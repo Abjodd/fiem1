@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --border: #e4e8f0;
+    --primary: #0052cc;
+    --primary-light: #e8f0fe;
+    --accent: #00b4d8;
+    --text-primary: #0d1b2a;
+    --text-secondary: #5a6a7e;
+    --text-muted: #9aa5b4;
+    --nav-bg: #0d1b2a;
+    --font: 'DM Sans', sans-serif;
+    --transition: 0.18s cubic-bezier(.4,0,.2,1);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+  }
+
+  html, body, #root { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font-family: var(--font);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 18px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--primary);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform var(--transition);
+  }
+
+  .tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+  }
+
+  .tile:hover::before { transform: scaleY(1); }
+
+  .placeholder-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 48px 32px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
