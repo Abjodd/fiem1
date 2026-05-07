@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import {
   ChevronLeft,
@@ -71,7 +70,6 @@ const createMovementApi = {
   async createMovement(payload) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 400))
-      // Simulate generated tracking number
       const newId = `100000${Math.floor(1000 + Math.random() * 9000)}/2026`
       return { success: true, trackingId: newId, payload }
     }
@@ -81,6 +79,20 @@ const createMovementApi = {
       body: JSON.stringify(payload),
     })
     if (!res.ok) throw new Error('Failed to create movement')
+    return res.json()
+  },
+
+  async updateMovement(id, payload) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 400))
+      return { success: true, trackingId: id, payload }
+    }
+    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error('Failed to update movement')
     return res.json()
   },
 }
@@ -100,6 +112,35 @@ const INITIAL_FORM = {
   pollutionCertificateApplicable: false,
   safetyEquipments: false,
   safetyGuardForMaterial: false,
+}
+
+// Helper to convert tracking data into form shape when editing
+const trackingToForm = (t) => {
+  // Convert ewayBillDate string (e.g. "Nov 13, 2025") to YYYY-MM-DD for input[type=date]
+  let ewayBillDateVal = ''
+  if (t.ewayBillDate) {
+    try {
+      const d = new Date(t.ewayBillDate)
+      if (!isNaN(d)) {
+        const pad = (n) => String(n).padStart(2, '0')
+        ewayBillDateVal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+      }
+    } catch { /* ignore */ }
+  }
+
+  return {
+    asnNum: t.asns?.[0]?.asnId?.replace('...', '') || '',
+    transportMode: t.transportationMode || t.transportMode || 'By Road',
+    ewayBillNo: t.ewayBillNo || '',
+    ewayBillDate: ewayBillDateVal,
+    transporterName: t.transporter || '',
+    driverName: t.driverName || '',
+    contactNumber: t.contact || '',
+    vehicleRegNo: t.vehicleRegNo || '',
+    pollutionCertificateApplicable: t.pollutionCertificateApplicable === 'Yes' || t.pollutionCertificateApplicable === true,
+    safetyEquipments: t.safetyEquipments === 'Yes' || t.safetyEquipments === true,
+    safetyGuardForMaterial: t.safetyGuardForMaterial === 'Yes' || t.safetyGuardForMaterial === true,
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -125,7 +166,7 @@ const FieldRow = ({ label, required, children, error }) => (
 )
 
 // ═══════════════════════════════════════════════════════════════
-// REUSABLE TOGGLE SWITCH (Yes / No) — matches screenshot
+// REUSABLE TOGGLE SWITCH (Yes / No)
 // ═══════════════════════════════════════════════════════════════
 const ToggleSwitch = ({ value, onChange }) => (
   <button
@@ -152,14 +193,25 @@ const ToggleSwitch = ({ value, onChange }) => (
 
 // ═══════════════════════════════════════════════════════════════
 // COMPONENT
+// Props:
+//   editData  — tracking object to pre-fill (null = create mode)
+//   onBack    — callback to return to GoodsMovement (replaces navigate(-1))
 // ═══════════════════════════════════════════════════════════════
-export default function CreateMovement() {
-  // If you don't use react-router, replace useNavigate with a prop callback
+export default function CreateMovement({ editData = null, onBack = null }) {
+  const isEditMode = !!editData
+
+  // Prefer the onBack prop; fall back to react-router if available
   const navigate = (() => {
-    try { return useNavigate() } catch { return null }
+    try { return require('react-router-dom').useNavigate() } catch { return null }
   })()
 
-  const [form, setForm] = useState(INITIAL_FORM)
+  const goBack = () => {
+    if (onBack) { onBack(); return }
+    if (navigate) navigate(-1)
+    else window.history.back()
+  }
+
+  const [form, setForm] = useState(() => editData ? trackingToForm(editData) : INITIAL_FORM)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -168,6 +220,15 @@ export default function CreateMovement() {
   const [asnLookupOpen, setAsnLookupOpen] = useState(false)
   const [asnLookupSearch, setAsnLookupSearch] = useState('')
   const [asnLookupResults, setAsnLookupResults] = useState([])
+
+  // Re-initialise form if editData changes (e.g. user navigates to a different tracking)
+  useEffect(() => {
+    if (editData) {
+      setForm(trackingToForm(editData))
+      setErrors({})
+      setSubmitError('')
+    }
+  }, [editData?.id])
 
   // Load ASN lookup
   useEffect(() => {
@@ -193,11 +254,6 @@ export default function CreateMovement() {
     if (errors[key]) setErrors(e => ({ ...e, [key]: null }))
   }
 
-  const handleBack = () => {
-    if (navigate) navigate(-1)
-    else window.history.back()
-  }
-
   const validate = () => {
     const e = {}
     if (!form.asnNum.trim()) e.asnNum = 'ASN Number is required'
@@ -216,21 +272,24 @@ export default function CreateMovement() {
     if (!validate()) return
     setSubmitting(true)
     try {
-      const result = await createMovementApi.createMovement(form)
-      // Navigate back on success — caller can pick up new tracking
-      if (navigate) navigate(-1)
-      else window.history.back()
-      console.log('Created:', result)
+      if (isEditMode) {
+        const result = await createMovementApi.updateMovement(editData.id, form)
+        console.log('Updated:', result)
+      } else {
+        const result = await createMovementApi.createMovement(form)
+        console.log('Created:', result)
+      }
+      goBack()
     } catch (err) {
       console.error(err)
-      setSubmitError('Failed to create movement. Please try again.')
+      setSubmitError(`Failed to ${isEditMode ? 'update' : 'create'} movement. Please try again.`)
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleReset = () => {
-    setForm(INITIAL_FORM)
+    setForm(editData ? trackingToForm(editData) : INITIAL_FORM)
     setErrors({})
     setSubmitError('')
   }
@@ -243,7 +302,6 @@ export default function CreateMovement() {
 
   const clearEwayDate = () => updateField('ewayBillDate', '')
 
-  // ── Selected transport icon (for select dropdown leading icon) ──
   const selectedTransport = useMemo(
     () => TRANSPORT_MODES.find(m => m.value === form.transportMode) || TRANSPORT_MODES[0],
     [form.transportMode]
@@ -286,22 +344,34 @@ export default function CreateMovement() {
       {/* Page header bar with back + title */}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-3 flex items-center gap-3 anim-fade">
         <button
-          onClick={handleBack}
+          onClick={goBack}
           className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] hover:bg-[#f0f7ff] transition-all"
           title="Back"
         >
           <ChevronLeft size={17} />
         </button>
         <h2 className="flex-1 text-center text-[16px] sm:text-[18px] font-bold text-[#32363a] tracking-tight">
-          Create Movement
+          {isEditMode ? 'Change Movement' : 'Create Movement'}
         </h2>
-        <div className="w-9" /> {/* spacer to keep title centered */}
+        <div className="w-9" />
       </div>
 
       {/* Form area */}
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-220px)] pb-24">
         <div className="max-w-[920px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 anim-slide-up">
           <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-5 sm:p-8 row-stagger">
+
+            {/* Tracking Number — read-only in edit mode */}
+            {isEditMode && (
+              <FieldRow label="Tracking Number">
+                <input
+                  type="text"
+                  value={editData.id}
+                  readOnly
+                  className="w-full h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-[#f5f6f7] text-[#32363a] cursor-not-allowed"
+                />
+              </FieldRow>
+            )}
 
             {/* ASN Num — value-help */}
             <FieldRow label="ASN Num." required error={errors.asnNum}>
@@ -493,7 +563,7 @@ export default function CreateMovement() {
           Reset
         </button>
         <button
-          onClick={handleBack}
+          onClick={goBack}
           disabled={submitting}
           className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] border border-[#0a6ed1] bg-white rounded-lg hover:bg-[#ebf5ff] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60"
         >
@@ -514,7 +584,6 @@ export default function CreateMovement() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAsnLookupOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[680px] anim-modal flex flex-col" style={{ maxHeight: '80vh' }}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
               <h4 className="text-[15px] font-bold text-[#32363a]">Select ASN</h4>
               <button onClick={() => setAsnLookupOpen(false)}
@@ -523,7 +592,6 @@ export default function CreateMovement() {
               </button>
             </div>
 
-            {/* Search */}
             <div className="px-6 py-3 border-b border-[#e5e5e5]">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6a6d70]" />
@@ -537,7 +605,6 @@ export default function CreateMovement() {
               </div>
             </div>
 
-            {/* Results */}
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-[13px]">
                 <thead className="sticky top-0 bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5]">
@@ -574,7 +641,6 @@ export default function CreateMovement() {
               </table>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-3 border-t border-[#e5e5e5] flex items-center justify-end">
               <button
                 onClick={() => setAsnLookupOpen(false)}

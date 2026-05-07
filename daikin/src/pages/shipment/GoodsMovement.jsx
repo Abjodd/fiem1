@@ -27,6 +27,8 @@ import {
   Edit3,
   ExternalLink,
   Save,
+  PlayCircle,
+  AlertTriangle,
 } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════
@@ -52,6 +54,8 @@ const SHIPMENT_TRACKINGS = [
     safetyEquipments: 'Yes',
     safetyGuardForMaterial: 'Yes',
     vehicleRegNo: 'UP67',
+    ewayBillNo: '',
+    ewayBillDate: '',
     timeline: [
       { key: 'created', label: 'Created', completed: true, timestamp: '06.05.2026 09:00' },
       { key: 'shipped', label: 'Shipped', completed: true, timestamp: '06.05.2026 10:30' },
@@ -91,6 +95,8 @@ const SHIPMENT_TRACKINGS = [
     safetyEquipments: 'No',
     safetyGuardForMaterial: 'Yes',
     vehicleRegNo: 'TN22',
+    ewayBillNo: '',
+    ewayBillDate: '',
     timeline: [
       { key: 'created', label: 'Created', completed: true, timestamp: '06.05.2026 09:45' },
       { key: 'shipped', label: 'Shipped', completed: true, timestamp: '06.05.2026 11:00' },
@@ -130,6 +136,8 @@ const SHIPMENT_TRACKINGS = [
     safetyEquipments: 'Yes',
     safetyGuardForMaterial: 'No',
     vehicleRegNo: 'RJ14',
+    ewayBillNo: '',
+    ewayBillDate: '',
     timeline: [
       { key: 'created', label: 'Created', completed: true, timestamp: '06.05.2026 08:30' },
       { key: 'shipped', label: 'Shipped', completed: true, timestamp: '06.05.2026 10:00' },
@@ -169,12 +177,15 @@ const SHIPMENT_TRACKINGS = [
     safetyEquipments: 'Yes',
     safetyGuardForMaterial: 'Yes',
     vehicleRegNo: 'HR26',
+    ewayBillNo: '346256123543',
+    ewayBillDate: 'Apr 30, 2026',
     timeline: [
       { key: 'created', label: 'Created', completed: true, timestamp: '30.04.2026 16:00' },
       { key: 'shipped', label: 'Shipped', completed: false, timestamp: null },
       { key: 'gate_reporting', label: 'Gate Reporting', completed: false, timestamp: null },
       { key: 'gate_entry', label: 'Gate Entry (IN)', completed: false, timestamp: null },
       { key: 'goods_received', label: 'Goods Received', completed: false, timestamp: null },
+      { key: 'completed', label: 'Completed', completed: false, timestamp: null }
     ],
     asns: [
       {
@@ -262,7 +273,6 @@ const goodsMovementApi = {
     return res.json()
   },
 
-  // ── New: update shipment (when status is Shipped / In Transit) ──
   async updateShipment(id, payload) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 250))
@@ -277,7 +287,30 @@ const goodsMovementApi = {
     return res.json()
   },
 
-  // ── New: ASN value-help lookup ──
+  async startShipment(id, payload) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 300))
+      return { success: true, id, payload }
+    }
+    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error('Failed to start shipment')
+    return res.json()
+  },
+
+  async cancelTracking(id) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      return { success: true, id }
+    }
+    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
+    if (!res.ok) throw new Error('Failed to cancel tracking')
+    return res.json()
+  },
+
   async searchAsns({ search = '' } = {}) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 80))
@@ -299,7 +332,7 @@ const goodsMovementApi = {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// STATUS CHECK — when can the user "Update Shipment"?
+// STATUS CHECK HELPERS
 // ═══════════════════════════════════════════════════════════════
 const isUpdatableStatus = (status) => {
   if (!status) return false
@@ -307,8 +340,15 @@ const isUpdatableStatus = (status) => {
   return s === 'shipped' || s === 'in transit'
 }
 
+// Show Start Shipment / Edit / Cancel when status is "Created" (yet to ship)
+const isCreatedStatus = (status) => {
+  if (!status) return false
+  const s = status.toLowerCase()
+  return s === 'created' || s === 'yet to ship'
+}
+
 // ═══════════════════════════════════════════════════════════════
-// TABS CONFIG (timeline + asn always; update is added conditionally)
+// TABS CONFIG
 // ═══════════════════════════════════════════════════════════════
 const BASE_TABS = [
   {
@@ -347,6 +387,7 @@ const TIMELINE_STEPS = [
   { key: 'gate_reporting', label: 'Gate Reporting', Icon: MapPin },
   { key: 'gate_entry', label: 'Gate Entry (IN)', Icon: LogIn },
   { key: 'goods_received', label: 'Goods Received', Icon: PackageCheck },
+  { key: 'completed', label: 'Completed', Icon: PackageCheck }
 ]
 
 // ═══════════════════════════════════════════════════════════════
@@ -387,6 +428,7 @@ export default function GoodsMovement() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [timelinePage, setTimelinePage] = useState(0)
   const [showCreateMovement, setShowCreateMovement] = useState(false)
+  const [editTrackingData, setEditTrackingData] = useState(null)
 
   // ── Update Shipment modal state ──
   const [updateModalOpen, setUpdateModalOpen] = useState(false)
@@ -398,6 +440,17 @@ export default function GoodsMovement() {
   const [asnLookupOpen, setAsnLookupOpen] = useState(false)
   const [asnLookupSearch, setAsnLookupSearch] = useState('')
   const [asnLookupResults, setAsnLookupResults] = useState([])
+
+  // ── Start Shipment flow state ──
+  const [startWarningOpen, setStartWarningOpen] = useState(false)
+  const [shipmentDetailsOpen, setShipmentDetailsOpen] = useState(false)
+  const [shipmentDetailsForm, setShipmentDetailsForm] = useState({
+    date: '',
+    time: '',
+    etaDate: '',
+  })
+  const [shipmentDetailsSubmitting, setShipmentDetailsSubmitting] = useState(false)
+  const [shipmentDetailsError, setShipmentDetailsError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -437,17 +490,46 @@ export default function GoodsMovement() {
     return () => { cancelled = true }
   }, [asnLookupOpen, asnLookupSearch])
 
+  // Pre-fill shipment details form with today's date/time
+  useEffect(() => {
+    if (!shipmentDetailsOpen) return
+    const now = new Date()
+    const pad = (n) => String(n).padStart(2, '0')
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const hours = now.getHours()
+    const mins = now.getMinutes()
+    const secs = now.getSeconds()
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const h12 = hours % 12 || 12
+    const timeStr = `${pad(h12)}:${pad(mins)}:${pad(secs)} ${ampm}`
+    setShipmentDetailsForm({
+      date: dateStr,
+      time: timeStr,
+      etaDate: tracking?.etaDate
+        ? (() => {
+            try {
+              const d = new Date(tracking.etaDate)
+              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+            } catch { return dateStr }
+          })()
+        : dateStr,
+    })
+    setShipmentDetailsError('')
+  }, [shipmentDetailsOpen])
+
   // Close modals on Escape
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'Escape') {
         if (asnLookupOpen) setAsnLookupOpen(false)
         else if (updateModalOpen) closeUpdateModal()
+        else if (shipmentDetailsOpen) setShipmentDetailsOpen(false)
+        else if (startWarningOpen) setStartWarningOpen(false)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [updateModalOpen, asnLookupOpen])
+  }, [updateModalOpen, asnLookupOpen, startWarningOpen, shipmentDetailsOpen])
 
   const handleSelectTracking = (id) => {
     setSelectedId(id)
@@ -456,12 +538,68 @@ export default function GoodsMovement() {
   }
 
   const handleCreateMovement = () => {
-  setShowCreateMovement(true)
+    setEditTrackingData(null)
+    setShowCreateMovement(true)
+  }
+
+  const handleEditMovement = () => {
+    if (!tracking) return
+    // Pass tracking data to CreateMovement for pre-filling
+    setEditTrackingData(tracking)
+    setShowCreateMovement(true)
+  }
+
+  const handleCancelMovement = async () => {
+    if (!tracking) return
+    try {
+      await goodsMovementApi.cancelTracking(tracking.id)
+      // Optionally refresh list or show feedback
+      console.log('Cancelled:', tracking.id)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const handlePrint = async () => {
     if (!tracking) return
     try { await goodsMovementApi.printTracking(tracking.id) } catch (err) { console.error(err) }
+  }
+
+  // ── Start Shipment flow ──
+  const handleStartShipmentClick = () => {
+    setStartWarningOpen(true)
+  }
+
+  const handleWarningOk = () => {
+    setStartWarningOpen(false)
+    setShipmentDetailsOpen(true)
+  }
+
+  const handleShipmentDetailsSubmit = async () => {
+    if (!shipmentDetailsForm.date || !shipmentDetailsForm.time || !shipmentDetailsForm.etaDate) {
+      setShipmentDetailsError('All fields are required.')
+      return
+    }
+    setShipmentDetailsSubmitting(true)
+    setShipmentDetailsError('')
+    try {
+      await goodsMovementApi.startShipment(tracking.id, shipmentDetailsForm)
+      setShipmentDetailsOpen(false)
+      // Optimistic: update status to Shipped
+      setTracking(prev => prev ? {
+        ...prev,
+        status: 'Shipped',
+        statusColor: 'blue',
+        timeline: prev.timeline.map(t =>
+          t.key === 'shipped' ? { ...t, completed: true, timestamp: new Date().toLocaleString() } : t
+        ),
+      } : prev)
+    } catch (err) {
+      console.error(err)
+      setShipmentDetailsError('Failed to start shipment. Please try again.')
+    } finally {
+      setShipmentDetailsSubmitting(false)
+    }
   }
 
   // ── Open / close Update modal ──
@@ -490,7 +628,6 @@ export default function GoodsMovement() {
     setUpdateError('')
     try {
       await goodsMovementApi.updateShipment(tracking.id, updateForm)
-      // Optimistic local update so UI reflects the new values immediately
       setTracking(prev => prev ? {
         ...prev,
         vehicleRegNo: updateForm.vehicleNumber,
@@ -517,7 +654,7 @@ export default function GoodsMovement() {
     setAsnLookupSearch('')
   }
 
-  // Compute visible tabs (Update tab only when status allows)
+  // Compute visible tabs
   const tabs = useMemo(() => {
     if (!tracking) return BASE_TABS
     return isUpdatableStatus(tracking.status) ? [...BASE_TABS, UPDATE_TAB] : BASE_TABS
@@ -745,7 +882,6 @@ export default function GoodsMovement() {
     return (
       <div className="anim-fade px-4 sm:px-6 lg:px-10 py-8">
         <div className="max-w-2xl">
-          {/* Info banner */}
           <div className="flex items-start gap-3 p-4 rounded-xl bg-[#fff3e8] border border-[#ffd9b3] mb-6">
             <Edit3 size={18} className="text-[#e76500] flex-shrink-0 mt-0.5" strokeWidth={2} />
             <div>
@@ -756,7 +892,6 @@ export default function GoodsMovement() {
             </div>
           </div>
 
-          {/* Current values summary */}
           <div className="rounded-xl border border-[#e5e5e5] bg-white shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-[15px] font-semibold text-[#32363a]">Current Shipment Details</h4>
@@ -795,7 +930,7 @@ export default function GoodsMovement() {
   }
 
   if (showCreateMovement) {
-  return <CreateMovement />
+    return <CreateMovement editData={editTrackingData} onBack={() => { setShowCreateMovement(false); setEditTrackingData(null) }} />
   }
 
   return (
@@ -972,11 +1107,12 @@ export default function GoodsMovement() {
         </div>
       </div>
 
-      {/* Bottom action bar */}
+      {/* ─────────── Bottom action bar ─────────── */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex items-center gap-3 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+        {/* Always show Create */}
         <button
-        onClick={handleCreateMovement}
-        className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+          onClick={handleCreateMovement}
+          className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
           <FilePlus size={15} />
           Create
         </button>
@@ -987,6 +1123,33 @@ export default function GoodsMovement() {
           <Printer size={15} />
           Print
         </button>
+
+        {/* Start Shipment / Edit / Cancel — only when status is Created */}
+        {tracking && isCreatedStatus(tracking.status) && (
+          <>
+            <button
+              onClick={handleStartShipmentClick}
+              className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"
+            >
+              <PlayCircle size={15} />
+              Start Shipment
+            </button>
+            <button
+              onClick={handleEditMovement}
+              className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"
+            >
+              <Edit3 size={15} />
+              Edit
+            </button>
+            <button
+              onClick={handleCancelMovement}
+              className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <X size={15} />
+              Cancel
+            </button>
+          </>
+        )}
       </div>
 
       {/* ─────────── Update Shipment Modal ─────────── */}
@@ -994,7 +1157,6 @@ export default function GoodsMovement() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={closeUpdateModal} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[560px] anim-modal">
-            {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">Tracking No</div>
@@ -1006,9 +1168,7 @@ export default function GoodsMovement() {
               </button>
             </div>
 
-            {/* Modal body */}
             <div className="px-6 py-5 space-y-5">
-              {/* ASN with value-help */}
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
                   ASN <span className="text-[#cc1c14]">*</span>
@@ -1032,7 +1192,6 @@ export default function GoodsMovement() {
                 </div>
               </div>
 
-              {/* Vehicle Number */}
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
                   Vehicle Number <span className="text-[#cc1c14]">*</span>
@@ -1046,7 +1205,6 @@ export default function GoodsMovement() {
                 />
               </div>
 
-              {/* Invoice Number */}
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
                   Invoice Number <span className="text-[#cc1c14]">*</span>
@@ -1067,7 +1225,6 @@ export default function GoodsMovement() {
               )}
             </div>
 
-            {/* Modal footer */}
             <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
               <button
                 onClick={closeUpdateModal}
@@ -1094,7 +1251,6 @@ export default function GoodsMovement() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAsnLookupOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[680px] anim-modal flex flex-col" style={{ maxHeight: '80vh' }}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
               <h4 className="text-[15px] font-bold text-[#32363a]">Select ASN</h4>
               <button onClick={() => setAsnLookupOpen(false)}
@@ -1103,7 +1259,6 @@ export default function GoodsMovement() {
               </button>
             </div>
 
-            {/* Search */}
             <div className="px-6 py-3 border-b border-[#e5e5e5]">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6a6d70]" />
@@ -1117,7 +1272,6 @@ export default function GoodsMovement() {
               </div>
             </div>
 
-            {/* Results */}
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-[13px]">
                 <thead className="sticky top-0 bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5]">
@@ -1154,13 +1308,143 @@ export default function GoodsMovement() {
               </table>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-3 border-t border-[#e5e5e5] flex items-center justify-end">
               <button
                 onClick={() => setAsnLookupOpen(false)}
                 className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────── Start Shipment Warning Dialog ─────────── */}
+      {startWarningOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setStartWarningOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[440px] anim-modal">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5e5]">
+              <div className="w-9 h-9 rounded-full bg-[#fff3e8] flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={18} className="text-[#e76500]" />
+              </div>
+              <h4 className="text-[15px] font-bold text-[#32363a]">Warning</h4>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              <p className="text-[14px] text-[#32363a] leading-relaxed">
+                Please note that once you start the shipment, you'll not be able to modify the document.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
+              <button
+                onClick={() => setStartWarningOpen(false)}
+                className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWarningOk}
+                className="px-5 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────── Shipment Details Dialog ─────────── */}
+      {shipmentDetailsOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShipmentDetailsOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[380px] anim-modal">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-[#e5e5e5] text-center">
+              <h4 className="text-[16px] font-bold text-[#32363a]">Shipment Details</h4>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Date */}
+              <div>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
+                  Date: <span className="text-[#cc1c14]">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={shipmentDetailsForm.date}
+                  onChange={(e) => setShipmentDetailsForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full h-10 px-3 text-[14px] border border-[#0a6ed1] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+                />
+              </div>
+
+              {/* Time */}
+              <div>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
+                  Time: <span className="text-[#cc1c14]">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={shipmentDetailsForm.time}
+                    onChange={(e) => setShipmentDetailsForm(f => ({ ...f, time: e.target.value }))}
+                    placeholder="HH:MM:SS AM/PM"
+                    className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6a6d70" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* ETA Date */}
+              <div>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
+                  ETA (Delivery Date): <span className="text-[#cc1c14]">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={shipmentDetailsForm.etaDate}
+                    onChange={(e) => setShipmentDetailsForm(f => ({ ...f, etaDate: e.target.value }))}
+                    className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <CalendarDays size={15} className="text-[#6a6d70]" />
+                  </div>
+                </div>
+              </div>
+
+              {shipmentDetailsError && (
+                <div className="text-[13px] text-[#cc1c14] bg-[#fce8e6] border border-[#f5b3ae] rounded-lg px-3 py-2">
+                  {shipmentDetailsError}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShipmentDetailsOpen(false)}
+                disabled={shipmentDetailsSubmitting}
+                className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShipmentDetailsSubmit}
+                disabled={shipmentDetailsSubmitting}
+                className="px-5 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {shipmentDetailsSubmitting ? 'Submitting…' : 'Submit'}
               </button>
             </div>
           </div>
