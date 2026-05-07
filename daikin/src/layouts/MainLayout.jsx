@@ -7,6 +7,7 @@ import TileGrid from '../components/TileGrid.jsx'
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState(NAV_MODULES[0]?.id)
   const sectionRefs = useRef({})
+  const scrollAreaRef = useRef(null)
   const isScrollingTo = useRef(false)
   const scrollTimer = useRef(null)
 
@@ -14,6 +15,9 @@ export default function MainLayout() {
 
   useEffect(() => {
     const stickyH = getStickyHeight()
+    const scrollArea = scrollAreaRef.current
+    if (!scrollArea) return
+
     const visibleSections = new Set()
 
     const obs = new IntersectionObserver(
@@ -39,7 +43,11 @@ export default function MainLayout() {
 
         if (topmost) setActiveModule(topmost)
       },
-      { rootMargin: `-${stickyH}px 0px -20% 0px`, threshold: 0 }
+      {
+        root: scrollArea,
+        rootMargin: `-${stickyH}px 0px -20% 0px`,
+        threshold: 0
+      }
     )
 
     NAV_MODULES.forEach((mod) => {
@@ -52,13 +60,21 @@ export default function MainLayout() {
 
   const handleSelect = useCallback((id) => {
     const el = sectionRefs.current[id]
-    if (!el) return
+    const scrollArea = scrollAreaRef.current
+    if (!el || !scrollArea) return
+
     setActiveModule(id)
     isScrollingTo.current = true
     if (scrollTimer.current) clearTimeout(scrollTimer.current)
+
     const offset = getStickyHeight()
-    const top = el.getBoundingClientRect().top + window.scrollY - offset
-    window.scrollTo({ top, behavior: 'smooth' })
+    const top =
+      el.getBoundingClientRect().top -
+      scrollArea.getBoundingClientRect().top +
+      scrollArea.scrollTop -
+      offset
+
+    scrollArea.scrollTo({ top, behavior: 'smooth' })
     scrollTimer.current = setTimeout(() => { isScrollingTo.current = false }, 1000)
   }, [])
 
@@ -69,7 +85,6 @@ export default function MainLayout() {
 
         * { box-sizing: border-box; }
 
-        /* ── Full-height shell ── */
         .ml-shell {
           display: flex;
           flex-direction: column;
@@ -77,14 +92,12 @@ export default function MainLayout() {
           overflow: hidden;
         }
 
-        /* Header + NavBar sit in the fixed top stack */
         .ml-fixed-top {
           flex-shrink: 0;
           position: relative;
           z-index: 100;
         }
 
-        /* Only this scrolls */
         .ml-scroll-area {
           flex: 1;
           overflow-y: auto;
@@ -140,14 +153,12 @@ export default function MainLayout() {
       `}</style>
 
       <div className="ml-shell">
-        {/* Fixed top — Header + NavBar never move */}
         <div className="ml-fixed-top">
           <Header />
           <NavBar activeModule={activeModule} onSelect={handleSelect} />
         </div>
 
-        {/* Scrollable content area */}
-        <div className="ml-scroll-area">
+        <div className="ml-scroll-area" ref={scrollAreaRef}>
           <main className="ml-main">
             {NAV_MODULES.map((mod) => (
               <section
