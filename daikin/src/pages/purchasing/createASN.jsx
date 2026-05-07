@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
 
 // ═══════════════════════════════════════════════════════════════
@@ -121,9 +121,186 @@ const createAsnApi = {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// MOBILE HOOK
+// ═══════════════════════════════════════════════════════════════
+function useIsMobile(breakpoint = 768) {
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint)
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth < breakpoint)
+        window.addEventListener('resize', handler)
+        return () => window.removeEventListener('resize', handler)
+    }, [breakpoint])
+    return isMobile
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MOBILE ITEM CARD  (same colors/fonts as desktop)
+// ═══════════════════════════════════════════════════════════════
+function MobileItemCard({ item, isSelected, onToggle, onUpdate }) {
+    const [expanded, setExpanded] = useState(false)
+
+    return (
+        <div className={`rounded-xl border mb-3 overflow-hidden transition-colors ${isSelected ? 'bg-[#ebf5ff] border-[#0a6ed1]' : 'bg-white border-[#e5e5e5]'}`}>
+            {/* Top row */}
+            <div className="flex items-center gap-3 px-4 py-3">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={onToggle}
+                    className="accent-[#0a6ed1] w-4 h-4 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                    <div className="text-[#0a6ed1] font-semibold text-[13px]">{item.materialNumber}</div>
+                    <div className="text-[#6a6d70] text-[12px] truncate">{item.materialName}</div>
+                </div>
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="px-2 py-0.5 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[11px] font-bold">Item {item.itemNo}</span>
+                    <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">{item.storageLocation}</span>
+                </div>
+                <button
+                    onClick={() => setExpanded(e => !e)}
+                    className="text-[#6a6d70] flex-shrink-0 p-1"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </button>
+            </div>
+
+            {/* Quick stats */}
+            <div className="flex border-t border-[#f0f0f0] text-center">
+                {[
+                    { label: 'Avl. ASN', value: `${item.avlAsnQty} ${item.totalUnit}` },
+                    { label: 'Net Price', value: `₹${item.netPrice}` },
+                    { label: 'Shipment', value: item.shipmentDate },
+                ].map((s, i) => (
+                    <div key={i} className={`flex-1 py-2 ${i < 2 ? 'border-r border-[#f0f0f0]' : ''}`}>
+                        <div className="text-[10px] text-[#9ca3af] font-semibold uppercase tracking-wide">{s.label}</div>
+                        <div className="text-[12px] text-[#32363a] font-bold mt-0.5">{s.value}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Expanded editable fields */}
+            {expanded && (
+                <div className="border-t border-[#f0f0f0] bg-[#fafbfc] px-4 py-4">
+                    {/* Read-only grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                        {[
+                            { label: 'Sch. Line', value: item.schLine },
+                            { label: 'Total Qty', value: `${item.totalQty} ${item.totalUnit}` },
+                            { label: 'Conf. Qty', value: `${item.confQty} ${item.confUnit}` },
+                            { label: 'Delivered', value: `${item.deliveredQty} ${item.deliveredUnit}` },
+                            { label: 'ASN Created', value: item.asnCreated },
+                            { label: 'SPQ', value: item.spq },
+                        ].map((d, i) => (
+                            <div key={i} className="bg-white rounded-lg px-3 py-2 border border-[#e5e5e5]">
+                                <div className="text-[10px] text-[#9ca3af] font-semibold uppercase tracking-wide">{d.label}</div>
+                                <div className="text-[13px] text-[#32363a] font-semibold mt-0.5">{d.value}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Editable: Avl ASN Qty */}
+                    <div className="mb-3">
+                        <label className="block text-[12px] font-semibold text-[#374151] mb-1">Avl. ASN Qty</label>
+                        <input
+                            type="text"
+                            value={item.avlAsnQty}
+                            onChange={e => onUpdate('avlAsnQty', e.target.value)}
+                            className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+                        />
+                    </div>
+
+                    {/* Editable: Supplier Net Price */}
+                    <div className="mb-3">
+                        <label className="block text-[12px] font-semibold text-[#374151] mb-1">Supplier Net Price</label>
+                        <input
+                            type="text"
+                            value={item.supplierNetPrice}
+                            onChange={e => onUpdate('supplierNetPrice', e.target.value)}
+                            className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+                        />
+                    </div>
+
+                    {/* Editable: Material Expiry */}
+                    <div className="mb-3">
+                        <label className="block text-[12px] font-semibold text-[#374151] mb-1">Material Expiry</label>
+                        <input
+                            type="date"
+                            value={item.materialExpiry}
+                            onChange={e => onUpdate('materialExpiry', e.target.value)}
+                            className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+                        />
+                    </div>
+
+                    {/* Packing row */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Type</label>
+                            <select
+                                value={item.packingMaterialType}
+                                onChange={e => onUpdate('packingMaterialType', e.target.value)}
+                                className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]"
+                            >
+                                <option value="">Select</option>
+                                <option value="Trolley">Trolley</option>
+                                <option value="Pallet">Pallet</option>
+                                <option value="Carton">Carton</option>
+                                <option value="Crate">Crate</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Qty</label>
+                            <input
+                                type="text"
+                                value={item.packingMaterialQty}
+                                onChange={e => onUpdate('packingMaterialQty', e.target.value)}
+                                className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    {/* PDIR */}
+                    <div className="mb-3">
+                        <label className="block text-[12px] font-semibold text-[#374151] mb-1">PDIR No.</label>
+                        <select
+                            value={item.pdirNo}
+                            onChange={e => onUpdate('pdirNo', e.target.value)}
+                            className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]"
+                        >
+                            <option value="">Select</option>
+                            <option value="PDIR-001">PDIR-001</option>
+                            <option value="PDIR-002">PDIR-002</option>
+                        </select>
+                    </div>
+
+                    {/* Tax Mismatch */}
+                    <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 border border-[#e5e5e5]">
+                        <span className="text-[13px] font-semibold text-[#374151]">Tax Mismatch</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-bold text-[#6a6d70]">{item.taxMismatch ? 'YES' : 'NO'}</span>
+                            <button
+                                onClick={() => onUpdate('taxMismatch', !item.taxMismatch)}
+                                className={`relative w-11 h-6 rounded-full transition-colors ${item.taxMismatch ? 'bg-[#107e3e]' : 'bg-[#d9d9d9]'}`}
+                            >
+                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${item.taxMismatch ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
+    const isMobile = useIsMobile()
     const [activeTab, setActiveTab] = useState('info') // 'info' | 'attachments'
 
     // Invoice form
@@ -271,11 +448,9 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setActiveTab('info')}
-                            className={`flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'info' ? 'border-[#0a6ed1]' : 'border-transparent'
-                                }`}
+                            className={`flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'info' ? 'border-[#0a6ed1]' : 'border-transparent'}`}
                         >
-                            <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all ${activeTab === 'info' ? 'bg-[#0a6ed1] shadow-md' : 'bg-white border-2 border-[#0a6ed1]'
-                                }`}>
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all ${activeTab === 'info' ? 'bg-[#0a6ed1] shadow-md' : 'bg-white border-2 border-[#0a6ed1]'}`}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab === 'info' ? 'white' : '#0a6ed1'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" />
                                     <path d="M12 16v-4M12 8h.01" />
@@ -284,11 +459,9 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                         </button>
                         <button
                             onClick={() => setActiveTab('attachments')}
-                            className={`flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'attachments' ? 'border-[#0a6ed1]' : 'border-transparent'
-                                }`}
+                            className={`flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'attachments' ? 'border-[#0a6ed1]' : 'border-transparent'}`}
                         >
-                            <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all ${activeTab === 'attachments' ? 'bg-[#0a6ed1] shadow-md' : 'bg-white border-2 border-[#0a6ed1]'
-                                }`}>
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all ${activeTab === 'attachments' ? 'bg-[#0a6ed1] shadow-md' : 'bg-white border-2 border-[#0a6ed1]'}`}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab === 'attachments' ? 'white' : '#0a6ed1'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.49" />
                                 </svg>
@@ -420,9 +593,9 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                             </div>
                         </div>
 
-                        {/* Filter row */}
-                        <div className="px-8 py-5 bg-white border-t border-[#e5e5e5] grid grid-cols-12 gap-4 items-end">
-                            <div className="col-span-2">
+                        {/* Filter row — stacks vertically on mobile */}
+                        <div className="px-4 md:px-8 py-5 bg-white border-t border-[#e5e5e5] grid grid-cols-2 md:grid-cols-12 gap-4 items-end">
+                            <div className="col-span-1 md:col-span-2">
                                 <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Shipment From Date</label>
                                 <input
                                     type="date"
@@ -432,7 +605,7 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                                     className="w-full h-10 pl-3 pr-2 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                                 />
                             </div>
-                            <div className="col-span-2">
+                            <div className="col-span-1 md:col-span-2">
                                 <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">To Date</label>
                                 <input
                                     type="date"
@@ -442,15 +615,15 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                                     className="w-full h-10 pl-3 pr-2 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                                 />
                             </div>
-                            <div className="col-span-1 flex gap-2">
+                            <div className="col-span-1 md:col-span-1 flex gap-2">
                                 <button
                                     onClick={handleGo}
-                                    className="h-10 px-4 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+                                    className="h-10 px-4 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm w-full"
                                 >
                                     Go
                                 </button>
                             </div>
-                            <div className="col-span-1">
+                            <div className="col-span-1 md:col-span-1">
                                 <button
                                     onClick={handleClear}
                                     className="h-10 px-4 text-[14px] font-semibold text-[#cc1c14] bg-[#fce8e6] border border-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all w-full"
@@ -458,7 +631,7 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                                     Clear
                                 </button>
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-2 md:col-span-3">
                                 <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Enter Materials</label>
                                 <div className="relative">
                                     <input
@@ -473,7 +646,7 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                                     </svg>
                                 </div>
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-2 md:col-span-3">
                                 <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Enter Storage Location (comma-separated)</label>
                                 <div className="relative">
                                     <input
@@ -490,129 +663,160 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                             </div>
                         </div>
 
-                        {/* Items table */}
-                        <div className="px-8 pb-8 bg-white">
-                            <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
-                                <table className="w-full text-[13px] min-w-[2200px]">
-                                    <thead>
-                                        <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                                            <th className="py-3 px-3 w-10">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={allSelected}
-                                                    ref={el => { if (el) el.indeterminate = someSelected }}
-                                                    onChange={toggleAll}
-                                                    className="accent-[#0a6ed1] w-4 h-4"
-                                                />
-                                            </th>
-                                            {[
-                                                'Item', 'Sch. Line', 'Material', 'Storage', 'Shipment Date', 'Material Expiry', 'Total Qty', 'Conf. Qty', 'Delivered Qty', 'ASN Created', 'Avl. ASN Qty', 'Net Price', 'Supplier Net Price', 'Tax Mismatch', 'Packing Material Type', 'Packing Material Qty', 'SPQ', 'PDIR No.',
-                                            ].map(h => (
-                                                <th key={h} className="text-left font-semibold py-3 px-3 text-[12px] uppercase tracking-wider whitespace-nowrap">{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {items.length === 0 && (
-                                            <tr><td colSpan={19} className="py-12 text-center text-[#6a6d70] text-[14px]">No items available</td></tr>
-                                        )}
-                                        {items.map(item => {
-                                            const isSelected = selectedItemNos.includes(item.itemNo)
-                                            return (
-                                                <tr key={item.itemNo} className={`border-b border-[#f0f0f0] last:border-b-0 transition-colors ${isSelected ? 'bg-[#ebf5ff]' : 'hover:bg-[#fafbfc]'}`}>
-                                                    <td className="py-3 px-3">
-                                                        <input type="checkbox" checked={isSelected} onChange={() => toggleOne(item.itemNo)} className="accent-[#0a6ed1] w-4 h-4" />
-                                                    </td>
-                                                    <td className="py-3 px-3 text-[#32363a] font-semibold">{item.itemNo}</td>
-                                                    <td className="py-3 px-3">
-                                                        <span className="inline-flex items-center justify-center w-7 h-7 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[12px] font-bold">{item.schLine}</span>
-                                                    </td>
-                                                    <td className="py-3 px-3">
-                                                        <div className="text-[#0a6ed1] font-semibold">{item.materialNumber}</div>
-                                                        <div className="text-[#6a6d70] text-[12px]">{item.materialName}</div>
-                                                    </td>
-                                                    <td className="py-3 px-3">
-                                                        <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[12px] font-semibold">{item.storageLocation}</span>
-                                                    </td>
-                                                    <td className="py-3 px-3 text-[#32363a]">{item.shipmentDate}</td>
-                                                    <td className="py-3 px-3">
-                                                        <input
-                                                            type="date"
-                                                            value={item.materialExpiry}
-                                                            onChange={e => updateItem(item.itemNo, 'materialExpiry', e.target.value)}
-                                                            placeholder="e.g. Dec 31, …"
-                                                            className="w-32 h-8 px-2 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1]"
-                                                        />
-                                                    </td>
-                                                    <td className="py-3 px-3 text-[#0a6ed1] font-semibold">{item.totalQty} {item.totalUnit}</td>
-                                                    <td className="py-3 px-3 text-[#32363a]">{item.confQty} {item.confUnit}</td>
-                                                    <td className="py-3 px-3 text-[#32363a]">{item.deliveredQty} {item.deliveredUnit}</td>
-                                                    <td className="py-3 px-3 text-[#32363a]">{item.asnCreated}</td>
-                                                    <td className="py-3 px-3">
-                                                        <input
-                                                            type="text"
-                                                            value={item.avlAsnQty}
-                                                            onChange={e => updateItem(item.itemNo, 'avlAsnQty', e.target.value)}
-                                                            className="w-20 h-8 px-2 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] font-semibold text-[#32363a]"
-                                                        />
-                                                    </td>
-                                                    <td className="py-3 px-3 text-[#32363a]">{item.netPrice}</td>
-                                                    <td className="py-3 px-3">
-                                                        <input
-                                                            type="text"
-                                                            value={item.supplierNetPrice}
-                                                            onChange={e => updateItem(item.itemNo, 'supplierNetPrice', e.target.value)}
-                                                            className="w-20 h-8 px-2 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] text-[#32363a]"
-                                                        />
-                                                    </td>
-                                                    <td className="py-3 px-3">
-                                                        <button
-                                                            onClick={() => updateItem(item.itemNo, 'taxMismatch', !item.taxMismatch)}
-                                                            className={`relative w-11 h-6 rounded-full transition-colors ${item.taxMismatch ? 'bg-[#107e3e]' : 'bg-[#d9d9d9]'}`}
-                                                        >
-                                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${item.taxMismatch ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
-                                                        </button>
-                                                        <span className="ml-2 text-[12px] font-semibold text-[#6a6d70]">{item.taxMismatch ? 'YES' : 'NO'}</span>
-                                                    </td>
-                                                    <td className="py-3 px-3">
-                                                        <select
-                                                            value={item.packingMaterialType}
-                                                            onChange={e => updateItem(item.itemNo, 'packingMaterialType', e.target.value)}
-                                                            className="w-32 h-8 px-2 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1]"
-                                                        >
-                                                            <option value="">Select</option>
-                                                            <option value="Trolley">Trolley</option>
-                                                            <option value="Pallet">Pallet</option>
-                                                            <option value="Carton">Carton</option>
-                                                            <option value="Crate">Crate</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="py-3 px-3">
-                                                        <input
-                                                            type="text"
-                                                            value={item.packingMaterialQty}
-                                                            onChange={e => updateItem(item.itemNo, 'packingMaterialQty', e.target.value)}
-                                                            className="w-16 h-8 px-2 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] text-center"
-                                                        />
-                                                    </td>
-                                                    <td className="py-3 px-3 text-[#32363a]">{item.spq}</td>
-                                                    <td className="py-3 px-3">
-                                                        <select
-                                                            value={item.pdirNo}
-                                                            onChange={e => updateItem(item.itemNo, 'pdirNo', e.target.value)}
-                                                            className="w-28 h-8 px-2 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1]"
-                                                        >
-                                                            <option value="">Select</option>
-                                                            <option value="PDIR-001">PDIR-001</option>
-                                                            <option value="PDIR-002">PDIR-002</option>
-                                                        </select>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
+                        {/* Items — desktop table OR mobile cards */}
+                        <div className="px-4 md:px-8 pb-8 bg-white">
+                            {isMobile ? (
+                                /* ── MOBILE CARD LIST ── */
+                                <div className="pt-2">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[14px] font-bold text-[#32363a]">Items ({items.length})</span>
+                                        <label className="flex items-center gap-2 text-[13px] font-semibold text-[#0a6ed1] cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                ref={el => { if (el) el.indeterminate = someSelected }}
+                                                onChange={toggleAll}
+                                                className="accent-[#0a6ed1] w-4 h-4"
+                                            />
+                                            Select All
+                                        </label>
+                                    </div>
+                                    {items.length === 0 && (
+                                        <div className="py-12 text-center text-[#6a6d70] text-[14px]">No items available</div>
+                                    )}
+                                    {items.map(item => (
+                                        <MobileItemCard
+                                            key={item.itemNo}
+                                            item={item}
+                                            isSelected={selectedItemNos.includes(item.itemNo)}
+                                            onToggle={() => toggleOne(item.itemNo)}
+                                            onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                /* ── DESKTOP TABLE ── */
+                                <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
+                                    <table className="w-full text-[13px] min-w-[2200px]">
+                                        <thead>
+                                            <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
+                                                <th className="py-3 px-3 w-10">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={allSelected}
+                                                        ref={el => { if (el) el.indeterminate = someSelected }}
+                                                        onChange={toggleAll}
+                                                        className="accent-[#0a6ed1] w-4 h-4"
+                                                    />
+                                                </th>
+                                                {[
+                                                    'Item', 'Sch. Line', 'Material', 'Storage', 'Shipment Date', 'Material Expiry', 'Total Qty', 'Conf. Qty', 'Delivered Qty', 'ASN Created', 'Avl. ASN Qty', 'Net Price', 'Supplier Net Price', 'Tax Mismatch', 'Packing Material Type', 'Packing Material Qty', 'SPQ', 'PDIR No.',
+                                                ].map(h => (
+                                                    <th key={h} className="text-left font-semibold py-3 px-3 text-[12px] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {items.length === 0 && (
+                                                <tr><td colSpan={19} className="py-12 text-center text-[#6a6d70] text-[14px]">No items available</td></tr>
+                                            )}
+                                            {items.map(item => {
+                                                const isSelected = selectedItemNos.includes(item.itemNo)
+                                                return (
+                                                    <tr key={item.itemNo} className={`border-b border-[#f0f0f0] last:border-b-0 transition-colors ${isSelected ? 'bg-[#ebf5ff]' : 'hover:bg-[#fafbfc]'}`}>
+                                                        <td className="py-3 px-3">
+                                                            <input type="checkbox" checked={isSelected} onChange={() => toggleOne(item.itemNo)} className="accent-[#0a6ed1] w-4 h-4" />
+                                                        </td>
+                                                        <td className="py-3 px-3 text-[#32363a] font-semibold">{item.itemNo}</td>
+                                                        <td className="py-3 px-3">
+                                                            <span className="inline-flex items-center justify-center w-7 h-7 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[12px] font-bold">{item.schLine}</span>
+                                                        </td>
+                                                        <td className="py-3 px-3">
+                                                            <div className="text-[#0a6ed1] font-semibold">{item.materialNumber}</div>
+                                                            <div className="text-[#6a6d70] text-[12px]">{item.materialName}</div>
+                                                        </td>
+                                                        <td className="py-3 px-3">
+                                                            <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[12px] font-semibold">{item.storageLocation}</span>
+                                                        </td>
+                                                        <td className="py-3 px-3 text-[#32363a]">{item.shipmentDate}</td>
+                                                        <td className="py-3 px-3">
+                                                            <input
+                                                                type="date"
+                                                                value={item.materialExpiry}
+                                                                onChange={e => updateItem(item.itemNo, 'materialExpiry', e.target.value)}
+                                                                className="w-32 h-8 px-2 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1]"
+                                                            />
+                                                        </td>
+                                                        <td className="py-3 px-3 text-[#0a6ed1] font-semibold">{item.totalQty} {item.totalUnit}</td>
+                                                        <td className="py-3 px-3 text-[#32363a]">{item.confQty} {item.confUnit}</td>
+                                                        <td className="py-3 px-3 text-[#32363a]">{item.deliveredQty} {item.deliveredUnit}</td>
+                                                        <td className="py-3 px-3 text-[#32363a]">{item.asnCreated}</td>
+                                                        <td className="py-3 px-3">
+                                                            <input
+                                                                type="text"
+                                                                value={item.avlAsnQty}
+                                                                onChange={e => updateItem(item.itemNo, 'avlAsnQty', e.target.value)}
+                                                                className="w-20 h-8 px-2 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] font-semibold text-[#32363a]"
+                                                            />
+                                                        </td>
+                                                        <td className="py-3 px-3 text-[#32363a]">{item.netPrice}</td>
+                                                        <td className="py-3 px-3">
+                                                            <input
+                                                                type="text"
+                                                                value={item.supplierNetPrice}
+                                                                onChange={e => updateItem(item.itemNo, 'supplierNetPrice', e.target.value)}
+                                                                className="w-20 h-8 px-2 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] text-[#32363a]"
+                                                            />
+                                                        </td>
+                                                        <td className="py-3 px-3">
+                                                            <button
+                                                                onClick={() => updateItem(item.itemNo, 'taxMismatch', !item.taxMismatch)}
+                                                                className={`relative w-11 h-6 rounded-full transition-colors ${item.taxMismatch ? 'bg-[#107e3e]' : 'bg-[#d9d9d9]'}`}
+                                                            >
+                                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${item.taxMismatch ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                                                            </button>
+                                                            <span className="ml-2 text-[12px] font-semibold text-[#6a6d70]">{item.taxMismatch ? 'YES' : 'NO'}</span>
+                                                        </td>
+                                                        <td className="py-3 px-3">
+                                                            <select
+                                                                value={item.packingMaterialType}
+                                                                onChange={e => updateItem(item.itemNo, 'packingMaterialType', e.target.value)}
+                                                                className="w-32 h-8 px-2 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1]"
+                                                            >
+                                                                <option value="">Select</option>
+                                                                <option value="Trolley">Trolley</option>
+                                                                <option value="Pallet">Pallet</option>
+                                                                <option value="Carton">Carton</option>
+                                                                <option value="Crate">Crate</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="py-3 px-3">
+                                                            <input
+                                                                type="text"
+                                                                value={item.packingMaterialQty}
+                                                                onChange={e => updateItem(item.itemNo, 'packingMaterialQty', e.target.value)}
+                                                                className="w-16 h-8 px-2 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] text-center"
+                                                            />
+                                                        </td>
+                                                        <td className="py-3 px-3 text-[#32363a]">{item.spq}</td>
+                                                        <td className="py-3 px-3">
+                                                            <select
+                                                                value={item.pdirNo}
+                                                                onChange={e => updateItem(item.itemNo, 'pdirNo', e.target.value)}
+                                                                className="w-28 h-8 px-2 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1]"
+                                                            >
+                                                                <option value="">Select</option>
+                                                                <option value="PDIR-001">PDIR-001</option>
+                                                                <option value="PDIR-002">PDIR-002</option>
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -643,7 +847,6 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                             {attachments.length === 0 ? (
                                 <div
                                     onDragOver={e => e.preventDefault()}
-                                    // 
                                     onDrop={e => {
                                         e.preventDefault()
                                         const files = Array.from(e.dataTransfer.files)

@@ -990,7 +990,7 @@ export default function GoodsMovement() {
 
           {/* Desktop sidebar */}
           <aside data-sidebar
-            className={`hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
+            className={`hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-[calc(100vh-136px)] sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
           >
             <SidebarContent />
           </aside>

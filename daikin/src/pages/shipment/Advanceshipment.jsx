@@ -408,7 +408,7 @@ export default function AdvanceShippingNote() {
   const SidebarContent = () => (
     <>
       {/* Header */}
-      <div className="px-4 py-4 border-b border-[#e5e5e5]">
+      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
         {!sidebarCollapsed && (
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold text-[#32363a]">Advance Shipping Notes</h3>
@@ -453,7 +453,7 @@ export default function AdvanceShippingNote() {
       </div>
 
       {/* ASN list */}
-      <div className="flex-1 overflow-y-auto row-stagger">
+      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
         {sidebarCollapsed ? (
           asns.map((a) => {
             const isSelected = a.id === selectedAsnId
@@ -506,7 +506,7 @@ export default function AdvanceShippingNote() {
       </div>
 
       {/* Footer: filter + collapse toggle */}
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between" ref={filterRef}>
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
         <div className="relative">
           <button
             onClick={() => setFilterOpen(!filterOpen)}
@@ -797,7 +797,7 @@ export default function AdvanceShippingNote() {
 
           {/* Desktop sidebar */}
           <aside data-sidebar
-            className={`hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
+            className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
           >
             <SidebarContent />
           </aside>

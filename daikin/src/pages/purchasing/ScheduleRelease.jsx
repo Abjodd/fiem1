@@ -82,6 +82,111 @@ const SCHEDULE_AGREEMENTS = [
           { schLineNo: '2', deliveryDate: 'Nov 05, 2025', deliverySchedule: 32, confirmedQty: 32, unit: 'KG' },
         ],
       },
+      {
+        itemNo: '10',
+        materialName: 'xcvbnm',
+        materialNumber: '234010000451',
+        hsnCode: '82073000',
+        storageLocation: 'RM01',
+        deliverySchedule: '62.00',
+        deliveryUnit: 'NO',
+        deliveredQty: '0',
+        deliveredUnit: 'NO',
+        unitPrice: '10.00',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '2', deliveryDate: 'Sep 01, 2025', deliverySchedule: 4, confirmedQty: 4, unit: 'NO' },
+          { schLineNo: '1', deliveryDate: 'Oct 22, 2025', deliverySchedule: 10, confirmedQty: 10, unit: 'NO' },
+          { schLineNo: '3', deliveryDate: 'Oct 28, 2025', deliverySchedule: 3, confirmedQty: 3, unit: 'NO' },
+          { schLineNo: '4', deliveryDate: 'Oct 30, 2025', deliverySchedule: 20, confirmedQty: 20, unit: 'NO' },
+          { schLineNo: '5', deliveryDate: 'Nov 12, 2025', deliverySchedule: 25, confirmedQty: 25, unit: 'NO' },
+        ],
+      },
+      {
+        itemNo: '40',
+        materialName: 'CFF End plate Assy',
+        materialNumber: '234010000452',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '62.00',
+        deliveryUnit: 'KG',
+        deliveredQty: '0',
+        deliveredUnit: 'KG',
+        unitPrice: '70.23',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Oct 15, 2025', deliverySchedule: 30, confirmedQty: 30, unit: 'KG' },
+          { schLineNo: '2', deliveryDate: 'Nov 05, 2025', deliverySchedule: 32, confirmedQty: 32, unit: 'KG' },
+        ],
+      },
+      {
+        itemNo: '90',
+        materialName: 'CFF End plate Assy',
+        materialNumber: '234010000452',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '62.00',
+        deliveryUnit: 'KG',
+        deliveredQty: '0',
+        deliveredUnit: 'KG',
+        unitPrice: '70.23',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Oct 15, 2025', deliverySchedule: 30, confirmedQty: 30, unit: 'KG' },
+          { schLineNo: '2', deliveryDate: 'Nov 05, 2025', deliverySchedule: 32, confirmedQty: 32, unit: 'KG' },
+        ],
+      },
+      {
+        itemNo: '60',
+        materialName: 'CFF End plate Assy',
+        materialNumber: '234010000452',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '62.00',
+        deliveryUnit: 'KG',
+        deliveredQty: '0',
+        deliveredUnit: 'KG',
+        unitPrice: '70.23',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Oct 15, 2025', deliverySchedule: 30, confirmedQty: 30, unit: 'KG' },
+          { schLineNo: '2', deliveryDate: 'Nov 05, 2025', deliverySchedule: 32, confirmedQty: 32, unit: 'KG' },
+        ],
+      },
+      {
+        itemNo: '80',
+        materialName: 'CFF End plate Assy',
+        materialNumber: '234010000452',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '62.00',
+        deliveryUnit: 'KG',
+        deliveredQty: '0',
+        deliveredUnit: 'KG',
+        unitPrice: '70.23',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Oct 15, 2025', deliverySchedule: 30, confirmedQty: 30, unit: 'KG' },
+          { schLineNo: '2', deliveryDate: 'Nov 05, 2025', deliverySchedule: 32, confirmedQty: 32, unit: 'KG' },
+        ],
+      },
+      {
+        itemNo: '50',
+        materialName: 'CFF End plate Assy',
+        materialNumber: '234010000452',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '62.00',
+        deliveryUnit: 'KG',
+        deliveredQty: '0',
+        deliveredUnit: 'KG',
+        unitPrice: '70.23',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Oct 15, 2025', deliverySchedule: 30, confirmedQty: 30, unit: 'KG' },
+          { schLineNo: '2', deliveryDate: 'Nov 05, 2025', deliverySchedule: 32, confirmedQty: 32, unit: 'KG' },
+        ],
+      },
     ],
   },
   {
@@ -140,6 +245,110 @@ const SCHEDULE_AGREEMENTS = [
   },
   {
     id: '5501000068',
+    plant: 'NM01',
+    plantName: 'Neemrana Plant',
+    date: 'Mar 02, 2025',
+    type: 'Manual',
+    vendor: 'Kunstocom(India) Ltd',
+    items: [
+      {
+        itemNo: '10',
+        materialName: 'Refrigerant line kit',
+        materialNumber: '234010000480',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '25.00',
+        deliveryUnit: 'NO',
+        deliveredQty: '0',
+        deliveredUnit: 'NO',
+        unitPrice: '210.00',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Mar 10, 2025', deliverySchedule: 25, confirmedQty: 25, unit: 'NO' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '5501000069',
+    plant: 'NM01',
+    plantName: 'Neemrana Plant',
+    date: 'Mar 02, 2025',
+    type: 'Manual',
+    vendor: 'Kunstocom(India) Ltd',
+    items: [
+      {
+        itemNo: '10',
+        materialName: 'Refrigerant line kit',
+        materialNumber: '234010000480',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '25.00',
+        deliveryUnit: 'NO',
+        deliveredQty: '0',
+        deliveredUnit: 'NO',
+        unitPrice: '210.00',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Mar 10, 2025', deliverySchedule: 25, confirmedQty: 25, unit: 'NO' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '5501000070',
+    plant: 'NM01',
+    plantName: 'Neemrana Plant',
+    date: 'Mar 02, 2025',
+    type: 'Manual',
+    vendor: 'Kunstocom(India) Ltd',
+    items: [
+      {
+        itemNo: '10',
+        materialName: 'Refrigerant line kit',
+        materialNumber: '234010000480',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '25.00',
+        deliveryUnit: 'NO',
+        deliveredQty: '0',
+        deliveredUnit: 'NO',
+        unitPrice: '210.00',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Mar 10, 2025', deliverySchedule: 25, confirmedQty: 25, unit: 'NO' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '5501000071',
+    plant: 'NM01',
+    plantName: 'Neemrana Plant',
+    date: 'Mar 02, 2025',
+    type: 'Manual',
+    vendor: 'Kunstocom(India) Ltd',
+    items: [
+      {
+        itemNo: '10',
+        materialName: 'Refrigerant line kit',
+        materialNumber: '234010000480',
+        hsnCode: '8415',
+        storageLocation: 'RM02',
+        deliverySchedule: '25.00',
+        deliveryUnit: 'NO',
+        deliveredQty: '0',
+        deliveredUnit: 'NO',
+        unitPrice: '210.00',
+        status: 'Confirmed',
+        scheduleLines: [
+          { schLineNo: '1', deliveryDate: 'Mar 10, 2025', deliverySchedule: 25, confirmedQty: 25, unit: 'NO' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '5501000072',
     plant: 'NM01',
     plantName: 'Neemrana Plant',
     date: 'Mar 02, 2025',
@@ -413,7 +622,7 @@ export default function ScheduleRelease() {
   const SidebarContent = () => (
     <>
       {/* Header */}
-      <div className="px-4 py-4 border-b border-[#e5e5e5]">
+      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
         {!sidebarCollapsed && (
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold text-[#32363a]">Schedule Agreements</h3>
@@ -464,7 +673,7 @@ export default function ScheduleRelease() {
       </div>
 
       {/* Agreement list */}
-      <div className="flex-1 overflow-y-auto row-stagger">
+      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
         {sidebarCollapsed ? (
           // Collapsed: show only ID initials as icon buttons
           agreements.map((a) => {
@@ -518,7 +727,7 @@ export default function ScheduleRelease() {
       </div>
 
       {/* Footer: filter + collapse toggle */}
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between" ref={filterRef}>
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
         {/* Plant filter */}
         <div className="relative">
           <button
@@ -645,19 +854,19 @@ export default function ScheduleRelease() {
             <aside
               data-sidebar
               className={`
-                hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0
-                ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}
-              `}
+                        hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0
+                        ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}
+                      `}
             >
               <SidebarContent />
             </aside>
 
             {/* ─── RIGHT PANE ─── */}
-            <main className="flex-1 bg-white overflow-y-auto anim-slide-r min-w-0">
+            <main className="flex-1 bg-white overflow-hidden flex flex-col anim-slide-r min-w-0">
               {agreement && (
                 <>
                   {/* ── Header ── */}
-                  <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 sm:pb-6 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
+                  <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 sm:pb-6 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white flex-shrink-0">
                     {/* Mobile: hamburger to open sidebar */}
                     <div className="flex items-center gap-3 mb-4 md:hidden">
                       <button
@@ -696,7 +905,7 @@ export default function ScheduleRelease() {
                   </div>
 
                   {/* ── Tab indicator ── */}
-                  <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-6">
+                  <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-6 flex-shrink-0">
                     <div className="inline-flex flex-col items-center pb-2.5 border-b-2 border-[#0a6ed1]">
                       <div className="w-10 h-10 rounded-full bg-[#0a6ed1] flex items-center justify-center mb-1.5 shadow-md transition-transform hover:scale-110">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -709,7 +918,7 @@ export default function ScheduleRelease() {
                   </div>
 
                   {/* ── Filters — responsive grid ── */}
-                  <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-[#e5e5e5]">
+                  <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-[#e5e5e5] flex-shrink-0">
                     <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-end">
                       {/* From Date */}
                       <div className="w-full sm:w-auto sm:min-w-[160px] sm:flex-1 sm:max-w-[200px]">
@@ -778,74 +987,84 @@ export default function ScheduleRelease() {
                   </div>
 
                   {/* ── Items table ── */}
-                  <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
-                    <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
-                      <table className="w-full text-[14px]" style={{ minWidth: '640px' }}>
-                        <thead>
-                          <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Item No.</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Material</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">HSN Code</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Storage</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Delivery</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Delivered</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Unit Price</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Status</th>
-                            <th className="w-10"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="row-stagger">
-                          {filteredItems.length === 0 && (
-                            <tr>
-                              <td colSpan={9} className="py-12 text-center text-[14px] text-[#6a6d70]">
-                                No items match the current filters
-                              </td>
-                            </tr>
-                          )}
-                          {filteredItems.map((item) => (
-                            <tr
-                              key={item.itemNo}
-                              onClick={() => setSelectedItem({ agreementId: agreement.id, itemNo: item.itemNo })}
-                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-all duration-200 group"
-                            >
-                              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.itemNo}</td>
-                              <td className="py-3.5 px-4">
-                                <div className="text-[#32363a] font-medium">{item.materialName}</div>
-                                <div className="text-[#0a6ed1] font-medium text-[13px]">{item.materialNumber}</div>
-                              </td>
-                              <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode}</td>
-                              <td className="py-3.5 px-4">
-                                <span className="px-2.5 py-1 bg-[#f0f4f8] text-[#32363a] rounded-md text-[13px] font-semibold">
-                                  {item.storageLocation}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4 text-[#32363a]">
-                                <span className="font-semibold">{item.deliverySchedule}</span> <span className="text-[#6a6d70] text-[13px]">{item.deliveryUnit}</span>
-                              </td>
-                              <td className="py-3.5 px-4 text-[#32363a]">
-                                {item.deliveredQty} <span className="text-[#6a6d70] text-[13px]">{item.deliveredUnit}</span>
-                              </td>
-                              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.unitPrice}</td>
-                              <td className="py-3.5 px-4">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5ec] text-[#107e3e] rounded-full text-[13px] font-semibold">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#107e3e] animate-pulse"></span>
-                                  {item.status}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-3">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#0a6ed1] group-hover:translate-x-1.5 transition-transform duration-200">
-                                  <path d="M9 18l6-6-6-6" />
-                                </svg>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <div className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-0 overflow-hidden flex flex-col" style={{ height: '40vh' }}>
+  <div className="rounded-xl border border-[#e5e5e5] shadow-sm flex flex-col overflow-hidden flex-1">
+
+    {/* Static header table — never scrolls */}
+    <table className="w-full text-[14px] flex-shrink-0" style={{ minWidth: '640px' }}>
+      <thead>
+        <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Item No.</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Material</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">HSN Code</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Storage</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Delivery</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Delivered</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Unit Price</th>
+          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Status</th>
+          <th className="w-10"></th>
+        </tr>
+      </thead>
+    </table>
+
+    {/* Scrollable body — only rows scroll */}
+    <div className="flex-1 overflow-y-auto min-h-0">
+      <table className="w-full text-[14px]" style={{ minWidth: '640px' }}>
+        <tbody className="row-stagger">
+          {filteredItems.length === 0 && (
+            <tr>
+              <td colSpan={9} className="py-12 text-center text-[14px] text-[#6a6d70]">
+                No items match the current filters
+              </td>
+            </tr>
+          )}
+          {filteredItems.map((item) => (
+            <tr
+              key={item.itemNo}
+              onClick={() => setSelectedItem({ agreementId: agreement.id, itemNo: item.itemNo })}
+              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-all duration-200 group"
+            >
+              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.itemNo}</td>
+              <td className="py-3.5 px-4">
+                <div className="text-[#32363a] font-medium">{item.materialName}</div>
+                <div className="text-[#0a6ed1] font-medium text-[13px]">{item.materialNumber}</div>
+              </td>
+              <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode}</td>
+              <td className="py-3.5 px-4">
+                <span className="px-2.5 py-1 bg-[#f0f4f8] text-[#32363a] rounded-md text-[13px] font-semibold">
+                  {item.storageLocation}
+                </span>
+              </td>
+              <td className="py-3.5 px-4 text-[#32363a]">
+                <span className="font-semibold">{item.deliverySchedule}</span>{" "}
+                <span className="text-[#6a6d70] text-[13px]">{item.deliveryUnit}</span>
+              </td>
+              <td className="py-3.5 px-4 text-[#32363a]">
+                {item.deliveredQty} <span className="text-[#6a6d70] text-[13px]">{item.deliveredUnit}</span>
+              </td>
+              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.unitPrice}</td>
+              <td className="py-3.5 px-4">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5ec] text-[#107e3e] rounded-full text-[13px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#107e3e] animate-pulse"></span>
+                  {item.status}
+                </span>
+              </td>
+              <td className="py-3.5 px-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#0a6ed1] group-hover:translate-x-1.5 transition-transform duration-200">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
 
                   {/* ── Footer actions ── */}
-                  <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-5 border-t border-[#e5e5e5] flex items-center justify-between gap-3 sticky bottom-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+                  <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-5 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
                     <button
                       onClick={handleCreateAsn}
                       className="flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98] transition-all"
