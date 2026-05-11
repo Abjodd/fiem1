@@ -288,6 +288,14 @@ export const NAV_MODULES = [
         sub: 'Track Shipments',
         path: '/shipment/goods-movement',
         icon: 'tracking',
+      },
+
+      {
+        id: 'gatein-gateout',
+        label: 'Gate In Gate Out',
+        sub: 'Manage Inbound/Outbound',
+        path: '/shipment/gatein-gateout',
+        icon: 'gate',
       }
     ],
   },

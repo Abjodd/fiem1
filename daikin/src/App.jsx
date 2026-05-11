@@ -9,6 +9,7 @@ import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
 import OpenPOReport from './pages/purchasing/OpenPOReport.jsx'
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
 import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
+import GateInGateOut from './pages/shipment/gateingateout.jsx'
 
 // Quality
 // import { QC4M, QC1, QC3, ProcessAudit, VendorMaster, PDIRCreation } from './pages/quality/index.jsx'
@@ -39,6 +40,8 @@ export default function App() {
       {/*shipment*/}
       <Route path="/shipment/advance-shipping-note" element={<Advanceshipment />} />
       <Route path="/shipment/goods-movement" element={<GoodsMovement />} />
+      <Route path="/shipment/gatein-gateout" element={<GateInGateOut />} />
+      
       
 
       {/* Fallback */}
