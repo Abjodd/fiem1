@@ -5,10 +5,10 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
   .tg-wrap {
-    --accent:      #4338ca;
-    --accent-soft: rgba(67,56,202,0.08);
-    --border:      rgba(67,56,202,0.10);
-    --border-hard: rgba(67,56,202,0.20);
+    --accent:      #0082c4;
+    --accent-soft: rgba(0,130,196,0.08);
+    --border:      rgba(0,130,196,0.10);
+    --border-hard: rgba(0,130,196 ,0.20);
     --ink:         #1e1b4b;
     --muted:       #9896b8;
     --surface:     #ffffff;

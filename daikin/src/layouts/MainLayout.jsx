@@ -62,24 +62,31 @@ const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --accent:        #4338ca;
-    --accent-hover:  #4f46e5;
-    --accent-soft:   rgba(67,56,202,0.08);
-    --accent-mid:    rgba(67,56,202,0.14);
-    --accent-brd:    rgba(67,56,202,0.22);
-    --bg:            #f5f6fa;
+    --accent:        #00A2E8;
+    --accent-dark:   #0082c4;
+    --accent-soft:   rgba(0,162,232,0.08);
+    --accent-mid:    rgba(0,162,232,0.14);
+    --accent-brd:    rgba(0,162,232,0.25);
+    --bg:            #f0f6fb;
     --surface:       #ffffff;
-    --surface-2:     #f0f1f8;
-    --border:        rgba(67,56,202,0.09);
-    --border-hard:   rgba(67,56,202,0.16);
-    --ink:           #1e1b4b;
-    --ink-2:         #4338ca;
-    --muted:         #a5b4fc;
+    --surface-2:     #e8f4fc;
+    --border:        rgba(0,162,232,0.10);
+    --border-hard:   rgba(0,162,232,0.18);
+    --ink:           #05080d;
+    --ink-2:         #1a3a52;
+    --muted:         #6ba8c8;
     --sidebar-w:     252px;
-    --sb-bg:         #1e1b4b;
-    --sb-bg-2:       #272466;
-    --sb-scrollbar:  rgba(99,102,241,0.45);
-    --sb-scrollbar-track: rgba(255,255,255,0.05);
+
+    /* sidebar — light */
+    --sb-bg:         #ffffff;
+    --sb-bg-2:       #f0f8fd;
+    --sb-border:     rgba(0,162,232,0.12);
+    --sb-ink:        #05080d;
+    --sb-ink-2:      #1a3a52;
+    --sb-muted:      #7ab4ce;
+    --sb-scrollbar:  rgba(0,162,232,0.35);
+    --sb-scrollbar-track: rgba(0,162,232,0.05);
+
     --mono: 'IBM Plex Mono', monospace;
     --sans: 'IBM Plex Sans', sans-serif;
   }
@@ -107,23 +114,41 @@ const CSS = `
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    box-shadow: 1px 0 0 rgba(255,255,255,0.04), 4px 0 24px rgba(0,0,0,0.18);
+    border-right: 1px solid var(--sb-border);
+    box-shadow: 2px 0 16px rgba(0,162,232,0.07);
   }
 
+  /* subtle dot pattern */
   .ml-sb-dots {
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgba(165,180,252,0.06) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(0,162,232,0.07) 1px, transparent 1px);
     background-size: 22px 22px;
     pointer-events: none;
     z-index: 0;
   }
 
+  /* top accent bar */
+  .ml-sb-accent-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00A2E8, #0066a8, #00A2E8);
+    background-size: 200% 100%;
+    animation: bar-move 4s linear infinite;
+    z-index: 2;
+  }
+
+  @keyframes bar-move {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+  }
+
   .ml-sb-blob1 {
     position: absolute;
-    top: -80px; left: -80px;
-    width: 300px; height: 300px;
-    background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 65%);
+    top: -60px; left: -60px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(0,162,232,0.08) 0%, transparent 65%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
@@ -132,9 +157,9 @@ const CSS = `
 
   .ml-sb-blob2 {
     position: absolute;
-    bottom: -40px; right: -80px;
-    width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 65%);
+    bottom: -40px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,130,196,0.07) 0%, transparent 65%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
@@ -143,15 +168,16 @@ const CSS = `
 
   @keyframes blob-drift {
     from { transform: translate(0,0) scale(1); }
-    to   { transform: translate(14px, 20px) scale(1.06); }
+    to   { transform: translate(12px, 18px) scale(1.05); }
   }
 
   .ml-sb-head {
     position: relative;
     z-index: 1;
-    padding: 24px 20px 18px;
-    border-bottom: 1px solid rgba(165,180,252,0.08);
+    padding: 22px 20px 16px;
+    border-bottom: 1px solid var(--sb-border);
     flex-shrink: 0;
+    margin-top: 3px;
   }
 
   .ml-sb-eyebrow {
@@ -160,7 +186,8 @@ const CSS = `
     font-weight: 600;
     letter-spacing: 0.26em;
     text-transform: uppercase;
-    color: rgba(165,180,252,0.45);
+    color: var(--accent);
+    opacity: 0.7;
     margin-bottom: 10px;
   }
 
@@ -168,7 +195,7 @@ const CSS = `
     font-family: var(--sans);
     font-size: 19px;
     font-weight: 600;
-    color: #fff;
+    color: var(--sb-ink);
     letter-spacing: -0.02em;
     line-height: 1;
     margin-bottom: 14px;
@@ -176,7 +203,7 @@ const CSS = `
 
   .ml-sb-wordmark em {
     font-style: normal;
-    color: rgba(165,180,252,0.6);
+    color: var(--accent);
     font-weight: 300;
   }
 
@@ -197,45 +224,41 @@ const CSS = `
   }
 
   .ml-sb-chip-white {
-    background: rgba(99,102,241,0.25);
-    color: rgba(199,210,254,0.95);
-    border: 1px solid rgba(99,102,241,0.35);
+    background: rgba(0,162,232,0.1);
+    color: #0082c4;
+    border: 1px solid rgba(0,162,232,0.25);
   }
 
   .ml-sb-chip-outline {
     background: transparent;
-    color: rgba(165,180,252,0.5);
-    border: 1px solid rgba(165,180,252,0.15);
+    color: var(--sb-muted);
+    border: 1px solid rgba(0,162,232,0.15);
   }
 
-  /* ── Sidebar scrollbar — always visible, themed ── */
+  /* ── Sidebar scrollbar ── */
   .ml-nav-scroll {
     flex: 1;
     overflow-y: scroll;
     overflow-x: hidden;
-    padding: 16px 12px 12px;
+    padding: 14px 10px 10px;
     position: relative;
     z-index: 1;
-    /* Firefox */
     scrollbar-width: thin;
     scrollbar-color: var(--sb-scrollbar) var(--sb-scrollbar-track);
   }
 
-  /* Webkit — custom track + thumb */
-  .ml-nav-scroll::-webkit-scrollbar {
-    width: 5px;
-  }
+  .ml-nav-scroll::-webkit-scrollbar { width: 4px; }
   .ml-nav-scroll::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.04);
+    background: rgba(0,162,232,0.04);
     border-radius: 4px;
     margin: 4px 0;
   }
   .ml-nav-scroll::-webkit-scrollbar-thumb {
-    background: rgba(99,102,241,0.55);
+    background: rgba(0,162,232,0.3);
     border-radius: 4px;
   }
   .ml-nav-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(129,140,248,0.8);
+    background: rgba(0,162,232,0.55);
   }
 
   .ml-nav-group {
@@ -244,7 +267,8 @@ const CSS = `
     font-weight: 600;
     letter-spacing: 0.26em;
     text-transform: uppercase;
-    color: rgba(165,180,252,0.28);
+    color: var(--sb-muted);
+    opacity: 0.7;
     padding: 6px 8px 10px;
   }
 
@@ -252,12 +276,12 @@ const CSS = `
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 10px;
+    padding: 8px 10px;
     cursor: pointer;
     border-radius: 8px;
     font-size: 12.5px;
     font-family: var(--sans);
-    color: rgba(199,210,254,0.55);
+    color: var(--sb-ink-2);
     transition: color 0.15s, background 0.15s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -266,24 +290,24 @@ const CSS = `
   }
 
   .ml-nav-item:hover {
-    color: rgba(255,255,255,0.88);
-    background: rgba(165,180,252,0.08);
+    color: var(--accent-dark);
+    background: rgba(0,162,232,0.06);
   }
 
   .ml-nav-item.active {
-    background: rgba(99,102,241,0.22);
-    color: #ffffff;
-    font-weight: 500;
+    background: rgba(0,162,232,0.10);
+    color: #0075b0;
+    font-weight: 600;
   }
 
   .ml-nav-item.active::before {
     content: '';
     position: absolute;
-    left: -12px;
-    top: 9px;
-    bottom: 9px;
+    left: -10px;
+    top: 8px;
+    bottom: 8px;
     width: 3px;
-    background: #a5b4fc;
+    background: var(--accent);
     border-radius: 0 3px 3px 0;
   }
 
@@ -295,20 +319,23 @@ const CSS = `
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: rgba(165,180,252,0.07);
-    color: rgba(165,180,252,0.5);
+    background: rgba(0,162,232,0.06);
+    color: var(--sb-muted);
+    border: 1px solid rgba(0,162,232,0.10);
     transition: background 0.15s, color 0.15s, transform 0.2s;
   }
 
   .ml-nav-item:hover .ml-nav-icon {
-    background: rgba(165,180,252,0.13);
-    color: rgba(199,210,254,0.9);
+    background: rgba(0,162,232,0.12);
+    color: var(--accent);
     transform: scale(1.07);
+    border-color: rgba(0,162,232,0.2);
   }
 
   .ml-nav-item.active .ml-nav-icon {
-    background: rgba(99,102,241,0.3);
-    color: #c7d2fe;
+    background: rgba(0,162,232,0.15);
+    color: var(--accent);
+    border-color: rgba(0,162,232,0.25);
   }
 
   .ml-nav-label { flex: 1; }
@@ -320,44 +347,44 @@ const CSS = `
     letter-spacing: 0.06em;
     padding: 2px 7px;
     border-radius: 4px;
-    background: rgba(165,180,252,0.08);
-    color: rgba(165,180,252,0.4);
+    background: rgba(0,162,232,0.07);
+    color: var(--sb-muted);
     flex-shrink: 0;
-    border: 1px solid rgba(165,180,252,0.1);
+    border: 1px solid rgba(0,162,232,0.12);
   }
 
   .ml-nav-item.active .ml-nav-badge {
-    background: rgba(99,102,241,0.25);
-    color: rgba(199,210,254,0.8);
-    border-color: rgba(99,102,241,0.3);
+    background: rgba(0,162,232,0.14);
+    color: #0082c4;
+    border-color: rgba(0,162,232,0.25);
   }
 
   .ml-sb-footer {
     flex-shrink: 0;
     position: relative;
     z-index: 1;
-    border-top: 1px solid rgba(165,180,252,0.08);
-    padding: 14px 20px;
+    border-top: 1px solid var(--sb-border);
+    padding: 13px 20px;
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(0,0,0,0.12);
+    background: rgba(0,162,232,0.03);
   }
 
   .ml-sb-pulse {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #6ee7b7;
+    background: #00c47a;
     flex-shrink: 0;
-    box-shadow: 0 0 0 0 rgba(110,231,183,0.4);
+    box-shadow: 0 0 0 0 rgba(0,196,122,0.4);
     animation: pulse-ring 2.4s ease-in-out infinite;
   }
 
   @keyframes pulse-ring {
-    0%   { box-shadow: 0 0 0 0 rgba(110,231,183,0.4); }
-    60%  { box-shadow: 0 0 0 6px rgba(110,231,183,0); }
-    100% { box-shadow: 0 0 0 0 rgba(110,231,183,0); }
+    0%   { box-shadow: 0 0 0 0 rgba(0,196,122,0.4); }
+    60%  { box-shadow: 0 0 0 6px rgba(0,196,122,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,196,122,0); }
   }
 
   .ml-sb-footer-info { flex: 1; }
@@ -368,15 +395,17 @@ const CSS = `
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(199,210,254,0.45);
+    color: var(--sb-ink-2);
+    opacity: 0.6;
   }
 
   .ml-sb-footer-tag {
     font-family: var(--mono);
     font-size: 8px;
-    color: rgba(165,180,252,0.22);
+    color: var(--sb-muted);
     letter-spacing: 0.06em;
     margin-top: 2px;
+    opacity: 0.6;
   }
 
   /* ════════ MAIN CONTENT SCROLL ════════ */
@@ -419,9 +448,9 @@ const CSS = `
     font-weight: 600;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--accent-dark);
     white-space: nowrap;
-    opacity: 0.7;
+    opacity: 0.75;
   }
 
   .ml-section-rule {
@@ -439,8 +468,8 @@ const CSS = `
     padding: 2px 8px;
     border-radius: 4px;
     letter-spacing: 0.08em;
-    color: var(--accent);
-    opacity: 0.7;
+    color: var(--accent-dark);
+    opacity: 0.75;
   }
 
   /* ════════ MOBILE ════════ */
@@ -463,23 +492,23 @@ const CSS = `
       width: 36px;
       height: 36px;
       border-radius: 8px;
-      background: var(--sb-bg);
+      background: var(--accent);
       border: none;
-      color: #c7d2fe;
+      color: #ffffff;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition: background 0.15s;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 10px rgba(0,162,232,0.35);
     }
 
-    .ml-mobile-toggle:active { background: var(--sb-bg-2); }
+    .ml-mobile-toggle:active { background: var(--accent-dark); }
 
     .ml-sidebar-overlay {
       display: block;
       position: fixed;
       inset: 0;
       z-index: 399;
-      background: rgba(15,12,40,0.5);
+      background: rgba(5,8,13,0.35);
       backdrop-filter: blur(3px);
       opacity: 0;
       pointer-events: none;
@@ -502,7 +531,8 @@ const CSS = `
       overflow: hidden;
       transform: translateX(-100%);
       transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 4px 0 32px rgba(0,0,0,0.3);
+      box-shadow: 4px 0 32px rgba(0,162,232,0.15);
+      border-right: 1px solid var(--sb-border);
     }
 
     .ml-sidebar-drawer.open { transform: translateX(0); }
@@ -513,9 +543,9 @@ const CSS = `
       z-index: 10;
       width: 30px; height: 30px;
       border-radius: 7px;
-      background: rgba(165,180,252,0.1);
-      border: 1px solid rgba(165,180,252,0.15);
-      color: rgba(199,210,254,0.65);
+      background: rgba(0,162,232,0.08);
+      border: 1px solid rgba(0,162,232,0.18);
+      color: var(--accent-dark);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -525,8 +555,7 @@ const CSS = `
     }
 
     .ml-drawer-close:active {
-      background: rgba(165,180,252,0.2);
-      color: #ffffff;
+      background: rgba(0,162,232,0.16);
     }
 
     .ml-main { padding: 20px 14px 80px; gap: 36px; }
@@ -537,7 +566,7 @@ const CSS = `
       flex-shrink: 0;
       background: var(--surface);
       border-top: 1px solid var(--border-hard);
-      box-shadow: 0 -2px 12px rgba(67,56,202,0.08);
+      box-shadow: 0 -2px 12px rgba(0,162,232,0.08);
       overflow-x: auto;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
@@ -606,7 +635,6 @@ const CSS = `
     }
   }
 
-  /* tablet — narrower sidebar */
   @media (min-width: 769px) and (max-width: 1024px) {
     :root { --sidebar-w: 210px; }
     .ml-main { padding: 28px 20px 80px; gap: 44px; }
@@ -624,6 +652,7 @@ const CSS = `
 function SidebarInner({ activeModule, onSelect, onClose }) {
   return (
     <>
+      <div className="ml-sb-accent-bar" />
       <div className="ml-sb-dots" />
       <div className="ml-sb-blob1" />
       <div className="ml-sb-blob2" />
