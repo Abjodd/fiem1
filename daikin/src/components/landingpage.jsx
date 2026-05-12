@@ -186,14 +186,19 @@ export default function DaikinPortal() {
             <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#05080d]/85 backdrop-blur-xl border-b border-white/5' : 'bg-transparent'}`}>
                 <div className="max-w-[1480px] mx-auto px-8 py-5 flex items-center justify-between">
                     {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <svg width="38" height="22" viewBox="0 0 100 56" fill="none">
-                            <polygon points="0,0 30,0 15,56" fill="#1a1a1a" />
-                            <polygon points="15,0 45,0 30,56 0,56" fill="#00A2E8" />
-                        </svg>
-                        <span className="font-bold tracking-[0.02em] text-[20px] text-[#00A2E8]">DAIKIN</span>
-                        <span className="hidden md:inline text-white/30 text-sm font-mono ml-2 pl-3 border-l border-white/10">SAP PORTAL</span>
-                    </div>
+                   <div className="flex items-center gap-3">
+    
+    <img
+        src="/daikin.png"
+        alt="Daikin Logo"
+        className="w-24 md:w-28 object-contain"
+    />
+
+    <span className="hidden md:inline text-white/30 text-sm font-mono ml-2 pl-3 border-l border-white/10">
+        SAP PORTAL
+    </span>
+
+</div>
 
                     {/* Nav links */}
                     <ul className="hidden lg:flex items-center gap-9 text-[14px]">
