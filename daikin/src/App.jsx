@@ -5,47 +5,64 @@ import './app.css'
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
-// import VendorStock from './pages/purchasing/VendorStock.jsx'
 import OpenPOReport from './pages/purchasing/OpenPOReport.jsx'
+
+// Shipment
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
 import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
 import GateInGateOut from './pages/shipment/gateingateout.jsx'
 
-// Quality
-// import { QC4M, QC1, QC3, ProcessAudit, VendorMaster, PDIRCreation } from './pages/quality/index.jsx'
+// Landing
+import LandingPage from './components/landingpage.jsx'
 
-/**
- * ADD NEW ROUTES HERE as you build more pages.
- * Pattern: <Route path="/module/tile-id" element={<YourPage />} />
- */
 export default function App() {
   return (
     <Routes>
-      {/* Home — shows the module tile dashboard */}
-      <Route path="/" element={<MainLayout />} />
+
+      {/* First Page */}
+      <Route path="/" element={<Navigate to="/landing" replace />} />
+
+      {/* Landing Page */}
+      <Route path="/landing" element={<LandingPage />} />
+
+      {/* Dashboard / Main Layout */}
+      <Route path="/dashboard" element={<MainLayout />} />
 
       {/* Purchasing */}
-      <Route path="/purchasing/schedule-release" element={<ScheduleRelease />} />
-      <Route path="/purchasing/purchase-order" element={<PurchaseOrder />} />
-      {/* <Route path="/purchasing/vendor-stock" element={<VendorStock />} /> */}
-      <Route path="/purchasing/open-po" element={<OpenPOReport />} />
+      <Route
+        path="/purchasing/schedule-release"
+        element={<ScheduleRelease />}
+      />
 
-      {/* Quality
-      <Route path="/quality/qc-4m" element={<QC4M />} />
-      <Route path="/quality/qc-1" element={<QC1 />} />
-      <Route path="/quality/qc-3" element={<QC3 />} />
-      <Route path="/quality/process-audit" element={<ProcessAudit />} />
-      <Route path="/quality/vendor-master" element={<VendorMaster />} />
-      <Route path="/quality/pdir" element={<PDIRCreation />} /> */}
-      {/*shipment*/}
-      <Route path="/shipment/advance-shipping-note" element={<Advanceshipment />} />
-      <Route path="/shipment/goods-movement" element={<GoodsMovement />} />
-      <Route path="/shipment/gatein-gateout" element={<GateInGateOut />} />
-      
-      
+      <Route
+        path="/purchasing/purchase-order"
+        element={<PurchaseOrder />}
+      />
+
+      <Route
+        path="/purchasing/open-po"
+        element={<OpenPOReport />}
+      />
+
+      {/* Shipment */}
+      <Route
+        path="/shipment/advance-shipping-note"
+        element={<Advanceshipment />}
+      />
+
+      <Route
+        path="/shipment/goods-movement"
+        element={<GoodsMovement />}
+      />
+
+      <Route
+        path="/shipment/gatein-gateout"
+        element={<GateInGateOut />}
+      />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/landing" replace />} />
+
     </Routes>
   )
 }
