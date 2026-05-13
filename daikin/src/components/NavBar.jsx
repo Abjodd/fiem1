@@ -5,15 +5,15 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
   .nb-wrap {
-    --accent:       #3b2fc9;
+    --accent:       #0082c4;
     --accent-2:     #5b4be8;
-    --accent-soft:  rgba(59,47,201,0.07);
-    --accent-mid:   rgba(59,47,201,0.14);
-    --accent-brd:   rgba(59,47,201,0.22);
+    --accent-soft:  rgba(8, 144, 213, 0.07);
+    --accent-mid:   rgba(9, 113, 165, 0.14);
+    --accent-brd:   rgba(22, 138, 196, 0.22);
     --bg:           #ffffff;
     --surface:      #f4f5fb;
     --border:       rgba(59,47,201,0.10);
-    --border-hard:  rgba(59,47,201,0.16);
+    --border-hard:  rgba(12, 7, 75, 0.16);
     --ink:          #1a1740;
     --ink-2:        #4a4870;
     --muted:        #9896b8;

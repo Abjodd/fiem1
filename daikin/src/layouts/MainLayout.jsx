@@ -62,6 +62,7 @@ const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
+<<<<<<< HEAD
     --accent:        #0b3d91;
     --accent-light:  #1e5dd6;
     --accent-deep:   #07296b;
@@ -85,6 +86,35 @@ const CSS = `
     --mono: 'Geist Mono', monospace;
     --sans: 'Geist', -apple-system, sans-serif;
     --serif: 'Instrument Serif', serif;
+=======
+    --accent:        #00A2E8;
+    --accent-dark:   #0082c4;
+    --accent-soft:   rgba(0,162,232,0.08);
+    --accent-mid:    rgba(0,162,232,0.14);
+    --accent-brd:    rgba(0,162,232,0.25);
+    --bg:            #f0f6fb;
+    --surface:       #ffffff;
+    --surface-2:     #e8f4fc;
+    --border:        rgba(0,162,232,0.10);
+    --border-hard:   rgba(0,162,232,0.18);
+    --ink:           #05080d;
+    --ink-2:         #1a3a52;
+    --muted:         #6ba8c8;
+    --sidebar-w:     252px;
+
+    /* sidebar — light */
+    --sb-bg:         #ffffff;
+    --sb-bg-2:       #f0f8fd;
+    --sb-border:     rgba(0,162,232,0.12);
+    --sb-ink:        #05080d;
+    --sb-ink-2:      #1a3a52;
+    --sb-muted:      #7ab4ce;
+    --sb-scrollbar:  rgba(0,162,232,0.35);
+    --sb-scrollbar-track: rgba(0,162,232,0.05);
+
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   }
 
   html, body, #root { height: 100%; overflow: hidden; }
@@ -104,6 +134,7 @@ const CSS = `
     color: var(--ink);
     overflow: hidden;
     position: relative;
+<<<<<<< HEAD
   }
 
   .ml-top {
@@ -175,6 +206,203 @@ const CSS = `
   .ml-pill-item:hover {
     color: var(--ink);
     background: rgba(11, 61, 145, 0.06);
+=======
+    border-right: 1px solid var(--sb-border);
+    box-shadow: 2px 0 16px rgba(0,162,232,0.07);
+  }
+
+  /* subtle dot pattern */
+  .ml-sb-dots {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0,162,232,0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* top accent bar */
+  .ml-sb-accent-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00A2E8, #0066a8, #00A2E8);
+    background-size: 200% 100%;
+    animation: bar-move 4s linear infinite;
+    z-index: 2;
+  }
+
+  @keyframes bar-move {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+  }
+
+  .ml-sb-blob1 {
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(0,162,232,0.08) 0%, transparent 65%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: blob-drift 10s ease-in-out infinite alternate;
+  }
+
+  .ml-sb-blob2 {
+    position: absolute;
+    bottom: -40px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,130,196,0.07) 0%, transparent 65%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: blob-drift 8s ease-in-out 2s infinite alternate-reverse;
+  }
+
+  @keyframes blob-drift {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(12px, 18px) scale(1.05); }
+  }
+
+  .ml-sb-head {
+    position: relative;
+    z-index: 1;
+    padding: 22px 20px 16px;
+    border-bottom: 1px solid var(--sb-border);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .ml-sb-eyebrow {
+    font-family: var(--mono);
+    font-size: 7.5px;
+    font-weight: 600;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0.7;
+    margin-bottom: 10px;
+  }
+
+  .ml-sb-wordmark {
+    font-family: var(--sans);
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--sb-ink);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+
+  .ml-sb-wordmark em {
+    font-style: normal;
+    color: var(--accent);
+    font-weight: 300;
+  }
+
+  .ml-sb-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .ml-sb-chip {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+
+  .ml-sb-chip-white {
+    background: rgba(0,162,232,0.1);
+    color: #0082c4;
+    border: 1px solid rgba(0,162,232,0.25);
+  }
+
+  .ml-sb-chip-outline {
+    background: transparent;
+    color: var(--sb-muted);
+    border: 1px solid rgba(0,162,232,0.15);
+  }
+
+  /* ── Sidebar scrollbar ── */
+  .ml-nav-scroll {
+    flex: 1;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding: 14px 10px 10px;
+    position: relative;
+    z-index: 1;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-scrollbar) var(--sb-scrollbar-track);
+  }
+
+  .ml-nav-scroll::-webkit-scrollbar { width: 4px; }
+  .ml-nav-scroll::-webkit-scrollbar-track {
+    background: rgba(0,162,232,0.04);
+    border-radius: 4px;
+    margin: 4px 0;
+  }
+  .ml-nav-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0,162,232,0.3);
+    border-radius: 4px;
+  }
+  .ml-nav-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,162,232,0.55);
+  }
+
+  .ml-nav-group {
+    font-family: var(--mono);
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--sb-muted);
+    opacity: 0.7;
+    padding: 6px 8px 10px;
+  }
+
+  .ml-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-family: var(--sans);
+    color: var(--sb-ink-2);
+    transition: color 0.15s, background 0.15s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .ml-nav-item:hover {
+    color: var(--accent-dark);
+    background: rgba(0,162,232,0.06);
+  }
+
+  .ml-nav-item.active {
+    background: rgba(0,162,232,0.10);
+    color: #0075b0;
+    font-weight: 600;
+  }
+
+  .ml-nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   }
 
   .ml-pill-item.active {
@@ -196,6 +424,7 @@ const CSS = `
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+<<<<<<< HEAD
     width: 16px;
     height: 16px;
     color: currentColor;
@@ -217,9 +446,34 @@ const CSS = `
     height: 18px;
     padding: 0 5px;
     border-radius: 100px;
+=======
+    background: rgba(0,162,232,0.06);
+    color: var(--sb-muted);
+    border: 1px solid rgba(0,162,232,0.10);
+    transition: background 0.15s, color 0.15s, transform 0.2s;
+  }
+
+  .ml-nav-item:hover .ml-nav-icon {
+    background: rgba(0,162,232,0.12);
+    color: var(--accent);
+    transform: scale(1.07);
+    border-color: rgba(0,162,232,0.2);
+  }
+
+  .ml-nav-item.active .ml-nav-icon {
+    background: rgba(0,162,232,0.15);
+    color: var(--accent);
+    border-color: rgba(0,162,232,0.25);
+  }
+
+  .ml-nav-label { flex: 1; }
+
+  .ml-nav-badge {
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 500;
+<<<<<<< HEAD
     background: rgba(11, 61, 145, 0.1);
     color: var(--accent);
     margin-left: 2px;
@@ -229,6 +483,21 @@ const CSS = `
   .ml-pill-item.active .ml-pill-badge {
     background: rgba(255, 255, 255, 0.22);
     color: #ffffff;
+=======
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(0,162,232,0.07);
+    color: var(--sb-muted);
+    flex-shrink: 0;
+    border: 1px solid rgba(0,162,232,0.12);
+  }
+
+  .ml-nav-item.active .ml-nav-badge {
+    background: rgba(0,162,232,0.14);
+    color: #0082c4;
+    border-color: rgba(0,162,232,0.25);
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   }
 
   /* Pill nav divider — separates groups */
@@ -238,6 +507,7 @@ const CSS = `
     background: rgba(11, 61, 145, 0.12);
     margin: 0 4px;
     flex-shrink: 0;
+<<<<<<< HEAD
   }
 
   /* Scrollable container for overflow on smaller screens */
@@ -251,6 +521,53 @@ const CSS = `
     scrollbar-width: none;
     -ms-overflow-style: none;
     max-width: 100%;
+=======
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--sb-border);
+    padding: 13px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,162,232,0.03);
+  }
+
+  .ml-sb-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00c47a;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(0,196,122,0.4);
+    animation: pulse-ring 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(0,196,122,0.4); }
+    60%  { box-shadow: 0 0 0 6px rgba(0,196,122,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,196,122,0); }
+  }
+
+  .ml-sb-footer-info { flex: 1; }
+
+  .ml-sb-footer-status {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sb-ink-2);
+    opacity: 0.6;
+  }
+
+  .ml-sb-footer-tag {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--sb-muted);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+    opacity: 0.6;
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   }
   .ml-pill-scroll::-webkit-scrollbar { display: none; }
 
@@ -526,9 +843,17 @@ const CSS = `
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 600;
+<<<<<<< HEAD
     color: #ffffff;
     letter-spacing: 0.05em;
     flex-shrink: 0;
+=======
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    white-space: nowrap;
+    opacity: 0.75;
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   }
 
   .ml-footer-text {
@@ -547,9 +872,21 @@ const CSS = `
     align-items: center;
     gap: 24px;
     font-family: var(--mono);
+<<<<<<< HEAD
     font-size: 11px;
     letter-spacing: 0.06em;
     color: rgba(255, 255, 255, 0.5);
+=======
+    font-size: 9px;
+    font-weight: 500;
+    background: var(--surface);
+    border: 1px solid var(--border-hard);
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+    color: var(--accent-dark);
+    opacity: 0.75;
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   }
 
   .ml-footer-right a {
@@ -606,6 +943,7 @@ const CSS = `
       z-index: 310;
       width: 36px;
       height: 36px;
+<<<<<<< HEAD
       border-radius: 10px;
       background: var(--accent-soft);
       border: 1px solid var(--accent-brd);
@@ -619,6 +957,19 @@ const CSS = `
       background: var(--accent-mid);
       border-color: var(--accent);
     }
+=======
+      border-radius: 8px;
+      background: var(--accent);
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+      box-shadow: 0 2px 10px rgba(0,162,232,0.35);
+    }
+
+    .ml-mobile-toggle:active { background: var(--accent-dark); }
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
 
     .ml-mobile-toggle:active {
       transform: scale(0.94);
@@ -631,9 +982,14 @@ const CSS = `
       position: fixed;
       inset: 0;
       z-index: 399;
+<<<<<<< HEAD
       background: rgba(7, 41, 107, 0.45);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
+=======
+      background: rgba(5,8,13,0.35);
+      backdrop-filter: blur(3px);
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease;
@@ -658,8 +1014,14 @@ const CSS = `
       background: var(--accent-deep);
       overflow: hidden;
       transform: translateX(-100%);
+<<<<<<< HEAD
       transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 6px 0 40px rgba(7, 41, 107, 0.4);
+=======
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 4px 0 32px rgba(0,162,232,0.15);
+      border-right: 1px solid var(--sb-border);
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
     }
 
     .ml-sidebar-drawer.open {
@@ -713,6 +1075,7 @@ const CSS = `
     /* Close button (top right inside drawer) */
     .ml-drawer-close {
       position: absolute;
+<<<<<<< HEAD
       top: 16px;
       right: 16px;
       width: 32px;
@@ -721,6 +1084,15 @@ const CSS = `
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: rgba(255, 255, 255, 0.75);
+=======
+      top: 14px; right: 14px;
+      z-index: 10;
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      background: rgba(0,162,232,0.08);
+      border: 1px solid rgba(0,162,232,0.18);
+      color: var(--accent-dark);
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
       display: flex;
       align-items: center;
       justify-content: center;
@@ -730,8 +1102,12 @@ const CSS = `
     }
 
     .ml-drawer-close:active {
+<<<<<<< HEAD
       background: rgba(255, 255, 255, 0.18);
       color: #ffffff;
+=======
+      background: rgba(0,162,232,0.16);
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
     }
 
     /* Drawer body — scrollable list of modules */
@@ -951,7 +1327,11 @@ const CSS = `
       backdrop-filter: blur(24px) saturate(1.8);
       -webkit-backdrop-filter: blur(24px) saturate(1.8);
       border-top: 1px solid var(--border-hard);
+<<<<<<< HEAD
       box-shadow: 0 -4px 24px -4px rgba(11,61,145,0.08);
+=======
+      box-shadow: 0 -2px 12px rgba(0,162,232,0.08);
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
       overflow-x: auto;
       overflow-y: hidden;
       scrollbar-width: none;
@@ -1029,6 +1409,16 @@ const CSS = `
     }
   }
 
+<<<<<<< HEAD
+=======
+  @media (min-width: 769px) and (max-width: 1024px) {
+    :root { --sidebar-w: 210px; }
+    .ml-main { padding: 28px 20px 80px; gap: 44px; }
+    .ml-sb-head { padding: 18px 16px 14px; }
+    .ml-sb-wordmark { font-size: 17px; }
+  }
+
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
   @media (max-width: 480px) {
     .ml-section-head { padding: 30px 18px 28px; min-height: 240px; }
     .ml-section > :not(.ml-section-head) { padding: 28px 16px 36px; }
@@ -1037,6 +1427,62 @@ const CSS = `
   }
 `
 
+<<<<<<< HEAD
+=======
+function SidebarInner({ activeModule, onSelect, onClose }) {
+  return (
+    <>
+      <div className="ml-sb-accent-bar" />
+      <div className="ml-sb-dots" />
+      <div className="ml-sb-blob1" />
+      <div className="ml-sb-blob2" />
+
+      {onClose && (
+        <button className="ml-drawer-close" onClick={onClose} aria-label="Close menu">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      )}
+
+      <div className="ml-sb-head">
+        <div className="ml-sb-eyebrow">Daikin SAP Portal</div>
+        <div className="ml-sb-wordmark">Mod<em>ules</em></div>
+        <div className="ml-sb-chips">
+          <span className="ml-sb-chip ml-sb-chip-white">● Live</span>
+          <span className="ml-sb-chip ml-sb-chip-outline">DSAL</span>
+        </div>
+      </div>
+
+      <div className="ml-nav-scroll">
+        <div className="ml-nav-group">All Modules</div>
+        {NAV_MODULES.map((mod) => (
+          <div
+            key={mod.id}
+            className={`ml-nav-item${activeModule === mod.id ? ' active' : ''}`}
+            onClick={() => onSelect(mod.id)}
+          >
+            <div className="ml-nav-icon">{getIcon(mod.id)}</div>
+            <span className="ml-nav-label">{mod.label}</span>
+            {mod.tiles?.length > 0 && (
+              <span className="ml-nav-badge">{mod.tiles.length}</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="ml-sb-footer">
+        <div className="ml-sb-pulse" />
+        <div className="ml-sb-footer-info">
+          <div className="ml-sb-footer-status">System Online</div>
+          <div className="ml-sb-footer-tag">Kunstocom · v2.0</div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+>>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState(NAV_MODULES[0]?.id)
   const [drawerOpen, setDrawerOpen] = useState(false)
