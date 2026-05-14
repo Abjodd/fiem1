@@ -186,6 +186,16 @@ export const NAV_MODULES = [
         cover:
           'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200',
       },
+
+      {
+        id: 'schedule-generate',
+        label: 'Schedule Generate',
+        sub: 'For Supplier',
+        path: '/purchasing/schedule-generate',
+        icon: 'generate',
+        cover:
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
+      },
     ],
   },
 
