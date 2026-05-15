@@ -793,69 +793,121 @@ export default function ScheduleGenerate() {
                 </div>
 
                 {/* ── Items table ── */}
-                <div className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-6 overflow-hidden flex flex-col" style={{ height: '50vh' }}>
-                  <div className="rounded-xl border border-[#e5e5e5] shadow-sm flex flex-col overflow-hidden flex-1">
+                <div
+                  className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-6 overflow-hidden flex flex-col"
+                  style={{ height: '50vh' }}
+                >
+                  <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden flex-1">
 
-                    <table className="w-full text-[14px] flex-shrink-0" style={{ minWidth: '900px' }}>
-                      <thead>
-                        <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Item No.</th>
-                          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Material</th>
-                          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">HSN Code</th>
-                          <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Storage</th>
-                          <th className="text-right font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Delivery Schedule</th>
-                          <th className="text-right font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Scheduled Qty</th>
-                          <th className="text-right font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Unit Price</th>
-                          <th className="text-center font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Status</th>
-                        </tr>
-                      </thead>
-                    </table>
+                    <div className="overflow-auto h-full">
+                      <table
+                        className="w-full min-w-[900px] table-fixed text-[14px] border-collapse"
+                      >
+                        {/* HEADER */}
+                        <thead className="sticky top-0 z-10">
+                          <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
+                            <th className="text-center font-semibold py-3.5 px-4 w-[90px]">
+                              Item No.
+                            </th>
 
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                      <table className="w-full text-[14px]" style={{ minWidth: '900px' }}>
-                        <tbody className="row-stagger">
+                            <th className="text-center font-semibold py-3.5 px-4 w-[150px]">
+                              Material
+                            </th>
+
+                            <th className="text-center font-semibold py-3.5 px-4 w-[120px]">
+                              HSN Code
+                            </th>
+
+                            <th className="text-center font-semibold py-3.5 px-4 w-[120px]">
+                              Storage
+                            </th>
+
+                            <th className="text-center font-semibold py-3.5 px-4 w-[160px]">
+                              Delivery Schedule
+                            </th>
+
+                            <th className="text-center font-semibold py-3.5 px-4 w-[160px]">
+                              Scheduled Qty
+                            </th>
+
+                            <th className="text-center font-semibold py-3.5 px-4 w-[140px]">
+                              Unit Price
+                            </th>
+
+                            <th className="text-center font-semibold py-3.5 px-4 w-[150px]">
+                              Status
+                            </th>
+                          </tr>
+                        </thead>
+
+                        {/* BODY */}
+                        <tbody className="row-stagger bg-white">
                           {filteredItems.length === 0 && (
                             <tr>
-                              <td colSpan={8} className="py-12 text-center text-[14px] text-[#6a6d70]">
+                              <td
+                                colSpan={8}
+                                className="py-12 text-center text-[14px] text-[#6a6d70]"
+                              >
                                 No items match the current filters
                               </td>
                             </tr>
                           )}
+
                           {filteredItems.map((item) => (
                             <tr
                               key={`${item.itemNo}-${item.materialNumber}`}
-                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-all duration-200"
+                              className="border-b border-[#f0f0f0] hover:bg-[#fafbfc] text-center transition-all duration-200"
                             >
-                              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.itemNo}</td>
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-center text-[#32363a] font-semibold">
+                                {item.itemNo}
+                              </td>
+
+                              <td className="text-center py-3.5 px-4">
                                 <button
                                   onClick={() => handleOpenMaterial(item)}
-                                  className="text-left group"
+                                  className="text-center group"
                                 >
-                                  <div className="text-[#32363a] font-medium group-hover:text-[#0a6ed1] transition-colors">
+                                  <div className="text-[#32363a] text-center font-medium group-hover:text-[#0a6ed1]">
                                     {item.materialName}
                                   </div>
-                                  <div className="text-[#0a6ed1] font-semibold text-[13px] underline decoration-[#0a6ed1]/40 underline-offset-2 group-hover:decoration-[#0a6ed1] transition-all">
+
+                                  <div className="text-[#0a6ed1] text-center font-semibold text-[13px] underline underline-offset-2">
                                     {item.materialNumber}
                                   </div>
                                 </button>
                               </td>
-                              <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode}</td>
+
+                              <td className="py-3.5 px-4 text-center text-[#32363a]">
+                                {item.hsnCode}
+                              </td>
+
                               <td className="py-3.5 px-4">
-                                <span className="px-2.5 py-1 bg-[#f0f4f8] text-[#32363a] rounded-md text-[13px] font-semibold">
+                                <span className="px-2.5 py-1 bg-[#f0f4f8] text-center text-[#32363a] rounded-md text-[13px] font-semibold">
                                   {item.storageLocation}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-right text-[#32363a] font-semibold tabular-nums">
+
+                              <td className="py-3.5 px-4 text-[#32363a] text-center font-semibold tabular-nums">
                                 {Number(item.deliverySchedule).toLocaleString()}
                               </td>
-                              <td className="py-3.5 px-4 text-right text-[#32363a] tabular-nums">
-                                <span className={item.scheduledQuantity > 0 ? 'font-semibold text-[#107e3e]' : 'text-[#6a6d70]'}>
+
+                              <td className="py-3.5 px-4 text-center text-[#32363a] tabular-nums">
+                                <span
+                                  className={
+                                    item.scheduledQuantity > 0
+                                      ? 'font-semibold text-[#107e3e]'
+                                      : 'text-[#6a6d70]'
+                                  }
+                                >
                                   {Number(item.scheduledQuantity).toLocaleString()}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-right text-[#32363a] font-semibold tabular-nums">{item.unitPrice}</td>
-                              <td className="py-3.5 px-4 text-center">
+
+                              <td className="py-3.5 px-4 text-center text-[#32363a] font-semibold tabular-nums">
+                                {item.unitPrice}
+                              </td>
+
+                              <td className="text-center py-3.5 px-4">
                                 {item.status === 'Generated' ? (
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5ec] text-[#107e3e] rounded-full text-[13px] font-semibold">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#107e3e] animate-pulse"></span>
