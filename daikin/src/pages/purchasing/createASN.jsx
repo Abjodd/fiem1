@@ -419,7 +419,7 @@ export default function CreateASN({agreement: propAgreement}) {
             <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)] anim-fade">
                 {/* ─── HEADER STRIP ─── */}
                 <div className="bg-white border-b border-[#e5e5e5] px-8 py-3 flex items-center justify-between">
-                    <button
+                    {/* <button
                         onClick={() => navigate(-1)}
                         className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline hover:-translate-x-0.5 transition-transform"
                     >
@@ -427,7 +427,7 @@ export default function CreateASN({agreement: propAgreement}) {
                             <path d="M15 18l-6-6 6-6" />
                         </svg>
                         Back
-                    </button>
+                    </button> */}
                     <h1 className="text-[18px] font-bold text-[#32363a] tracking-tight">Create ASN</h1>
                     <button
                         onClick={handleCreate}
