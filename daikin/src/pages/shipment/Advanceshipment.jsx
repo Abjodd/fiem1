@@ -11,7 +11,7 @@ const ADVANCE_SHIPPING_NOTES = [
     currency: 'INR',
     baseDocument: 'PO: 7000037139',
     plant: 'NMR',
-    plantName: 'Daikin Airconditioning -NMR',
+    plantName: 'FIEM Industries Limited - NMR',
     date: 'May 06, 2026',
     status: 'Tagged',
     statusColor: 'red',
@@ -163,7 +163,7 @@ const ADVANCE_SHIPPING_NOTES = [
     currency: 'INR',
     baseDocument: 'PO: 7000037139',
     plant: 'NMR',
-    plantName: 'Daikin Airconditioning -NMR',
+    plantName: 'FIEM Industries Limited - NMR',
     date: 'May 06, 2026',
     status: 'Tagged',
     statusColor: 'red',
@@ -816,7 +816,7 @@ export default function AdvanceShippingNote() {
 
       {/* Top context bar */}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
-        <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (Daikin Airconditioning India Private Limited)</span>
+        <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (FIEM Industries Limited)</span>
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>

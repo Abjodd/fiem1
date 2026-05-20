@@ -9,7 +9,7 @@ const PO_SCHEDULE_REPORT_DATA = [
   {
     poSaNumber: '7000037139', poItem: '10',
     materialNumber: '1P302790-1 G', materialName: 'LEFT SIDE PANEL(RESIN)',
-    plantCode: 'NMR', plantName: 'Daikin Airconditioning -NMR',
+    plantCode: 'NMR', plantName: 'FIEM Industries Limited - NMR',
     vendorCode: '401122', vendorName: 'Kunstocom(India) Ltd',
     challanNo: '', expectedShipmentDate: 'May 19, 2026', deliveryDate: 'May 19, 2026',
     poQty: 1500, poUnit: 'NO', confirmedQty: 1500, confirmedUnit: 'NO',
@@ -18,7 +18,7 @@ const PO_SCHEDULE_REPORT_DATA = [
   {
     poSaNumber: '7000037138', poItem: '10',
     materialNumber: '1P302790-1 G', materialName: 'LEFT SIDE PANEL(RESIN)',
-    plantCode: 'NMR', plantName: 'Daikin Airconditioning -NMR',
+    plantCode: 'NMR', plantName: 'FIEM Industries Limited - NMR',
     vendorCode: '401122', vendorName: 'Kunstocom(India) Ltd',
     challanNo: '', expectedShipmentDate: 'May 19, 2026', deliveryDate: 'May 19, 2026',
     poQty: 1500, poUnit: 'NO', confirmedQty: 1500, confirmedUnit: 'NO',
@@ -27,7 +27,7 @@ const PO_SCHEDULE_REPORT_DATA = [
   {
     poSaNumber: '7000037138', poItem: '20',
     materialNumber: '2P438825-1 D', materialName: 'INDICATION LAMP COVER',
-    plantCode: 'NMR', plantName: 'Daikin Airconditioning -NMR',
+    plantCode: 'NMR', plantName: 'FIEM Industries Limited - NMR',
     vendorCode: '401122', vendorName: 'Kunstocom(India) Ltd',
     challanNo: '', expectedShipmentDate: 'May 19, 2026', deliveryDate: 'May 19, 2026',
     poQty: 1000, poUnit: 'NO', confirmedQty: 1000, confirmedUnit: 'NO',
@@ -45,7 +45,7 @@ const PO_SCHEDULE_REPORT_DATA = [
   {
     poSaNumber: '7000037141', poItem: '10',
     materialNumber: '4C100230-1', materialName: 'COMPRESSOR ASSY R32',
-    plantCode: 'NMR', plantName: 'Daikin Airconditioning -NMR',
+    plantCode: 'NMR', plantName: 'FIEM Industries Limited - NMR',
     vendorCode: '401199', vendorName: 'XYZ Compressors Pvt Ltd',
     challanNo: 'CH-2026-002', expectedShipmentDate: 'May 18, 2026', deliveryDate: 'May 19, 2026',
     poQty: 200, poUnit: 'NO', confirmedQty: 200, confirmedUnit: 'NO',
@@ -84,7 +84,7 @@ const VALUE_HELP_OPTIONS = {
     { code: '5P198710-3 B', label: 'PCB ASSY MAIN' },
   ],
   plant: [
-    { code: 'NMR',  label: 'Daikin Airconditioning -NMR' },
+    { code: 'NMR',  label: 'FIEM Industries' },
     { code: 'SR01', label: 'Sri City FG' },
   ],
 }
@@ -321,7 +321,7 @@ export default function POScheduleReport() {
           {/* ── Page Header ── */}
           <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-4 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white flex-shrink-0">
             <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">
-              Company Code: DSAL (Daikin Airconditioning India Private Limited)
+              Company Code: DSAL (FIEM Industries Limited)
             </div>
             <h2 className="text-[20px] sm:text-[24px] font-bold text-[#32363a] tracking-tight">PO Schedule Report</h2>
           </div>

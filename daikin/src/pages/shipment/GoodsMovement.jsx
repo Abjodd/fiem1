@@ -41,7 +41,7 @@ const SHIPMENT_TRACKINGS = [
     transportMode: 'By Road',
     date: 'May 06, 2026',
     plant: 'Daik',
-    plantName: 'Daikin Airconditioning -NMR',
+    plantName: 'FIEM Industries Limited - NMR',
     status: 'Goods Received',
     statusColor: 'green',
     transporter: 'BNE',
@@ -123,7 +123,7 @@ const SHIPMENT_TRACKINGS = [
     transportMode: 'By Road',
     date: 'May 06, 2026',
     plant: 'NMR',
-    plantName: 'Daikin Airconditioning -NMR',
+    plantName: 'FIEM Industries Limited - NMR',
     status: 'In Transit',
     statusColor: 'blue',
     transporter: 'Bluedart',
@@ -961,7 +961,7 @@ export default function GoodsMovement() {
 
       {/* Top context bar */}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
-        <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (Daikin Airconditioning India Private Limited)</span>
+        <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (FIEM Industries Limited)</span>
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>

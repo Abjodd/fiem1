@@ -803,7 +803,7 @@ export default function MainLayout() {
 
         <aside className={`ml-sidebar-drawer${drawerOpen ? ' open' : ''}`} aria-label="Mobile menu">
           <div className="ml-drawer-head">
-            <div className="ml-drawer-eyebrow">Daikin SAP Portal</div>
+            <div className="ml-drawer-eyebrow">FIEM SAP Portal</div>
             <div className="ml-drawer-title">Mod<em>ules</em></div>
             <button
               type="button"
@@ -870,9 +870,9 @@ export default function MainLayout() {
             <footer className="ml-footer">
               <div className="ml-footer-inner">
                 <div className="ml-footer-left">
-                  <div className="ml-footer-mark">D</div>
+                  <div className="ml-footer-mark">F</div>
                   <span className="ml-footer-text">
-                    © {new Date().getFullYear()} <em>Daikin</em> · SAP Portal · Internal use only
+                    © {new Date().getFullYear()} <em>FIEM</em> · SAP Portal · Internal use only
                   </span>
                 </div>
               </div>

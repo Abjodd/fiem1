@@ -42,7 +42,7 @@ const GATE_TRACKINGS = [
     transportMode: 'By Road',
     date: 'May 01, 2026',
     plant: 'NMR',
-    plantName: 'Daikin Airconditioning -NMR',
+    plantName: 'FIEM Industries Limited - NMR',
     status: 'Gate Reported',
     statusColor: 'orange',
     transporter: 'Raj',
