@@ -105,10 +105,12 @@ const INITIAL_FORM = {
   transportMode: 'By Road',
   ewayBillNo: '',
   ewayBillDate: '',
+  lrNum: '',
   transporterName: '',
   driverName: '',
   contactNumber: '',
   vehicleRegNo: '',
+  finaltranspoterName: '',
   pollutionCertificateApplicable: false,
   safetyEquipments: false,
   safetyGuardForMaterial: false,
@@ -133,10 +135,12 @@ const trackingToForm = (t) => {
     transportMode: t.transportationMode || t.transportMode || 'By Road',
     ewayBillNo: t.ewayBillNo || '',
     ewayBillDate: ewayBillDateVal,
+    lrNum: t.lrNum || '',
     transporterName: t.transporter || '',
     driverName: t.driverName || '',
     contactNumber: t.contact || '',
     vehicleRegNo: t.vehicleRegNo || '',
+    finaltranspoterName: t.finalTransporterName || '',
     pollutionCertificateApplicable: t.pollutionCertificateApplicable === 'Yes' || t.pollutionCertificateApplicable === true,
     safetyEquipments: t.safetyEquipments === 'Yes' || t.safetyEquipments === true,
     safetyGuardForMaterial: t.safetyGuardForMaterial === 'Yes' || t.safetyGuardForMaterial === true,
@@ -432,6 +436,22 @@ export default function CreateMovement({ editData = null, onBack = null }) {
               />
             </FieldRow>
 
+            <FieldRow label="LR No.">
+              <input
+                type="text"
+                value={form.lrNum}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 30)
+                  updateField('lrNum', value)
+                }}
+                placeholder="Enter LR Number"
+                maxLength={30}
+                className="w-full h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+              />
+            </FieldRow>
+
+            
+
             {/* Eway Bill Date */}
             <FieldRow label="Eway Bill Date">
               <div className="relative">
@@ -500,6 +520,16 @@ export default function CreateMovement({ editData = null, onBack = null }) {
                     ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
                     : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
                 }`}
+              />
+            </FieldRow>
+
+            <FieldRow label="Final Transporter Name">
+              <input
+                type="text"
+                value={form.finaltranspoterName}
+                onChange={(e) => updateField('finaltranspoterName', e.target.value)}
+                placeholder="Enter final transporter name (if different)"
+                className="w-full h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
               />
             </FieldRow>
 
