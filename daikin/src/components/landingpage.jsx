@@ -4,7 +4,7 @@ import { NAV_MODULES } from '../router/index';
 import { ArrowRight, Bell, Search, Menu, Sun, Moon } from 'lucide-react';
 
 export default function DaikinPortal() {
-    const userName = "Chethan";
+    const userName = "Arbeel";
     const [greeting, setGreeting]  = useState("Good Morning");
     const [time, setTime] = useState(new Date());
     const [scrolled, setScrolled] = useState(false);
