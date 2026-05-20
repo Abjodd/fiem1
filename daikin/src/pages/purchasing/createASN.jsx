@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 
 // ═══════════════════════════════════════════════════════════════
@@ -299,7 +300,10 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate }) {
 // ═══════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
-export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
+export default function CreateASN({agreement: propAgreement}) {
+    const navigate = useNavigate()
+    const location = useLocation()
+    const agreement = location.state?.agreement || DEFAULT_AGREEMENT
     const isMobile = useIsMobile()
     const [activeTab, setActiveTab] = useState('info') // 'info' | 'attachments'
 
@@ -416,7 +420,7 @@ export default function CreateASN({ agreement = DEFAULT_AGREEMENT, onClose }) {
                 {/* ─── HEADER STRIP ─── */}
                 <div className="bg-white border-b border-[#e5e5e5] px-8 py-3 flex items-center justify-between">
                     <button
-                        onClick={onClose}
+                        onClick={() => navigate(-1)}
                         className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline hover:-translate-x-0.5 transition-transform"
                     >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

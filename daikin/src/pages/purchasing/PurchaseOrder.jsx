@@ -1,8 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 
 import PageLayout from '../../layouts/PageLayout.jsx'
-import CreateASN from './createASN.jsx'
-
+import { useNavigate } from 'react-router-dom'
 // ═══════════════════════════════════════════════════════════════
 // DUMMY DATA (currently in use)
 // ═══════════════════════════════════════════════════════════════
@@ -492,8 +491,7 @@ const parseDeliveryDate = (s) => new Date(s)
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function PurchaseOrder() {
-  const [showCreateAsn, setShowCreateAsn] = useState(false)
-
+  const navigate = useNavigate()
   const [agreements, setAgreements] = useState([])
   const [agreement, setAgreement] = useState(null)
   const [selectedAgreementId, setSelectedAgreementId] = useState('5501000370')
@@ -601,9 +599,7 @@ export default function PurchaseOrder() {
     else setSelectedPlants([...selectedPlants, plant])
   }
 
-  const handleCreateAsn = () => {
-    setShowCreateAsn(true)
-  }
+
 
   const handleConfirm = async () => {
     if (!agreement) return
@@ -614,9 +610,10 @@ export default function PurchaseOrder() {
     }
   }
 
-  if (showCreateAsn) {
-    return <CreateASN />
-  }
+  
+const handleCreateAsn = () => {
+  navigate('/purchasing/create-asn', { state: { agreement } })
+}
 
   // ── Sidebar inner content (shared between desktop & mobile drawer) ──
   const SidebarContent = () => (
@@ -1018,9 +1015,9 @@ export default function PurchaseOrder() {
               </td>
             </tr>
           )}
-          {filteredItems.map((item) => (
+          {filteredItems.map((item,idx) => (
             <tr
-              key={item.itemNo}
+              key={`${item.itemNo}-${idx}`}
               onClick={() => setSelectedItem({ agreementId: agreement.id, itemNo: item.itemNo })}
               className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-all duration-200 group"
             >

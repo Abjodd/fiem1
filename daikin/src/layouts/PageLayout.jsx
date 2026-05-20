@@ -7,12 +7,20 @@ export default function PageLayout({ children }) {
   const { pathname } = useLocation()
   const match = findModuleByTilePath(pathname)
 
+  const handleBack = () => {
+    if (match?.module.id) {
+      navigate(`/dashboard`, { state: { scrollTo: match.module.id } })
+    } else {
+      navigate(-1)
+    }
+  }
+
   return (
     <>
       <Header />
       <div className="sticky top-14 z-[90] h-12 bg-[var(--nav-bg)] flex items-center px-7 gap-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="flex items-center gap-1.5 text-white/60 hover:text-white text-[13px] font-medium transition-colors duration-150"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

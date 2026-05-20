@@ -12,16 +12,21 @@ import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Re
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
 import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
 import GateInGateOut from './pages/shipment/gateingateout.jsx'
+import CreateASN from './pages/purchasing/createASN.jsx'
+import PageLayout from './layouts/PageLayout.jsx'
 
 // Landing
 import LandingPage from './components/landingpage.jsx'
 
 export default function App() {
   return (
+    
     <Routes>
 
       {/* First Page */}
       <Route path="/" element={<Navigate to="/landing" replace />} />
+      {/* Create ASN - New Route */}
+      <Route path="/purchasing/create-asn" element={<PageLayout><CreateASN /></PageLayout>} />
 
       {/* Landing Page */}
       <Route path="/landing" element={<LandingPage />} />
