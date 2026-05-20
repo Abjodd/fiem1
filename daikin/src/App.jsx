@@ -26,7 +26,7 @@ export default function App() {
       {/* First Page */}
       <Route path="/" element={<Navigate to="/landing" replace />} />
       {/* Create ASN - New Route */}
-      <Route path="/purchasing/create-asn" element={<PageLayout><CreateASN /></PageLayout>} />
+      <Route path="/purchasing/create-asn" element={<CreateASN />} />
 
       {/* Landing Page */}
       <Route path="/landing" element={<LandingPage />} />
