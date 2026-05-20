@@ -5,7 +5,7 @@ import './app.css'
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
-import OpenPOReport from './pages/purchasing/OpenPOReport.jsx'
+import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'
 import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Requirement given on 14th May
 
 // Shipment
@@ -41,8 +41,8 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/open-po"
-        element={<OpenPOReport />}
+        path="/purchasing/po-schedule-report"
+        element={<POScheduleReport />}
       />
 
       <Route

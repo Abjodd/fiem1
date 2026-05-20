@@ -178,13 +178,13 @@ export const NAV_MODULES = [
       },
 
       {
-        id: 'open-po',
-        label: 'Open PO Report',
-        sub: 'For Supplier',
-        path: '/purchasing/open-po',
+        id: 'po-schedule-report',
+        label: 'PO Schedule Report',
+        sub: 'Open PO Report',
+        path: '/purchasing/po-schedule-report',
         icon: 'report',
         cover:
-          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200',
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
       },
 
       {
