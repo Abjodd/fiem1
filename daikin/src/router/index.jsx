@@ -184,7 +184,7 @@ export const NAV_MODULES = [
         path: '/purchasing/po-schedule-report',
         icon: 'report',
         cover:
-          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
+          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200',
       },
 
       {

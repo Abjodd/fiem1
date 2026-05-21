@@ -66,7 +66,7 @@ const ADVANCE_SHIPPING_NOTES = [
     plantName: 'Sri City FG',
     date: 'May 06, 2026',
     status: 'Confirmed',
-    statusColor: 'red',
+    statusColor: 'blue',
     vendor: 'Kunstocom(India) Ltd',
     generalData: {
       supplierInvoice: 'INV-0044',
@@ -210,56 +210,161 @@ const ADVANCE_SHIPPING_NOTES = [
       { name: 'Quality_Certificate.pdf', type: 'PDF' },
     ],
   },
+  
+  // ── NEW: Confirmed status dummy data ──
   {
-    id: '2600000041/2026',
-    amount: 72.00,
+    id: '2600000050/2026',
+    amount: 3450.00,
     currency: 'INR',
-    baseDocument: 'SA: 5501000365',
-    plant: 'NM01',
-    plantName: 'Neemrana Plant',
-    date: 'Apr 30, 2026',
-    status: 'Open',
-    statusColor: 'green',
+    baseDocument: 'PO: 7000038001',
+    plant: 'NMR',
+    plantName: 'FIEM Industries Limited - NMR',
+    date: 'May 10, 2026',
+    status: 'Confirmed',
+    statusColor: 'blue',
     vendor: 'Kunstocom(India) Ltd',
     generalData: {
-      supplierInvoice: 'INV-0041',
-      baseDocument: 'SA : 5501000365',
-      invoiceAmount: 72.00,
-      invoiceDate: 'Apr 30, 2026',
+      supplierInvoice: 'INV-0050',
+      baseDocument: 'PO : 7000038001',
+      invoiceAmount: 3450.00,
+      invoiceDate: 'May 10, 2026',
     },
     items: [
       {
-        deliveryDate: '10.05.2026',
-        material: 'Refrigerant Line Kit B2',
-        quantity: 4,
+        deliveryDate: '25.05.2026',
+        material: 'Evaporator Coil EV-200',
+        quantity: 5,
         unit: 'NOS',
-        amount: 72.00,
-        hsnSac: '8415',
-        igst: 6.48,
+        amount: 3450.00,
+        hsnSac: '84158200',
+        igst: 0.00,
+        cgst: 310.50,
+        sgstUtgst: 310.50,
+      },
+    ],
+    taxSummary: {
+      taxableValue: 3450.00,
+      igst: 0.00,
+      cgst: 310.50,
+      sgstUtgst: 310.50,
+      unPlannedCost: 0.00,
+      totalAmount: 4071.00,
+    },
+    shipment: {
+      trackingNo: '1000001180',
+      driverName: 'MKT',
+      contactNumber: '9988776655',
+      transporterName: 'FedEx',
+      transportMode: 'By Road',
+      vehicleRegNo: 'DL01',
+      creationDate: '10.05.2026',
+      creationTime: '11:00:00',
+    },
+    attachments: [
+      { name: 'Invoice_0050.pdf', type: 'PDF' },
+    ],
+  },
+  {
+    id: '2600000051/2026',
+    amount: 1200.00,
+    currency: 'INR',
+    baseDocument: 'SA: 5501000500',
+    plant: 'NM01',
+    plantName: 'Neemrana Plant',
+    date: 'May 12, 2026',
+    status: 'Confirmed',
+    statusColor: 'blue',
+    vendor: 'Kunstocom(India) Ltd',
+    generalData: {
+      supplierInvoice: 'INV-0051',
+      baseDocument: 'SA : 5501000500',
+      invoiceAmount: 1200.00,
+      invoiceDate: 'May 12, 2026',
+    },
+    items: [
+      {
+        deliveryDate: '28.05.2026',
+        material: 'Condenser Fan Motor CFM-5',
+        quantity: 8,
+        unit: 'NOS',
+        amount: 1200.00,
+        hsnSac: '85016400',
+        igst: 108.00,
         cgst: 0.00,
         sgstUtgst: 0.00,
       },
     ],
     taxSummary: {
-      taxableValue: 72.00,
-      igst: 6.48,
+      taxableValue: 1200.00,
+      igst: 108.00,
       cgst: 0.00,
       sgstUtgst: 0.00,
       unPlannedCost: 0.00,
-      totalAmount: 78.48,
+      totalAmount: 1308.00,
     },
     shipment: {
-      trackingNo: '1000001173',
-      driverName: 'PKS',
-      contactNumber: '9011234567',
-      transporterName: 'GATI',
+      trackingNo: '1000001181',
+      driverName: 'AKS',
+      contactNumber: '9123456780',
+      transporterName: 'DTDC',
       transportMode: 'By Road',
-      vehicleRegNo: 'HR26',
-      creationDate: '30.04.2026',
-      creationTime: '16:20:10',
+      vehicleRegNo: 'HR55',
+      creationDate: '12.05.2026',
+      creationTime: '09:15:00',
+    },
+    attachments: [],
+  },
+  {
+    id: '2600000052/2026',
+    amount: 875.50,
+    currency: 'INR',
+    baseDocument: 'PO: 7000039100',
+    plant: 'SR01',
+    plantName: 'Sri City FG',
+    date: 'May 14, 2026',
+    status: 'Confirmed',
+    statusColor: 'blue',
+    vendor: 'Kunstocom(India) Ltd',
+    generalData: {
+      supplierInvoice: 'INV-0052',
+      baseDocument: 'PO : 7000039100',
+      invoiceAmount: 875.50,
+      invoiceDate: 'May 14, 2026',
+    },
+    items: [
+      {
+        deliveryDate: '30.05.2026',
+        material: 'Thermostat Control Unit TCU-3',
+        quantity: 3,
+        unit: 'NOS',
+        amount: 875.50,
+        hsnSac: '90322000',
+        igst: 0.00,
+        cgst: 78.80,
+        sgstUtgst: 78.80,
+      },
+    ],
+    taxSummary: {
+      taxableValue: 875.50,
+      igst: 0.00,
+      cgst: 78.80,
+      sgstUtgst: 78.80,
+      unPlannedCost: 0.00,
+      totalAmount: 1033.10,
+    },
+    shipment: {
+      trackingNo: '1000001182',
+      driverName: 'LKP',
+      contactNumber: '9900112233',
+      transporterName: 'Bluedart',
+      transportMode: 'By Air',
+      vehicleRegNo: 'N/A',
+      creationDate: '14.05.2026',
+      creationTime: '15:45:30',
     },
     attachments: [
-      { name: 'Packing_List_41.pdf', type: 'PDF' },
+      { name: 'Invoice_0052.pdf', type: 'PDF' },
+      { name: 'Dispatch_Note_52.pdf', type: 'PDF' },
     ],
   },
 ]
@@ -270,11 +375,14 @@ const ADVANCE_SHIPPING_NOTES = [
 const API_BASE_URL = '/api/v1'
 const USE_MOCK = true
 
+// Mock store — mutable copy for cancel operations
+let mockStore = [...ADVANCE_SHIPPING_NOTES]
+
 const asnApi = {
   async listAsns({ search = '', plants = [] } = {}) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 100))
-      return ADVANCE_SHIPPING_NOTES.filter(a => {
+      return mockStore.filter(a => {
         const q = search.trim().toLowerCase()
         const matchSearch = !q ||
           a.id.toLowerCase().includes(q) ||
@@ -296,7 +404,7 @@ const asnApi = {
   async getAsn(id) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 100))
-      return ADVANCE_SHIPPING_NOTES.find(a => a.id === id) || null
+      return mockStore.find(a => a.id === id) || null
     }
     const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}`)
     if (!res.ok) throw new Error('Failed to fetch ASN')
@@ -310,6 +418,22 @@ const asnApi = {
     }
     const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}/print`, { method: 'POST' })
     if (!res.ok) throw new Error('Failed to print ASN')
+    return res.json()
+  },
+
+  // Cancel (delete) an ASN — only valid for status === 'Confirmed'
+  // Backend: DELETE /api/v1/asn/:id  → 200 { success: true, id }
+  async cancelAsn(id) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      const exists = mockStore.find(a => a.id === id)
+      if (!exists) throw new Error('ASN not found')
+      if (exists.status !== 'Confirmed') throw new Error('Only Confirmed ASNs can be cancelled')
+      mockStore = mockStore.filter(a => a.id !== id)
+      return { success: true, id }
+    }
+    const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Failed to cancel ASN')
     return res.json()
   },
 
@@ -378,6 +502,58 @@ const TABS = [
 ]
 
 // ═══════════════════════════════════════════════════════════════
+// CANCEL CONFIRM DIALOG
+// ═══════════════════════════════════════════════════════════════
+function CancelConfirmDialog({ asnId, onConfirm, onDismiss, loading }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center px-4" onClick={onDismiss}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 anim-scale"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-[#fce8e6] flex items-center justify-center flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <h3 className="text-[16px] font-bold text-[#32363a]">Cancel ASN?</h3>
+        </div>
+        <p className="text-[14px] text-[#6a6d70] mb-5">
+          ASN <span className="font-semibold text-[#32363a]">{asnId}</span> will be permanently deleted. This action cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onDismiss}
+            disabled={loading}
+            className="flex-1 h-9 text-[13px] font-semibold text-[#32363a] border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all disabled:opacity-50"
+          >
+            Go Back
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 h-9 text-[13px] font-semibold text-white bg-[#cc1c14] rounded-lg hover:bg-[#a81610] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25" />
+                  <path d="M21 12a9 9 0 00-9-9" />
+                </svg>
+                Cancelling…
+              </>
+            ) : 'Yes, Cancel ASN'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
@@ -390,7 +566,16 @@ export default function AdvanceShippingNote() {
   const [activeTab, setActiveTab] = useState('items')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  // Cancel dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
   const filterRef = useRef(null)
+
+  const fetchList = () => {
+    asnApi.listAsns({ search: searchQuery, plants: selectedPlants })
+      .then(data => setAsns(data))
+      .catch(err => console.error(err))
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -449,10 +634,35 @@ export default function AdvanceShippingNote() {
     try { await asnApi.printAsn(asn.id) } catch (err) { console.error(err) }
   }
 
-  const statusStyle = (statusColor) =>
-    statusColor === 'red'
-      ? 'text-[#cc1c14] bg-[#fce8e6]'
-      : 'text-[#107e3e] bg-[#e8f5ec]'
+  // Cancel flow: open dialog → confirm → call API → update state
+  const handleCancelClick = () => setCancelDialogOpen(true)
+
+  const handleCancelConfirm = async () => {
+    if (!asn) return
+    setCancelLoading(true)
+    try {
+      await asnApi.cancelAsn(asn.id)
+      // Remove from list and clear detail pane
+      setAsns(prev => prev.filter(a => a.id !== asn.id))
+      setAsn(null)
+      setSelectedAsnId(null)
+      setCancelDialogOpen(false)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
+  const handleCancelDismiss = () => {
+    if (!cancelLoading) setCancelDialogOpen(false)
+  }
+
+  const statusStyle = (statusColor) => {
+    if (statusColor === 'blue') return 'text-[#0a6ed1] bg-[#ebf5ff]'
+    if (statusColor === 'red') return 'text-[#cc1c14] bg-[#fce8e6]'
+    return 'text-[#107e3e] bg-[#e8f5ec]'
+  }
 
   // ── Sidebar inner content ──
   const SidebarContent = () => (
@@ -463,7 +673,7 @@ export default function AdvanceShippingNote() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold text-[#32363a]">Advance Shipping Notes</h3>
             <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">
-              {asns.length} of {ADVANCE_SHIPPING_NOTES.length}
+              {asns.length} of {mockStore.length}
             </span>
           </div>
         )}
@@ -814,6 +1024,16 @@ export default function AdvanceShippingNote() {
         .sidebar-transition { transition: width 0.25s ease; }
       `}</style>
 
+      {/* Cancel confirm dialog */}
+      {cancelDialogOpen && asn && (
+        <CancelConfirmDialog
+          asnId={asn.id}
+          onConfirm={handleCancelConfirm}
+          onDismiss={handleCancelDismiss}
+          loading={cancelLoading}
+        />
+      )}
+
       {/* Top context bar */}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
         <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (FIEM Industries Limited)</span>
@@ -883,6 +1103,21 @@ export default function AdvanceShippingNote() {
                     </div>
                     <div className="flex items-center gap-3 ml-3 flex-shrink-0">
                       <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
+
+                      {/* Cancel button — only for Confirmed ASNs */}
+                      {asn.status === 'Confirmed' && (
+                        <button
+                          onClick={handleCancelClick}
+                          className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M15 9l-6 6M9 9l6 6" />
+                          </svg>
+                          Cancel ASN
+                        </button>
+                      )}
+
                       <button
                         onClick={handlePrint}
                         className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"

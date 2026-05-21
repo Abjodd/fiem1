@@ -5,7 +5,7 @@ import './app.css'
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
-import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'
+import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'  //20th May Requirement
 import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Requirement given on 14th May
 
 // Shipment
