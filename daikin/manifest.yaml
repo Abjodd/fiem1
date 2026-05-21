@@ -1,5 +1,5 @@
 applications:
-  - name: Daikin
+  - name: FIEM
     memory: 128M
     buildpacks:
       - staticfile_buildpack
