@@ -275,30 +275,39 @@ export const NAV_MODULES = [
 
     tiles: [
       {
-        id: 'daily-reports',
-        label: 'Daily Reports',
-        path: '',
-        icon: 'daily',
+        id: 'forecast-report',
+        label: 'Forecast Reports',
+        path: '/reports/forecast-report',
+        icon: 'forecast',
         cover:
-          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200',
+          'https://images.unsplash.com/photo-1562577309-2592ab84b1bc?q=80&w=1200',
       },
 
       {
-        id: 'monthly-reports',
-        label: 'Monthly Reports',
-        path: '',
-        icon: 'monthly',
+        id: 'vendor-ledger-report',
+        label: 'Vendor Ledger Report',
+        path: '/reports/vendor-ledger-report',
+        icon: 'ledger',
+        cover:
+          'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
+      },
+
+      {
+        id: 'gatein-to-migo',
+        label: 'Gate-In to MIGO Report',
+        path: '/reports/gatein-to-migo',
+        icon: 'gate-migo',
+        cover:
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
+      },
+
+      {
+        id: 'delivery-schedule',
+        label: 'Delivery Schedule Tracker',
+        path: '/reports/delivery-schedule',
+        icon: 'schedule-tracker',
         cover:
           'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
-      },
-
-      {
-        id: 'analytics-dashboard',
-        label: 'Analytics Dashboard',
-        path: '',
-        icon: 'analytics',
-        cover:
-          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200',
       },
     ],
   },

@@ -8,6 +8,13 @@ import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
 import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'  //20th May Requirement
 import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Requirement given on 14th May
 
+//Reports
+import ForecastReport from './pages/reports/ForecastReport.jsx'
+//import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
+import GateInMIGO from './pages/reports/GateInMIGO.jsx'
+import DeliverySchedule from './pages/reports/DeliverySchedule.jsx'
+  
+
 // Shipment
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
 import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
@@ -17,6 +24,7 @@ import PageLayout from './layouts/PageLayout.jsx'
 
 // Landing
 import LandingPage from './components/landingpage.jsx'
+
 
 export default function App() {
   return (
@@ -54,6 +62,24 @@ export default function App() {
         path="/purchasing/schedule-generate"
         element={<ScheduleGenerate />}
       />
+
+      {/* Reports */}
+      <Route
+        path="/reports/forecast-report" element={<ForecastReport />}
+      />
+
+      {/* <Route
+        path="/reports/vendor-ledger-report" element={<VendorLedgerReport />}
+      /> */}
+
+      <Route
+        path="/reports/gatein-to-migo" element={<GateInMIGO />}
+      />
+
+      <Route
+        path="/reports/delivery-schedule" element={<DeliverySchedule />}
+      />
+
 
       {/* Shipment */}
       <Route
