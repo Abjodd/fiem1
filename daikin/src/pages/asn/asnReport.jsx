@@ -1,5 +1,5 @@
 import GenericPage from "../GenericPage";
-export default function asnReport(){
+export default function Asnreport(){
     return(
 
     <GenericPage>

@@ -16,7 +16,7 @@ import GateInMIGO from './pages/goodsreceipt/GateInMIGO.jsx'
 //logistics
 import DeliverySchedule from './pages/logistics/DeliverySchedule.jsx'
 //asnreport
-import asnReport from './pages/asn/asnReport.jsx'
+import Asnreport from './pages/asn/Asnreport.jsx'
   
 
 // Shipment
@@ -85,12 +85,12 @@ export default function App() {
       />
       {/*asn*/}
       <Route
-        path="/asn/asn-report" element={<asnReport />}
+        path="/asn/asn-report" element={<Asnreport />}
       />
 
       {/* Shipment */}
       <Route
-        path="/shipment/advance-shipping-note"or you can also
+        path="/shipment/advance-shipping-note"
         element={<Advanceshipment />}
       />
 
