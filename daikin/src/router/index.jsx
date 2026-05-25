@@ -169,14 +169,7 @@ export const NAV_MODULES = [
           'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
       },
 
-      {
-        id: 'vendor-stock',
-        label: 'PU-3 : Vendor Stock Report',
-        path: '',
-        icon: 'stock',
-        cover:
-          'https://media.istockphoto.com/id/523155194/photo/financial-data-on-a-monitor-stock-market-data-on-led.jpg?s=612x612&w=0&k=20&c=_3Rm4QHvucRzhrosmVUPUQoDx8h-E35DijJsbtQS5mY=',
-      },
+    
 
       {
         id: 'po-schedule-report',

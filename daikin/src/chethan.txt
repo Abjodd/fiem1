@@ -1,1 +1,4 @@
 arbeel
+
+
+Fix asnReport Mobile view.
