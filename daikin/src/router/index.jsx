@@ -7,94 +7,94 @@ export const NAV_MODULES = [
   // =========================
   // FACTORY
   // =========================
-  {
-    id: 'factory',
-    label: 'Factory',
+  // {
+  //   id: 'factory',
+  //   label: 'Factory',
 
-    tiles: [
-      {
-        id: 'production-plan',
-        label: 'Production Plan',
-        path: '',
-        icon: 'factory',
-        cover:
-          'https://images.unsplash.com/photo-1567789884554-0b844b597180?q=80&w=1200',
-      },
+  //   tiles: [
+  //     {
+  //       id: 'production-plan',
+  //       label: 'Production Plan',
+  //       path: '',
+  //       icon: 'factory',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1567789884554-0b844b597180?q=80&w=1200',
+  //     },
 
-      {
-        id: 'machine-status',
-        label: 'Machine Status',
-        path: '',
-        icon: 'machine',
-        cover:
-          'https://thumbs.dreamstime.com/b/control-panel-showing-buttons-lights-machine-operation-workshop-features-various-used-operating-machines-setup-444924993.jpg',
-      },
+  //     {
+  //       id: 'machine-status',
+  //       label: 'Machine Status',
+  //       path: '',
+  //       icon: 'machine',
+  //       cover:
+  //         'https://thumbs.dreamstime.com/b/control-panel-showing-buttons-lights-machine-operation-workshop-features-various-used-operating-machines-setup-444924993.jpg',
+  //     },
 
-      {
-        id: 'line-monitoring',
-        label: 'Line Monitoring',
-        path: '',
-        icon: 'monitor',
-        cover:
-          'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1200',
-      },
+  //     {
+  //       id: 'line-monitoring',
+  //       label: 'Line Monitoring',
+  //       path: '',
+  //       icon: 'monitor',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1200',
+  //     },
 
-      {
-        id: 'shift-management',
-        label: 'Shift Management',
-        path: '',
-        icon: 'shift',
-        cover:
-          'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1200',
-      },
-    ],
-  },
+  //     {
+  //       id: 'shift-management',
+  //       label: 'Shift Management',
+  //       path: '',
+  //       icon: 'shift',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
-  // =========================
-  // FINANCE
-  // =========================
-  {
-    id: 'finance',
-    label: 'Finance',
+  // // =========================
+  // // FINANCE
+  // // =========================
+  // {
+  //   id: 'finance',
+  //   label: 'Finance',
 
-    tiles: [
-      {
-        id: 'invoice-management',
-        label: 'Invoice Management',
-        path: '',
-        icon: 'invoice',
-        cover:
-          'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
-      },
+  //   tiles: [
+  //     {
+  //       id: 'invoice-management',
+  //       label: 'Invoice Management',
+  //       path: '',
+  //       icon: 'invoice',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
+  //     },
 
-      {
-        id: 'payment-status',
-        label: 'Payment Status',
-        path: '',
-        icon: 'payment',
-        cover:
-          'https://images.unsplash.com/photo-1556740749-887f6717d7e4?q=80&w=1200',
-      },
+  //     {
+  //       id: 'payment-status',
+  //       label: 'Payment Status',
+  //       path: '',
+  //       icon: 'payment',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1556740749-887f6717d7e4?q=80&w=1200',
+  //     },
 
-      {
-        id: 'vendor-payments',
-        label: 'Vendor Payments',
-        path: '',
-        icon: 'vendor-payment',
-        cover:
-          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
-      },
+  //     {
+  //       id: 'vendor-payments',
+  //       label: 'Vendor Payments',
+  //       path: '',
+  //       icon: 'vendor-payment',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
+  //     },
 
-      {
-        id: 'financial-reports',
-        label: 'Financial Reports',
-        path: '',
-        icon: 'finance',
-        cover:
-          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200',
-      },
-    ],
-  },
+  //     {
+  //       id: 'financial-reports',
+  //       label: 'Financial Reports',
+  //       path: '',
+  //       icon: 'finance',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
   // =========================
   // LOGISTICS
@@ -105,40 +105,41 @@ export const NAV_MODULES = [
 
     tiles: [
       {
-        id: 'inventory-tracking',
-        label: 'Inventory Tracking',
-        path: '',
-        icon: 'inventory',
+        
+        id: 'delivery-schedule',
+        label: 'Delivery Schedule Tracker',
+        path: '/logistics/delivery-schedule',
+        icon: 'schedule-tracker',
         cover:
-          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
       },
 
-      {
-        id: 'dispatch-management',
-        label: 'Dispatch Management',
-        path: '',
-        icon: 'dispatch',
-        cover:
-          'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=1200',
-      },
+      // {
+      //   id: 'dispatch-management',
+      //   label: 'Dispatch Management',
+      //   path: '',
+      //   icon: 'dispatch',
+      //   cover:
+      //     'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=1200',
+      // },
 
-      {
-        id: 'material-movement',
-        label: 'Material Movement',
-        path: '',
-        icon: 'movement',
-        cover:
-          'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200',
-      },
+      // {
+      //   id: 'material-movement',
+      //   label: 'Material Movement',
+      //   path: '',
+      //   icon: 'movement',
+      //   cover:
+      //     'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200',
+      // },
 
-      {
-        id: 'delivery-status',
-        label: 'Delivery Status',
-        path: '',
-        icon: 'delivery',
-        cover:
-          'https://images.unsplash.com/photo-1616400619175-5beda3a17896?q=80&w=1200',
-      },
+      // {
+      //   id: 'delivery-status',
+      //   label: 'Delivery Status',
+      //   path: '',
+      //   icon: 'delivery',
+      //   cover:
+      //     'https://images.unsplash.com/photo-1616400619175-5beda3a17896?q=80&w=1200',
+      // },
     ],
   },
 
@@ -202,69 +203,69 @@ export const NAV_MODULES = [
   // =========================
   // QUALITY
   // =========================
-  {
-    id: 'quality',
-    label: 'Quality',
+  // {
+  //   id: 'quality',
+  //   label: 'Quality',
 
-    tiles: [
-      {
-        id: 'qc-4m',
-        label: 'QC-4 : 4M Change Request',
-        sub: 'Approval System',
-        path: '',
-        icon: 'change',
-        cover:
-          'https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=1200',
-      },
+  //   tiles: [
+  //     {
+  //       id: 'qc-4m',
+  //       label: 'QC-4 : 4M Change Request',
+  //       sub: 'Approval System',
+  //       path: '',
+  //       icon: 'change',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=1200',
+  //     },
 
-      {
-        id: 'qc-1',
-        label: 'QC-1 : IR & CAR',
-        sub: 'Inspection & Corrective Action',
-        path: '',
-        icon: 'inspect',
-        cover:
-          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200',
-      },
+  //     {
+  //       id: 'qc-1',
+  //       label: 'QC-1 : IR & CAR',
+  //       sub: 'Inspection & Corrective Action',
+  //       path: '',
+  //       icon: 'inspect',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200',
+  //     },
 
-      {
-        id: 'qc-3',
-        label: 'QC-3 : Sample Approval',
-        path: '',
-        icon: 'sample',
-        cover:
-          'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200',
-      },
+  //     {
+  //       id: 'qc-3',
+  //       label: 'QC-3 : Sample Approval',
+  //       path: '',
+  //       icon: 'sample',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200',
+  //     },
 
-      {
-        id: 'process-audit',
-        label: 'Process Audit',
-        sub: 'Manage',
-        path: '',
-        icon: 'audit',
-        cover:
-          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
-      },
+  //     {
+  //       id: 'process-audit',
+  //       label: 'Process Audit',
+  //       sub: 'Manage',
+  //       path: '',
+  //       icon: 'audit',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
+  //     },
 
-      {
-        id: 'vendor-master',
-        label: 'Vendor Master',
-        path: '',
-        icon: 'vendor',
-        cover:
-          'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200',
-      },
+  //     {
+  //       id: 'vendor-master',
+  //       label: 'Vendor Master',
+  //       path: '',
+  //       icon: 'vendor',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200',
+  //     },
 
-      {
-        id: 'pdir',
-        label: 'PDIR Creation',
-        path: '',
-        icon: 'pdir',
-        cover:
-          'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200',
-      },
-    ],
-  },
+  //     {
+  //       id: 'pdir',
+  //       label: 'PDIR Creation',
+  //       path: '',
+  //       icon: 'pdir',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
   // =========================
   // REPORTS
@@ -292,62 +293,80 @@ export const NAV_MODULES = [
           'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
       },
 
-      {
+      
+
+      
+    ],
+  },
+
+  
+  {
+    id:'goodsreceipt',
+    label:'Goods Receipt',
+    tiles:[
+    {
         id: 'gatein-to-migo',
         label: 'Gate-In to MIGO Report',
-        path: '/reports/gatein-to-migo',
+        path: '/goodsreceipt/gatein-to-migo',
         icon: 'gate-migo',
         cover:
           'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
       },
-
-      {
-        id: 'delivery-schedule',
-        label: 'Delivery Schedule Tracker',
-        path: '/reports/delivery-schedule',
-        icon: 'schedule-tracker',
-        cover:
-          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
-      },
     ],
   },
 
+  {
+    id:'asn',
+    label:'ASN',
+    tiles:[
+      {
+        id: 'asn-report',
+        label: 'ASN report',
+        path: '/asn/asn-report',
+        icon: 'gate-migo',
+        cover:
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
+      },
+      
+
+    ],
+  },
   // =========================
   // SERVICE PROCESS
   // =========================
-  {
-    id: 'service-process',
-    label: 'Service Process',
+  // {
+  //   id: 'service-process',
+  //   label: 'Service Process',
 
-    tiles: [
-      {
-        id: 'service-request',
-        label: 'Service Request',
-        path: '',
-        icon: 'service',
-        cover:
-          'https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1200',
-      },
+  //   tiles: [
+  //     {
+  //       id: 'service-request',
+  //       label: 'Service Request',
+  //       path: '',
+  //       icon: 'service',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1200',
+  //     },
 
-      {
-        id: 'ticket-management',
-        label: 'Ticket Management',
-        path: '',
-        icon: 'ticket',
-        cover:
-          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200',
-      },
+  //     {
+  //       id: 'ticket-management',
+  //       label: 'Ticket Management',
+  //       path: '',
+  //       icon: 'ticket',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200',
+  //     },
 
-      {
-        id: 'customer-support',
-        label: 'Customer Support',
-        path: '',
-        icon: 'support',
-        cover:
-          'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200',
-      },
-    ],
-  },
+  //     {
+  //       id: 'customer-support',
+  //       label: 'Customer Support',
+  //       path: '',
+  //       icon: 'support',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
   // =========================
   // SHIPMENT
@@ -391,123 +410,123 @@ export const NAV_MODULES = [
   // =========================
   // TRANSPORT
   // =========================
-  {
-    id: 'transport',
-    label: 'Transport',
+  // {
+  //   id: 'transport',
+  //   label: 'Transport',
 
-    tiles: [
-      {
-        id: 'trip-summary-report',
-        label: 'Trip Summary Report',
-        path: '',
-        icon: 'trip',
-        cover:
-          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200',
-      },
-    ],
-  },
+  //   tiles: [
+  //     {
+  //       id: 'trip-summary-report',
+  //       label: 'Trip Summary Report',
+  //       path: '',
+  //       icon: 'trip',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
   // =========================
   // TMS STO
   // =========================
-  {
-    id: 'tms-sto',
-    label: 'TMS STO',
+  // {
+  //   id: 'tms-sto',
+  //   label: 'TMS STO',
 
-    tiles: [
-      {
-        id: 'tms-sto-edit',
-        label: 'TMS STO EDIT',
-        path: '',
-        icon: 'edit',
-        cover:
-          'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200',
-      },
-    ],
-  },
+  //   tiles: [
+  //     {
+  //       id: 'tms-sto-edit',
+  //       label: 'TMS STO EDIT',
+  //       path: '',
+  //       icon: 'edit',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
   // =========================
   // WAREHOUSE
   // =========================
-  {
-    id: 'warehouse',
-    label: 'Warehouse',
+  // {
+  //   id: 'warehouse',
+  //   label: 'Warehouse',
 
-    tiles: [
-      {
-        id: 'wh-2',
-        label: 'WH-2 : Empty Bin Trolley Management',
-        path: '',
-        icon: 'warehouse',
-        cover:
-          'https://images.unsplash.com/photo-1586528116493-0e4d2f8d0c59?q=80&w=1200',
-      },
+  //   tiles: [
+  //     {
+  //       id: 'wh-2',
+  //       label: 'WH-2 : Empty Bin Trolley Management',
+  //       path: '',
+  //       icon: 'warehouse',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1586528116493-0e4d2f8d0c59?q=80&w=1200',
+  //     },
 
-      {
-        id: 'physical-verification',
-        label: 'Physical Verification',
-        path: '',
-        icon: 'verify',
-        cover:
-          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200',
-      },
-    ],
-  },
+  //     {
+  //       id: 'physical-verification',
+  //       label: 'Physical Verification',
+  //       path: '',
+  //       icon: 'verify',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 
-  // =========================
-  // TMS DASHBOARD
-  // =========================
-  {
-    id: 'tms-dashboard',
-    label: 'TMS Dashboard',
+  // // =========================
+  // // TMS DASHBOARD
+  // // =========================
+  // {
+  //   id: 'tms-dashboard',
+  //   label: 'TMS Dashboard',
 
-    tiles: [
-      {
-        id: 'transport-changes',
-        label: 'Transport Changes',
-        path: '',
-        icon: 'transport',
-        cover:
-          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
-      },
+  //   tiles: [
+  //     {
+  //       id: 'transport-changes',
+  //       label: 'Transport Changes',
+  //       path: '',
+  //       icon: 'transport',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
+  //     },
 
-      {
-        id: 'ship-status',
-        label: 'Ship Status',
-        path: '',
-        icon: 'ship',
-        cover:
-          'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200',
-      },
+  //     {
+  //       id: 'ship-status',
+  //       label: 'Ship Status',
+  //       path: '',
+  //       icon: 'ship',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200',
+  //     },
 
-      {
-        id: 'pod-adherence',
-        label: 'POD Adherence Transporter',
-        path: '',
-        icon: 'pod',
-        cover:
-          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200',
-      },
+  //     {
+  //       id: 'pod-adherence',
+  //       label: 'POD Adherence Transporter',
+  //       path: '',
+  //       icon: 'pod',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200',
+  //     },
 
-      {
-        id: 'wh-wise-trip',
-        label: 'WH wise Trip ID creation',
-        path: '',
-        icon: 'trip',
-        cover:
-          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200',
-      },
+  //     {
+  //       id: 'wh-wise-trip',
+  //       label: 'WH wise Trip ID creation',
+  //       path: '',
+  //       icon: 'trip',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200',
+  //     },
 
-      {
-        id: 'sob-tms',
-        label: 'SOB TMS',
-        path: '',
-        icon: 'dashboard',
-        cover:
-          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200',
-      },
-    ],
-  },
+  //     {
+  //       id: 'sob-tms',
+  //       label: 'SOB TMS',
+  //       path: '',
+  //       icon: 'dashboard',
+  //       cover:
+  //         'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200',
+  //     },
+  //   ],
+  // },
 ]
 
 export const findModuleByTilePath = (path) => {

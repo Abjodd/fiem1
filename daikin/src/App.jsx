@@ -10,9 +10,13 @@ import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Re
 
 //Reports
 import ForecastReport from './pages/reports/ForecastReport.jsx'
-//import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
-import GateInMIGO from './pages/reports/GateInMIGO.jsx'
-import DeliverySchedule from './pages/reports/DeliverySchedule.jsx'
+import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
+//goodsreceipt
+import GateInMIGO from './pages/goodsreceipt/GateInMIGO.jsx'
+//logistics
+import DeliverySchedule from './pages/logistics/DeliverySchedule.jsx'
+//asnreport
+import asnReport from './pages/asn/asnReport.jsx'
   
 
 // Shipment
@@ -68,22 +72,25 @@ export default function App() {
         path="/reports/forecast-report" element={<ForecastReport />}
       />
 
-      {/* <Route
+      <Route
         path="/reports/vendor-ledger-report" element={<VendorLedgerReport />}
-      /> */}
-
-      <Route
-        path="/reports/gatein-to-migo" element={<GateInMIGO />}
       />
-
+      {/*goods receipt*/}
       <Route
-        path="/reports/delivery-schedule" element={<DeliverySchedule />}
+        path="/goodsreceipt/gatein-to-migo" element={<GateInMIGO />}
       />
-
+      {/*logistics*/}
+      <Route
+        path="/logistics/delivery-schedule" element={<DeliverySchedule />}
+      />
+      {/*asn*/}
+      <Route
+        path="/asn/asn-report" element={<asnReport />}
+      />
 
       {/* Shipment */}
       <Route
-        path="/shipment/advance-shipping-note"
+        path="/shipment/advance-shipping-note"or you can also
         element={<Advanceshipment />}
       />
 
