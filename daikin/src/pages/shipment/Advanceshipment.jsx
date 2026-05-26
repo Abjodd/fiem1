@@ -4,273 +4,623 @@ import PageLayout from '../../layouts/PageLayout.jsx'
 // ═══════════════════════════════════════════════════════════════
 // DUMMY DATA (currently in use)
 // ═══════════════════════════════════════════════════════════════
-const ADVANCE_SHIPPING_NOTES = [
-  {
-    id: '2600000045/2026',
-    amount: 968.80,
-    currency: 'INR',
-    baseDocument: 'PO: 7000037139',
-    plant: 'NMR',
-    plantName: 'Daikin Airconditioning -NMR',
-    date: 'May 06, 2026',
-    status: 'Tagged',
-    statusColor: 'red',
-    vendor: 'Kunstocom(India) Ltd',
-    generalData: {
-      supplierInvoice: 'GH12',
-      baseDocument: 'PO : 7000037139',
-      invoiceAmount: 968.80,
-      invoiceDate: 'May 06, 2026',
-    },
-    items: [
-      {
-        deliveryDate: '19.05.2026',
-        material: 'DISCH.GRILLE 1P302790-1 G',
-        quantity: 10,
-        unit: 'NOS',
-        amount: 968.80,
-        hsnSac: '84159000',
-        igst: 0.00,
-        cgst: 87.19,
-        sgstUtgst: 87.19,
-      },
-    ],
-    taxSummary: {
-      taxableValue: 968.80,
-      igst: 0.00,
-      cgst: 87.19,
-      sgstUtgst: 87.19,
-      unPlannedCost: 0.00,
-      totalAmount: 1143.18,
-    },
-    shipment: {
-      trackingNo: '1000001175',
-      driverName: 'SDH',
-      contactNumber: '6787897678',
-      transporterName: 'BNE',
-      transportMode: 'By Road',
-      vehicleRegNo: 'UP67',
-      creationDate: '06.05.2026',
-      creationTime: '14:13:58',
-    },
-    attachments: [
-      { name: 'Shipment Number 254.pdf', type: 'PDF' },
-    ],
-  },
-  {
-    id: '2600000044/2026',
-    amount: 10.00,
-    currency: 'INR',
-    baseDocument: 'SA: 5501000407',
-    plant: 'SR01',
-    plantName: 'Sri City FG',
-    date: 'May 06, 2026',
-    status: 'Tagged',
-    statusColor: 'red',
-    vendor: 'Kunstocom(India) Ltd',
-    generalData: {
-      supplierInvoice: 'INV-0044',
-      baseDocument: 'SA : 5501000407',
-      invoiceAmount: 10.00,
-      invoiceDate: 'May 06, 2026',
-    },
-    items: [
-      {
-        deliveryDate: '20.05.2026',
-        material: 'Fan Blade Assembly A1',
-        quantity: 1,
-        unit: 'NOS',
-        amount: 10.00,
-        hsnSac: '84159000',
-        igst: 0.00,
-        cgst: 0.90,
-        sgstUtgst: 0.90,
-      },
-    ],
-    taxSummary: {
-      taxableValue: 10.00,
-      igst: 0.00,
-      cgst: 0.90,
-      sgstUtgst: 0.90,
-      unPlannedCost: 0.00,
-      totalAmount: 11.80,
-    },
-    shipment: {
-      trackingNo: '1000001176',
-      driverName: 'RKS',
-      contactNumber: '9876543210',
-      transporterName: 'DHL',
-      transportMode: 'By Road',
-      vehicleRegNo: 'TN22',
-      creationDate: '06.05.2026',
-      creationTime: '10:30:00',
-    },
-    attachments: [],
-  },
-  {
-    id: '2600000042/2026',
-    amount: 193.76,
-    currency: 'INR',
-    baseDocument: 'PO: 7000037139',
-    plant: 'NMR',
-    plantName: 'Daikin Airconditioning -NMR',
-    date: 'May 06, 2026',
-    status: 'Tagged',
-    statusColor: 'red',
-    vendor: 'Kunstocom(India) Ltd',
-    generalData: {
-      supplierInvoice: 'INV-0042',
-      baseDocument: 'PO : 7000037139',
-      invoiceAmount: 193.76,
-      invoiceDate: 'May 06, 2026',
-    },
-    items: [
-      {
-        deliveryDate: '15.05.2026',
-        material: 'Compressor Housing CFF',
-        quantity: 2,
-        unit: 'NOS',
-        amount: 193.76,
-        hsnSac: '8415',
-        igst: 0.00,
-        cgst: 17.44,
-        sgstUtgst: 17.44,
-      },
-    ],
-    taxSummary: {
-      taxableValue: 193.76,
-      igst: 0.00,
-      cgst: 17.44,
-      sgstUtgst: 17.44,
-      unPlannedCost: 0.00,
-      totalAmount: 228.64,
-    },
-    shipment: {
-      trackingNo: '1000001174',
-      driverName: 'VKR',
-      contactNumber: '9812345678',
-      transporterName: 'Bluedart',
-      transportMode: 'By Road',
-      vehicleRegNo: 'RJ14',
-      creationDate: '06.05.2026',
-      creationTime: '09:45:22',
-    },
-    attachments: [
-      { name: 'Invoice_0042.pdf', type: 'PDF' },
-      { name: 'Quality_Certificate.pdf', type: 'PDF' },
-    ],
-  },
-  {
-    id: '2600000041/2026',
-    amount: 72.00,
-    currency: 'INR',
-    baseDocument: 'SA: 5501000365',
-    plant: 'NM01',
-    plantName: 'Neemrana Plant',
-    date: 'Apr 30, 2026',
-    status: 'Open',
-    statusColor: 'green',
-    vendor: 'Kunstocom(India) Ltd',
-    generalData: {
-      supplierInvoice: 'INV-0041',
-      baseDocument: 'SA : 5501000365',
-      invoiceAmount: 72.00,
-      invoiceDate: 'Apr 30, 2026',
-    },
-    items: [
-      {
-        deliveryDate: '10.05.2026',
-        material: 'Refrigerant Line Kit B2',
-        quantity: 4,
-        unit: 'NOS',
-        amount: 72.00,
-        hsnSac: '8415',
-        igst: 6.48,
-        cgst: 0.00,
-        sgstUtgst: 0.00,
-      },
-    ],
-    taxSummary: {
-      taxableValue: 72.00,
-      igst: 6.48,
-      cgst: 0.00,
-      sgstUtgst: 0.00,
-      unPlannedCost: 0.00,
-      totalAmount: 78.48,
-    },
-    shipment: {
-      trackingNo: '1000001173',
-      driverName: 'PKS',
-      contactNumber: '9011234567',
-      transporterName: 'GATI',
-      transportMode: 'By Road',
-      vehicleRegNo: 'HR26',
-      creationDate: '30.04.2026',
-      creationTime: '16:20:10',
-    },
-    attachments: [
-      { name: 'Packing_List_41.pdf', type: 'PDF' },
-    ],
-  },
-]
+// const ADVANCE_SHIPPING_NOTES = [
+//   {
+//     id: '2600000045/2026',
+//     amount: 968.80,
+//     currency: 'INR',
+//     baseDocument: 'PO: 7000037139',
+//     plant: 'NMR',
+//     plantName: 'FIEM Industries Limited - NMR',
+//     date: 'May 06, 2026',
+//     status: 'Tagged',
+//     statusColor: 'red',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'GH12',
+//       baseDocument: 'PO : 7000037139',
+//       invoiceAmount: 968.80,
+//       invoiceDate: 'May 06, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '19.05.2026',
+//         material: 'DISCH.GRILLE 1P302790-1 G',
+//         quantity: 10,
+//         unit: 'NOS',
+//         amount: 968.80,
+//         hsnSac: '84159000',
+//         igst: 0.00,
+//         cgst: 87.19,
+//         sgstUtgst: 87.19,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 968.80,
+//       igst: 0.00,
+//       cgst: 87.19,
+//       sgstUtgst: 87.19,
+//       unPlannedCost: 0.00,
+//       totalAmount: 1143.18,
+//     },
+//     shipment: {
+//       trackingNo: '1000001175',
+//       driverName: 'SDH',
+//       contactNumber: '6787897678',
+//       transporterName: 'BNE',
+//       transportMode: 'By Road',
+//       vehicleRegNo: 'UP67',
+//       creationDate: '06.05.2026',
+//       creationTime: '14:13:58',
+//     },
+//     attachments: [
+//       { name: 'Shipment Number 254.pdf', type: 'PDF' },
+//     ],
+//   },
+//   {
+//     id: '2600000078/2026',
+//     amount: 50.00,
+//     currency: 'INR',
+//     baseDocument: 'SA: 5501000409',
+//     plant: 'SR01',
+//     plantName: 'Sri City FG',
+//     date: 'May 06, 2026',
+//     status: 'Confirmed',
+//     statusColor: 'blue',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'INV-0044',
+//       baseDocument: 'SA : 5501000409',
+//       invoiceAmount: 50.00,
+//       invoiceDate: 'May 06, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '20.05.2026',
+//         material: 'Fan Blade Assembly A1',
+//         quantity: 1,
+//         unit: 'NOS',
+//         amount: 50.00,
+//         hsnSac: '84159000',
+//         igst: 0.00,
+//         cgst: 0.90,
+//         sgstUtgst: 0.90,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 50.00,
+//       igst: 0.00,
+//       cgst: 0.90,
+//       sgstUtgst: 0.90,
+//       unPlannedCost: 0.00,
+//       totalAmount: 11.80,
+//     },
+//     shipment: {
+//       trackingNo: '1000001177',
+//       driverName: 'RKS',
+//       contactNumber: '9876543210',
+//       transporterName: 'DHL',
+//       transportMode: 'By Road',
+//       vehicleRegNo: 'TN22',
+//       creationDate: '06.05.2026',
+//       creationTime: '10:30:00',
+//     },
+//     attachments: [],
+//   },
+//   {
+//     id: '2600000044/2026',
+//     amount: 10.00,
+//     currency: 'INR',
+//     baseDocument: 'SA: 5501000407',
+//     plant: 'SR01',
+//     plantName: 'Sri City FG',
+//     date: 'May 06, 2026',
+//     status: 'Tagged',
+//     statusColor: 'red',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'INV-0044',
+//       baseDocument: 'SA : 5501000407',
+//       invoiceAmount: 10.00,
+//       invoiceDate: 'May 06, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '20.05.2026',
+//         material: 'Fan Blade Assembly A1',
+//         quantity: 1,
+//         unit: 'NOS',
+//         amount: 10.00,
+//         hsnSac: '84159000',
+//         igst: 0.00,
+//         cgst: 0.90,
+//         sgstUtgst: 0.90,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 10.00,
+//       igst: 0.00,
+//       cgst: 0.90,
+//       sgstUtgst: 0.90,
+//       unPlannedCost: 0.00,
+//       totalAmount: 11.80,
+//     },
+//     shipment: {
+//       trackingNo: '1000001176',
+//       driverName: 'RKS',
+//       contactNumber: '9876543210',
+//       transporterName: 'DHL',
+//       transportMode: 'By Road',
+//       vehicleRegNo: 'TN22',
+//       creationDate: '06.05.2026',
+//       creationTime: '10:30:00',
+//     },
+//     attachments: [],
+//   },
+//   {
+//     id: '2600000042/2026',
+//     amount: 193.76,
+//     currency: 'INR',
+//     baseDocument: 'PO: 7000037139',
+//     plant: 'NMR',
+//     plantName: 'FIEM Industries Limited - NMR',
+//     date: 'May 06, 2026',
+//     status: 'Tagged',
+//     statusColor: 'red',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'INV-0042',
+//       baseDocument: 'PO : 7000037139',
+//       invoiceAmount: 193.76,
+//       invoiceDate: 'May 06, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '15.05.2026',
+//         material: 'Compressor Housing CFF',
+//         quantity: 2,
+//         unit: 'NOS',
+//         amount: 193.76,
+//         hsnSac: '8415',
+//         igst: 0.00,
+//         cgst: 17.44,
+//         sgstUtgst: 17.44,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 193.76,
+//       igst: 0.00,
+//       cgst: 17.44,
+//       sgstUtgst: 17.44,
+//       unPlannedCost: 0.00,
+//       totalAmount: 228.64,
+//     },
+//     shipment: {
+//       trackingNo: '1000001174',
+//       driverName: 'VKR',
+//       contactNumber: '9812345678',
+//       transporterName: 'Bluedart',
+//       transportMode: 'By Road',
+//       vehicleRegNo: 'RJ14',
+//       creationDate: '06.05.2026',
+//       creationTime: '09:45:22',
+//     },
+//     attachments: [
+//       { name: 'Invoice_0042.pdf', type: 'PDF' },
+//       { name: 'Quality_Certificate.pdf', type: 'PDF' },
+//     ],
+//   },
+
+//   // ── NEW: Confirmed status dummy data ──
+//   {
+//     id: '2600000050/2026',
+//     amount: 3450.00,
+//     currency: 'INR',
+//     baseDocument: 'PO: 7000038001',
+//     plant: 'NMR',
+//     plantName: 'FIEM Industries Limited - NMR',
+//     date: 'May 10, 2026',
+//     status: 'Confirmed',
+//     statusColor: 'blue',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'INV-0050',
+//       baseDocument: 'PO : 7000038001',
+//       invoiceAmount: 3450.00,
+//       invoiceDate: 'May 10, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '25.05.2026',
+//         material: 'Evaporator Coil EV-200',
+//         quantity: 5,
+//         unit: 'NOS',
+//         amount: 3450.00,
+//         hsnSac: '84158200',
+//         igst: 0.00,
+//         cgst: 310.50,
+//         sgstUtgst: 310.50,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 3450.00,
+//       igst: 0.00,
+//       cgst: 310.50,
+//       sgstUtgst: 310.50,
+//       unPlannedCost: 0.00,
+//       totalAmount: 4071.00,
+//     },
+//     shipment: {
+//       trackingNo: '1000001180',
+//       driverName: 'MKT',
+//       contactNumber: '9988776655',
+//       transporterName: 'FedEx',
+//       transportMode: 'By Road',
+//       vehicleRegNo: 'DL01',
+//       creationDate: '10.05.2026',
+//       creationTime: '11:00:00',
+//     },
+//     attachments: [
+//       { name: 'Invoice_0050.pdf', type: 'PDF' },
+//     ],
+//   },
+//   {
+//     id: '2600000051/2026',
+//     amount: 1200.00,
+//     currency: 'INR',
+//     baseDocument: 'SA: 5501000500',
+//     plant: 'NM01',
+//     plantName: 'Neemrana Plant',
+//     date: 'May 12, 2026',
+//     status: 'Confirmed',
+//     statusColor: 'blue',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'INV-0051',
+//       baseDocument: 'SA : 5501000500',
+//       invoiceAmount: 1200.00,
+//       invoiceDate: 'May 12, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '28.05.2026',
+//         material: 'Condenser Fan Motor CFM-5',
+//         quantity: 8,
+//         unit: 'NOS',
+//         amount: 1200.00,
+//         hsnSac: '85016400',
+//         igst: 108.00,
+//         cgst: 0.00,
+//         sgstUtgst: 0.00,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 1200.00,
+//       igst: 108.00,
+//       cgst: 0.00,
+//       sgstUtgst: 0.00,
+//       unPlannedCost: 0.00,
+//       totalAmount: 1308.00,
+//     },
+//     shipment: {
+//       trackingNo: '1000001181',
+//       driverName: 'AKS',
+//       contactNumber: '9123456780',
+//       transporterName: 'DTDC',
+//       transportMode: 'By Road',
+//       vehicleRegNo: 'HR55',
+//       creationDate: '12.05.2026',
+//       creationTime: '09:15:00',
+//     },
+//     attachments: [],
+//   },
+//   {
+//     id: '2600000052/2026',
+//     amount: 875.50,
+//     currency: 'INR',
+//     baseDocument: 'PO: 7000039100',
+//     plant: 'SR01',
+//     plantName: 'Sri City FG',
+//     date: 'May 14, 2026',
+//     status: 'Confirmed',
+//     statusColor: 'blue',
+//     vendor: 'Kunstocom(India) Ltd',
+//     generalData: {
+//       supplierInvoice: 'INV-0052',
+//       baseDocument: 'PO : 7000039100',
+//       invoiceAmount: 875.50,
+//       invoiceDate: 'May 14, 2026',
+//     },
+//     items: [
+//       {
+//         deliveryDate: '30.05.2026',
+//         material: 'Thermostat Control Unit TCU-3',
+//         quantity: 3,
+//         unit: 'NOS',
+//         amount: 875.50,
+//         hsnSac: '90322000',
+//         igst: 0.00,
+//         cgst: 78.80,
+//         sgstUtgst: 78.80,
+//       },
+//     ],
+//     taxSummary: {
+//       taxableValue: 875.50,
+//       igst: 0.00,
+//       cgst: 78.80,
+//       sgstUtgst: 78.80,
+//       unPlannedCost: 0.00,
+//       totalAmount: 1033.10,
+//     },
+//     shipment: {
+//       trackingNo: '1000001182',
+//       driverName: 'LKP',
+//       contactNumber: '9900112233',
+//       transporterName: 'Bluedart',
+//       transportMode: 'By Air',
+//       vehicleRegNo: 'N/A',
+//       creationDate: '14.05.2026',
+//       creationTime: '15:45:30',
+//     },
+//     attachments: [
+//       { name: 'Invoice_0052.pdf', type: 'PDF' },
+//       { name: 'Dispatch_Note_52.pdf', type: 'PDF' },
+//     ],
+//   },
+// ]
 
 // ═══════════════════════════════════════════════════════════════
 // API STRUCTURE — for future backend integration
 // ═══════════════════════════════════════════════════════════════
-const API_BASE_URL = '/api/v1'
-const USE_MOCK = true
+// const API_BASE_URL = '/api/v1'
+// const USE_MOCK = true
+
+// // Mock store — mutable copy for cancel operations
+// let mockStore = [...ADVANCE_SHIPPING_NOTES]
+
+// const asnApi = {
+//   async listAsns({ search = '', plants = [] } = {}) {
+//     if (USE_MOCK) {
+//       await new Promise(r => setTimeout(r, 100))
+//       return mockStore.filter(a => {
+//         const q = search.trim().toLowerCase()
+//         const matchSearch = !q ||
+//           a.id.toLowerCase().includes(q) ||
+//           a.plantName.toLowerCase().includes(q) ||
+//           a.plant.toLowerCase().includes(q) ||
+//           a.baseDocument.toLowerCase().includes(q)
+//         const matchPlant = plants.length === 0 || plants.includes(a.plant)
+//         return matchSearch && matchPlant
+//       })
+//     }
+//     const params = new URLSearchParams()
+//     if (search) params.set('search', search)
+//     if (plants.length) params.set('plants', plants.join(','))
+//     const res = await fetch(`${API_BASE_URL}/asn?${params}`)
+//     if (!res.ok) throw new Error('Failed to fetch ASNs')
+//     return res.json()
+//   },
+
+//   async getAsn(id) {
+//     if (USE_MOCK) {
+//       await new Promise(r => setTimeout(r, 100))
+//       return mockStore.find(a => a.id === id) || null
+//     }
+//     const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}`)
+//     if (!res.ok) throw new Error('Failed to fetch ASN')
+//     return res.json()
+//   },
+
+//   async printAsn(id) {
+//     if (USE_MOCK) {
+//       await new Promise(r => setTimeout(r, 200))
+//       return { success: true, id }
+//     }
+//     const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}/print`, { method: 'POST' })
+//     if (!res.ok) throw new Error('Failed to print ASN')
+//     return res.json()
+//   },
+
+//   // Cancel (delete) an ASN — only valid for status === 'Confirmed'
+//   // Backend: DELETE /api/v1/asn/:id  → 200 { success: true, id }
+//   async cancelAsn(id) {
+//     if (USE_MOCK) {
+//       await new Promise(r => setTimeout(r, 200))
+//       const exists = mockStore.find(a => a.id === id)
+//       if (!exists) throw new Error('ASN not found')
+//       if (exists.status !== 'Confirmed') throw new Error('Only Confirmed ASNs can be cancelled')
+//       mockStore = mockStore.filter(a => a.id !== id)
+//       return { success: true, id }
+//     }
+//     const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}`, { method: 'DELETE' })
+//     if (!res.ok) throw new Error('Failed to cancel ASN')
+//     return res.json()
+//   },
+
+//   async downloadAttachment(asnId, fileName) {
+//     if (USE_MOCK) {
+//       await new Promise(r => setTimeout(r, 150))
+//       return { success: true, url: `#mock-download/${fileName}` }
+//     }
+//     const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(asnId)}/attachments/${encodeURIComponent(fileName)}`)
+//     if (!res.ok) throw new Error('Failed to download attachment')
+//     return res.json()
+//   },
+// }
+
+// ═══════════════════════════════════════════════════════════════
+// OData SERVICE INTEGRATION
+// ═══════════════════════════════════════════════════════════════
+const ODATA_BASE = '/sap/opu/odata/shiv/MO_SUPP_PORTAL_ASN_APP_SRV'
+
+// helper — GET JSON from an OData path
+async function odataGet(path) {
+  const res = await fetch(`${ODATA_BASE}${path}`, {
+    headers: { Accept: 'application/json', Loginid: "manishgupta8@kpmg.com",
+        Logintype: "E", },
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`)
+  return res.json()
+}
+
+// helpers — SAP values are strings, often padded with spaces
+const num = (v) => Number(String(v ?? '').trim() || 0)
+const str = (v) => String(v ?? '').trim()
+
+// format SAP date "20260520" -> "20.05.2026"
+const fmtDate = (v) => {
+  const s = str(v)
+  if (s.length !== 8) return s
+  return `${s.slice(6, 8)}.${s.slice(4, 6)}.${s.slice(0, 2) === '00' ? s.slice(0, 4) : s.slice(0, 4)}`
+}
+// SAP date "20260520" -> "20.05.2026"  (correct version)
+const sapDate = (v) => {
+  const s = str(v)
+  if (s.length !== 8) return s
+  return `${s.slice(6, 8)}.${s.slice(4, 6)}.${s.slice(0, 4)}`
+}
+// SAP time "122800" -> "12:28:00"
+const sapTime = (v) => {
+  const s = str(v).padStart(6, '0')
+  if (s.length !== 6) return str(v)
+  return `${s.slice(0, 2)}:${s.slice(2, 4)}:${s.slice(4, 6)}`
+}
+
+// decide status from the SAP flags
+function deriveStatus(d) {
+  if (d.Cancel === true || str(d.Cancel) === 'X') return { status: 'Cancelled', color: 'red' }
+  if (str(d.Status)) {
+    const s = str(d.Status)
+    return { status: s, color: s.toLowerCase() === 'confirmed' ? 'blue' : 'red' }
+  }
+  if (str(d.Tagged) === 'X') return { status: 'Tagged', color: 'red' }
+  if (str(d.Draft) === 'X') return { status: 'Draft', color: 'green' }
+  return { status: 'Open', color: 'green' }
+}
+
+// mapper — OData header record -> UI shape
+function mapHeader(d) {
+  const { status, color } = deriveStatus(d)
+  const baseDoc = `${str(d.Type_text)} ${str(d.Order_num)}`.trim()
+  return {
+    id: `${str(d.Asn_Num)}/${str(d.FisYear)}`,
+    asnNum: str(d.Asn_Num),
+    fisYear: str(d.FisYear),
+    amount: num(d.TotAmt),
+    currency: str(d.currency) || 'INR',
+    baseDocument: baseDoc,
+    plant: str(d.Werks),
+    plantName: str(d.Plant_des),
+    date: sapDate(d.Invoice_Date),
+    status,
+    statusColor: color,
+    vendor: str(d.Name1),
+    generalData: {
+      supplierInvoice: str(d.Invoice_Num),
+      baseDocument: baseDoc,
+      invoiceAmount: num(d.Invoice_Amt),
+      invoiceDate: sapDate(d.Invoice_Date),
+    },
+    shipment: {
+      trackingNo: str(d.TrackingNo),
+      driverName: str(d.NameDrvr),
+      contactNumber: str(d.DrvContactNum),
+      transporterName: str(d.TransporterName),
+      transportMode: str(d.Transport),
+      vehicleRegNo: str(d.VehicleRegNumb),
+      creationDate: sapDate(d.CreationDt),
+      creationTime: sapTime(d.CreationTime),
+    },
+    items: [],
+    taxSummary: {
+      taxableValue: 0, igst: 0, cgst: 0,
+      sgstUtgst: 0, unPlannedCost: 0, totalAmount: 0,
+    },
+    attachments: [],
+  }
+}
+
+// mapper — one OData item record -> UI item shape
+function mapItem(d) {
+  return {
+    deliveryDate: sapDate(d.Delv_dt),
+    material: str(d.Mat_txt) || str(d.Material),
+    quantity: num(d.Quantity),
+    unit: str(d.Unit),
+    amount: num(d.Net_price),
+    hsnSac: str(d.HsnCode),
+    igst: num(d.Tot_igst),
+    cgst: num(d.Tot_cgst),
+    sgstUtgst: num(d.Tot_sgst),
+    unplannedCost: num(d.UnplannedCost),
+  }
+}
 
 const asnApi = {
+  // LIST — collection
   async listAsns({ search = '', plants = [] } = {}) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      return ADVANCE_SHIPPING_NOTES.filter(a => {
-        const q = search.trim().toLowerCase()
-        const matchSearch = !q ||
-          a.id.toLowerCase().includes(q) ||
-          a.plantName.toLowerCase().includes(q) ||
-          a.plant.toLowerCase().includes(q) ||
-          a.baseDocument.toLowerCase().includes(q)
-        const matchPlant = plants.length === 0 || plants.includes(a.plant)
-        return matchSearch && matchPlant
-      })
+    const json = await odataGet('/ASN_HEADERSet?$format=json')
+    let rows = (json.d?.results || []).map(mapHeader)
+
+    const q = search.trim().toLowerCase()
+    if (q) {
+      rows = rows.filter(a =>
+        a.id.toLowerCase().includes(q) ||
+        a.plantName.toLowerCase().includes(q) ||
+        a.plant.toLowerCase().includes(q) ||
+        a.baseDocument.toLowerCase().includes(q) ||
+        a.vendor.toLowerCase().includes(q)
+      )
     }
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    if (plants.length) params.set('plants', plants.join(','))
-    const res = await fetch(`${API_BASE_URL}/asn?${params}`)
-    if (!res.ok) throw new Error('Failed to fetch ASNs')
-    return res.json()
+    if (plants.length) rows = rows.filter(a => plants.includes(a.plant))
+    return rows
   },
 
+  // DETAIL — single record + expand items
   async getAsn(id) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      return ADVANCE_SHIPPING_NOTES.find(a => a.id === id) || null
+    const [asnNum, fisYear] = id.split('/')
+    const json = await odataGet(
+      `/ASN_HEADERSet(Asn_Num='${asnNum}',FisYear='${fisYear}')` +
+      `?$expand=Headertoitemnav&$format=json`
+    )
+    const d = json.d
+    if (!d) return null
+
+    const asn = mapHeader(d)
+    const itemRows = d.Headertoitemnav?.results || []
+    asn.items = itemRows.map(mapItem)
+
+    // tax summary = sum of item values
+    const sum = (k) => asn.items.reduce((t, it) => t + (it[k] || 0), 0)
+    const taxable = sum('amount')
+    const igst = sum('igst')
+    const cgst = sum('cgst')
+    const sgst = sum('sgstUtgst')
+    const unplanned = sum('unplannedCost')
+    asn.taxSummary = {
+      taxableValue: taxable,
+      igst, cgst, sgstUtgst: sgst,
+      unPlannedCost: unplanned,
+      totalAmount: taxable + igst + cgst + sgst + unplanned,
     }
-    const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}`)
-    if (!res.ok) throw new Error('Failed to fetch ASN')
-    return res.json()
+    return asn
+  },
+
+  // ATTACHMENTS — separate EntitySet, filtered
+  async getAttachments(asnNum, fisYear) {
+    const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`
+    const json = await odataGet(
+      `/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
+    )
+    return (json.d?.results || []).map(a => ({
+      name: str(a.Filename),
+      type: str(a.Mimetype).includes('pdf') ? 'PDF' : 'FILE',
+    }))
   },
 
   async printAsn(id) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 200))
-      return { success: true, id }
-    }
-    const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(id)}/print`, { method: 'POST' })
-    if (!res.ok) throw new Error('Failed to print ASN')
-    return res.json()
-  },
-
-  async downloadAttachment(asnId, fileName) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 150))
-      return { success: true, url: `#mock-download/${fileName}` }
-    }
-    const res = await fetch(`${API_BASE_URL}/asn/${encodeURIComponent(asnId)}/attachments/${encodeURIComponent(fileName)}`)
-    if (!res.ok) throw new Error('Failed to download attachment')
-    return res.json()
+    console.log('print requested for', id)
+    return { success: true, id }
   },
 }
 
@@ -328,12 +678,67 @@ const TABS = [
 ]
 
 // ═══════════════════════════════════════════════════════════════
+// CANCEL CONFIRM DIALOG
+// ═══════════════════════════════════════════════════════════════
+function CancelConfirmDialog({ asnId, onConfirm, onDismiss, loading }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center px-4" onClick={onDismiss}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 anim-scale"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-[#fce8e6] flex items-center justify-center flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <h3 className="text-[16px] font-bold text-[#32363a]">Cancel ASN?</h3>
+        </div>
+        <p className="text-[14px] text-[#6a6d70] mb-5">
+          ASN <span className="font-semibold text-[#32363a]">{asnId}</span> will be permanently deleted. This action cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onDismiss}
+            disabled={loading}
+            className="flex-1 h-9 text-[13px] font-semibold text-[#32363a] border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all disabled:opacity-50"
+          >
+            Go Back
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 h-9 text-[13px] font-semibold text-white bg-[#cc1c14] rounded-lg hover:bg-[#a81610] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25" />
+                  <path d="M21 12a9 9 0 00-9-9" />
+                </svg>
+                Cancelling…
+              </>
+            ) : 'Yes, Cancel ASN'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
   const [asns, setAsns] = useState([])
   const [asn, setAsn] = useState(null)
-  const [selectedAsnId, setSelectedAsnId] = useState('2600000045/2026')
+  const [selectedAsnId, setSelectedAsnId] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPlants, setSelectedPlants] = useState([])
   const [filterOpen, setFilterOpen] = useState(false)
@@ -344,18 +749,33 @@ export default function AdvanceShippingNote() {
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setError(null)
     asnApi.listAsns({ search: searchQuery, plants: selectedPlants })
       .then(data => { if (!cancelled) setAsns(data) })
-      .catch(err => console.error(err))
+      .catch(err => { if (!cancelled) setError(err.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [searchQuery, selectedPlants])
+
+  useEffect(() => {
+    if (!selectedAsnId && asns.length > 0) {
+      setSelectedAsnId(asns[0].id)
+    }
+  }, [asns, selectedAsnId])
 
   useEffect(() => {
     let cancelled = false
     if (!selectedAsnId) { setAsn(null); return }
     asnApi.getAsn(selectedAsnId)
-      .then(data => { if (!cancelled) { setAsn(data); setActiveTab('items') } })
-      .catch(err => console.error(err))
+      .then(async (data) => {
+        if (cancelled || !data) return
+        try {
+          data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear)
+        } catch (e) { console.error('attachments failed', e) }
+        if (!cancelled) { setAsn(data); setActiveTab('items') }
+      })
+      .catch(err => { if (!cancelled) console.error(err) })
     return () => { cancelled = true }
   }, [selectedAsnId])
 
@@ -380,9 +800,9 @@ export default function AdvanceShippingNote() {
 
   const plants = useMemo(() => {
     const map = new Map()
-    ADVANCE_SHIPPING_NOTES.forEach(a => map.set(a.plant, a.plantName))
+    asns.forEach(a => { if (a.plant) map.set(a.plant, a.plantName) })
     return Array.from(map, ([code, name]) => ({ code, name }))
-  }, [])
+  }, [asns])
 
   const togglePlant = (plant) => {
     if (selectedPlants.includes(plant)) setSelectedPlants(selectedPlants.filter(p => p !== plant))
@@ -413,7 +833,7 @@ export default function AdvanceShippingNote() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold text-[#32363a]">Advance Shipping Notes</h3>
             <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">
-              {asns.length} of {ADVANCE_SHIPPING_NOTES.length}
+              {asns.length}
             </span>
           </div>
         )}
@@ -745,31 +1165,35 @@ export default function AdvanceShippingNote() {
   return (
     <PageLayout>
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        .anim-fade { animation: fadeIn 0.35s ease-out both; }
-        .anim-slide-l { animation: slideInLeft 0.3s ease-out both; }
-        .anim-slide-r { animation: slideInRight 0.35s ease-out both; }
-        .anim-scale { animation: scaleIn 0.25s ease-out both; }
-        .anim-drawer { animation: slideInDrawer 0.28s ease-out both; }
-        .row-stagger > * { animation: fadeIn 0.4s ease-out both; }
-        .row-stagger > *:nth-child(1) { animation-delay: 0.02s; }
-        .row-stagger > *:nth-child(2) { animation-delay: 0.06s; }
-        .row-stagger > *:nth-child(3) { animation-delay: 0.10s; }
-        .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
-        .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
-        .sidebar-transition { transition: width 0.25s ease; }
-      `}</style>
+          @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes slideInLeft { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+          @keyframes slideInRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+          @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+          @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+          .anim-fade { animation: fadeIn 0.35s ease-out both; }
+          .anim-slide-l { animation: slideInLeft 0.3s ease-out both; }
+          .anim-slide-r { animation: slideInRight 0.35s ease-out both; }
+          .anim-scale { animation: scaleIn 0.25s ease-out both; }
+          .anim-drawer { animation: slideInDrawer 0.28s ease-out both; }
+          .row-stagger > * { animation: fadeIn 0.4s ease-out both; }
+          .row-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+          .row-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+          .row-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+          .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+          .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+          .sidebar-transition { transition: width 0.25s ease; }
+        `}</style>
 
-      {/* Top context bar */}
-      <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
-        <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (Daikin Airconditioning India Private Limited)</span>
-        <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
-        <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
-      </div>
+      {/* Cancel confirm dialog */}
+      {cancelDialogOpen && asn && (
+        <CancelConfirmDialog
+          asnId={asn.id}
+          onConfirm={handleCancelConfirm}
+          onDismiss={handleCancelDismiss}
+          loading={cancelLoading}
+        />
+      )}
+
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-136px)]">
         <div className="flex" style={{ minHeight: 'calc(100vh - 260px)' }}>

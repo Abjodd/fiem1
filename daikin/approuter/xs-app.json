@@ -1,0 +1,28 @@
+{
+  "welcomeFile": "/index.html",
+  "authenticationMethod": "none",
+  "routes": [
+    {
+      "source": "^/sap/(.*)$",
+      "target": "/sap/$1",
+      "destination": "SuppPro",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/index.html$",
+      "localDir": "resources",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^/(assets|static)/(.*)$",
+      "localDir": "resources",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^(.*)$",
+      "localDir": "resources",
+      "target": "/index.html",
+      "authenticationType": "none"
+    }
+  ]
+}
