@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import CreateMovement from './createMovement.jsx'
+import { goodsMovementApi } from '../../services/GoodsMovement.js'
 import {
   FilePlus,
   Truck,
@@ -32,306 +33,6 @@ import {
 } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════
-// DUMMY DATA (currently in use)
-// ═══════════════════════════════════════════════════════════════
-const SHIPMENT_TRACKINGS = [
-  {
-    id: '1000001175/2026',
-    trackingNo: '1000001175',
-    transportMode: 'By Road',
-    date: 'May 06, 2026',
-    plant: 'Daik',
-    plantName: 'FIEM Industries Limited - NMR',
-    status: 'Goods Received',
-    statusColor: 'green',
-    transporter: 'BNE',
-    driverName: 'SDH',
-    contact: '6787897678',
-    transportationMode: 'By Road',
-    pollutionCertificateApplicable: 'Yes',
-    totalAsnAmount: 968.80,
-    etaDate: 'May 06, 2026',
-    safetyEquipments: 'Yes',
-    safetyGuardForMaterial: 'Yes',
-    vehicleRegNo: 'UP67',
-    ewayBillNo: '',
-    ewayBillDate: '',
-    timeline: [
-      { key: 'created', label: 'Created', completed: true, timestamp: '06.05.2026 09:00' },
-      { key: 'shipped', label: 'Shipped', completed: true, timestamp: '06.05.2026 10:30' },
-      { key: 'gate_reporting', label: 'Gate Reporting', completed: true, timestamp: '06.05.2026 12:15' },
-      { key: 'gate_entry', label: 'Gate Entry (IN)', completed: true, timestamp: '06.05.2026 13:00' },
-      { key: 'goods_received', label: 'Goods Received', completed: true, timestamp: '06.05.2026 14:00' },
-    ],
-    asns: [
-      {
-        asnId: '2600000045...',
-        totalLineItems: 1,
-        ibdNumber: '85015549',
-        plant: 'NMR',
-        storageLocation: 'RM02',
-        invoiceNumber: 'GH12',
-        invoiceAmount: 968.80,
-        invoiceDate: 'May 06, 2026',
-      },
-    ],
-  },
-  {
-    id: '1000001176/2026',
-    trackingNo: '1000001176',
-    transportMode: 'By Road',
-    date: 'May 06, 2026',
-    plant: 'SR01',
-    plantName: 'Sri City FG',
-    status: 'Shipped',
-    statusColor: 'blue',
-    transporter: 'DHL',
-    driverName: 'RKS',
-    contact: '9876543210',
-    transportationMode: 'By Road',
-    pollutionCertificateApplicable: 'Yes',
-    totalAsnAmount: 10.00,
-    etaDate: 'May 08, 2026',
-    safetyEquipments: 'No',
-    safetyGuardForMaterial: 'Yes',
-    vehicleRegNo: 'TN22',
-    ewayBillNo: '',
-    ewayBillDate: '',
-    timeline: [
-      { key: 'created', label: 'Created', completed: true, timestamp: '06.05.2026 09:45' },
-      { key: 'shipped', label: 'Shipped', completed: true, timestamp: '06.05.2026 11:00' },
-      { key: 'gate_reporting', label: 'Gate Reporting', completed: false, timestamp: null },
-      { key: 'gate_entry', label: 'Gate Entry (IN)', completed: false, timestamp: null },
-      { key: 'goods_received', label: 'Goods Received', completed: false, timestamp: null },
-    ],
-    asns: [
-      {
-        asnId: '2600000044...',
-        totalLineItems: 1,
-        ibdNumber: '85015550',
-        plant: 'SR01',
-        storageLocation: 'WH01',
-        invoiceNumber: 'INV-0044',
-        invoiceAmount: 10.00,
-        invoiceDate: 'May 06, 2026',
-      },
-    ],
-  },
-  {
-    id: '1000001174/2026',
-    trackingNo: '1000001174',
-    transportMode: 'By Road',
-    date: 'May 06, 2026',
-    plant: 'NMR',
-    plantName: 'FIEM Industries Limited - NMR',
-    status: 'In Transit',
-    statusColor: 'blue',
-    transporter: 'Bluedart',
-    driverName: 'VKR',
-    contact: '9812345678',
-    transportationMode: 'By Road',
-    pollutionCertificateApplicable: 'No',
-    totalAsnAmount: 193.76,
-    etaDate: 'May 07, 2026',
-    safetyEquipments: 'Yes',
-    safetyGuardForMaterial: 'No',
-    vehicleRegNo: 'RJ14',
-    ewayBillNo: '',
-    ewayBillDate: '',
-    timeline: [
-      { key: 'created', label: 'Created', completed: true, timestamp: '06.05.2026 08:30' },
-      { key: 'shipped', label: 'Shipped', completed: true, timestamp: '06.05.2026 10:00' },
-      { key: 'gate_reporting', label: 'Gate Reporting', completed: false, timestamp: null },
-      { key: 'gate_entry', label: 'Gate Entry (IN)', completed: false, timestamp: null },
-      { key: 'goods_received', label: 'Goods Received', completed: false, timestamp: null },
-    ],
-    asns: [
-      {
-        asnId: '2600000042...',
-        totalLineItems: 1,
-        ibdNumber: '85015548',
-        plant: 'NMR',
-        storageLocation: 'RM01',
-        invoiceNumber: 'INV-0042',
-        invoiceAmount: 193.76,
-        invoiceDate: 'May 06, 2026',
-      },
-    ],
-  },
-  {
-    id: '1000001173/2026',
-    trackingNo: '1000001173',
-    transportMode: 'By Road',
-    date: 'Apr 30, 2026',
-    plant: 'NM01',
-    plantName: 'Neemrana Plant',
-    status: 'Created',
-    statusColor: 'gray',
-    transporter: 'GATI',
-    driverName: 'PKS',
-    contact: '9011234567',
-    transportationMode: 'By Road',
-    pollutionCertificateApplicable: 'Yes',
-    totalAsnAmount: 72.00,
-    etaDate: 'May 10, 2026',
-    safetyEquipments: 'Yes',
-    safetyGuardForMaterial: 'Yes',
-    vehicleRegNo: 'HR26',
-    ewayBillNo: '346256123543',
-    ewayBillDate: 'Apr 30, 2026',
-    timeline: [
-      { key: 'created', label: 'Created', completed: true, timestamp: '30.04.2026 16:00' },
-      { key: 'shipped', label: 'Shipped', completed: false, timestamp: null },
-      { key: 'gate_reporting', label: 'Gate Reporting', completed: false, timestamp: null },
-      { key: 'gate_entry', label: 'Gate Entry (IN)', completed: false, timestamp: null },
-      { key: 'goods_received', label: 'Goods Received', completed: false, timestamp: null },
-      { key: 'completed', label: 'Completed', completed: false, timestamp: null }
-    ],
-    asns: [
-      {
-        asnId: '2600000041...',
-        totalLineItems: 1,
-        ibdNumber: '85015547',
-        plant: 'NM01',
-        storageLocation: 'SL01',
-        invoiceNumber: 'INV-0041',
-        invoiceAmount: 72.00,
-        invoiceDate: 'Apr 30, 2026',
-      },
-    ],
-  },
-]
-
-// ═══════════════════════════════════════════════════════════════
-// ASN LOOKUP DATA — used by ASN value-help dialog
-// ═══════════════════════════════════════════════════════════════
-const ASN_LOOKUP = [
-  { asnId: '2600000044', ibdNumber: '85015550', plant: 'SR01', invoiceNumber: 'INV-0044', invoiceAmount: 10.00 },
-  { asnId: '2600000045', ibdNumber: '85015549', plant: 'NMR',  invoiceNumber: 'GH12',     invoiceAmount: 968.80 },
-  { asnId: '2600000046', ibdNumber: '85015551', plant: 'NMR',  invoiceNumber: 'INV-0046', invoiceAmount: 540.20 },
-  { asnId: '2600000047', ibdNumber: '85015552', plant: 'NM01', invoiceNumber: 'INV-0047', invoiceAmount: 1250.00 },
-  { asnId: '2600000048', ibdNumber: '85015553', plant: 'SR01', invoiceNumber: 'INV-0048', invoiceAmount: 320.50 },
-]
-
-// ═══════════════════════════════════════════════════════════════
-// API STRUCTURE — for future backend integration
-// ═══════════════════════════════════════════════════════════════
-const API_BASE_URL = '/api/v1'
-const USE_MOCK = true
-
-const goodsMovementApi = {
-  async listTrackings({ search = '' } = {}) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      return SHIPMENT_TRACKINGS.filter(t => {
-        const q = search.trim().toLowerCase()
-        return !q ||
-          t.id.toLowerCase().includes(q) ||
-          t.trackingNo.toLowerCase().includes(q) ||
-          t.plant.toLowerCase().includes(q) ||
-          t.plantName.toLowerCase().includes(q)
-      })
-    }
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking?${params}`)
-    if (!res.ok) throw new Error('Failed to fetch trackings')
-    return res.json()
-  },
-
-  async getTracking(id) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      return SHIPMENT_TRACKINGS.find(t => t.id === id) || null
-    }
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}`)
-    if (!res.ok) throw new Error('Failed to fetch tracking')
-    return res.json()
-  },
-
-  async createTracking(payload) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 200))
-      return { success: true, payload }
-    }
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) throw new Error('Failed to create tracking')
-    return res.json()
-  },
-
-  async printTracking(id) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 200))
-      return { success: true, id }
-    }
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}/print`, { method: 'POST' })
-    if (!res.ok) throw new Error('Failed to print tracking')
-    return res.json()
-  },
-
-  async updateShipment(id, payload) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 250))
-      return { success: true, id, payload }
-    }
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}/update`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) throw new Error('Failed to update shipment')
-    return res.json()
-  },
-
-  async startShipment(id, payload) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 300))
-      return { success: true, id, payload }
-    }
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) throw new Error('Failed to start shipment')
-    return res.json()
-  },
-
-  async cancelTracking(id) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 200))
-      return { success: true, id }
-    }
-    const res = await fetch(`${API_BASE_URL}/shipment-tracking/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
-    if (!res.ok) throw new Error('Failed to cancel tracking')
-    return res.json()
-  },
-
-  async searchAsns({ search = '' } = {}) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 80))
-      const q = search.trim().toLowerCase()
-      return ASN_LOOKUP.filter(a =>
-        !q ||
-        a.asnId.toLowerCase().includes(q) ||
-        a.ibdNumber.toLowerCase().includes(q) ||
-        a.plant.toLowerCase().includes(q) ||
-        a.invoiceNumber.toLowerCase().includes(q)
-      )
-    }
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    const res = await fetch(`${API_BASE_URL}/asn-lookup?${params}`)
-    if (!res.ok) throw new Error('Failed to fetch ASN lookup')
-    return res.json()
-  },
-}
-
-// ═══════════════════════════════════════════════════════════════
 // STATUS CHECK HELPERS
 // ═══════════════════════════════════════════════════════════════
 const isUpdatableStatus = (status) => {
@@ -340,7 +41,6 @@ const isUpdatableStatus = (status) => {
   return s === 'shipped' || s === 'in transit'
 }
 
-// Show Start Shipment / Edit / Cancel when status is "Created" (yet to ship)
 const isCreatedStatus = (status) => {
   if (!status) return false
   const s = status.toLowerCase()
@@ -382,12 +82,12 @@ const UPDATE_TAB = {
 // TIMELINE STEP CONFIG
 // ═══════════════════════════════════════════════════════════════
 const TIMELINE_STEPS = [
-  { key: 'created', label: 'Created', Icon: FilePlus },
-  { key: 'shipped', label: 'Shipped', Icon: Truck },
-  { key: 'gate_reporting', label: 'Gate Reporting', Icon: MapPin },
-  { key: 'gate_entry', label: 'Gate Entry (IN)', Icon: LogIn },
-  { key: 'goods_received', label: 'Goods Received', Icon: PackageCheck },
-  { key: 'completed', label: 'Completed', Icon: PackageCheck }
+  { key: 'created',       label: 'Created',          Icon: FilePlus    },
+  { key: 'shipped',       label: 'Shipped',           Icon: Truck       },
+  { key: 'gate_reporting',label: 'Gate Reporting',    Icon: MapPin      },
+  { key: 'gate_entry',    label: 'Gate Entry (IN)',   Icon: LogIn       },
+  { key: 'goods_received',label: 'Goods Received',    Icon: PackageCheck},
+  { key: 'completed',     label: 'Completed',         Icon: PackageCheck},
 ]
 
 // ═══════════════════════════════════════════════════════════════
@@ -395,22 +95,22 @@ const TIMELINE_STEPS = [
 // ═══════════════════════════════════════════════════════════════
 const statusStyle = (statusColor) => {
   const map = {
-    green: 'text-[#107e3e] bg-[#e8f5ec]',
-    blue: 'text-[#0a6ed1] bg-[#ebf5ff]',
+    green:  'text-[#107e3e] bg-[#e8f5ec]',
+    blue:   'text-[#0a6ed1] bg-[#ebf5ff]',
     orange: 'text-[#e76500] bg-[#fff3e8]',
-    red: 'text-[#cc1c14] bg-[#fce8e6]',
-    gray: 'text-[#6a6d70] bg-[#f5f6f7]',
+    red:    'text-[#cc1c14] bg-[#fce8e6]',
+    gray:   'text-[#6a6d70] bg-[#f5f6f7]',
   }
   return map[statusColor] || map.gray
 }
 
 const statusDotColor = (statusColor) => {
   const map = {
-    green: '#107e3e',
-    blue: '#0a6ed1',
+    green:  '#107e3e',
+    blue:   '#0a6ed1',
     orange: '#e76500',
-    red: '#cc1c14',
-    gray: '#6a6d70',
+    red:    '#cc1c14',
+    gray:   '#6a6d70',
   }
   return map[statusColor] || map.gray
 }
@@ -421,7 +121,7 @@ const statusDotColor = (statusColor) => {
 export default function GoodsMovement() {
   const [trackings, setTrackings] = useState([])
   const [tracking, setTracking] = useState(null)
-  const [selectedId, setSelectedId] = useState('1000001175/2026')
+  const [selectedId, setSelectedId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('timeline')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -444,22 +144,32 @@ export default function GoodsMovement() {
   // ── Start Shipment flow state ──
   const [startWarningOpen, setStartWarningOpen] = useState(false)
   const [shipmentDetailsOpen, setShipmentDetailsOpen] = useState(false)
-  const [shipmentDetailsForm, setShipmentDetailsForm] = useState({
-    date: '',
-    time: '',
-    etaDate: '',
-  })
+  const [shipmentDetailsForm, setShipmentDetailsForm] = useState({ date: '', time: '', etaDate: '' })
   const [shipmentDetailsSubmitting, setShipmentDetailsSubmitting] = useState(false)
   const [shipmentDetailsError, setShipmentDetailsError] = useState('')
 
+  // ── Total count for sidebar badge ──
+  const [totalCount, setTotalCount] = useState(0)
+
+  // ── Load tracking list ──────────────────────────────────────
   useEffect(() => {
     let cancelled = false
     goodsMovementApi.listTrackings({ search: searchQuery })
-      .then(data => { if (!cancelled) setTrackings(data) })
+      .then(data => {
+        if (!cancelled) {
+          setTrackings(data)
+          setTotalCount(prev => searchQuery ? prev : data.length)
+          // Auto-select first if nothing selected
+          if (!cancelled && data.length && !selectedId) {
+            setSelectedId(data[0].id)
+          }
+        }
+      })
       .catch(err => console.error(err))
     return () => { cancelled = true }
   }, [searchQuery])
 
+  // ── Load detail when selection changes ──────────────────────
   useEffect(() => {
     let cancelled = false
     if (!selectedId) { setTracking(null); return }
@@ -469,6 +179,7 @@ export default function GoodsMovement() {
     return () => { cancelled = true }
   }, [selectedId])
 
+  // ── Close mobile sidebar on outside click ──────────────────
   useEffect(() => {
     if (!mobileSidebarOpen) return
     const handler = (e) => {
@@ -480,17 +191,18 @@ export default function GoodsMovement() {
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileSidebarOpen])
 
-  // Load ASN lookup whenever its dialog is open or search changes
+  // ── Load ASN lookup when dialog opens or search changes ─────
   useEffect(() => {
-    if (!asnLookupOpen) return
+    if (!asnLookupOpen || !tracking) return
     let cancelled = false
-    goodsMovementApi.searchAsns({ search: asnLookupSearch })
+    const trackNo = tracking.trackingNo
+    goodsMovementApi.searchAsns({ trackNo, search: asnLookupSearch })
       .then(data => { if (!cancelled) setAsnLookupResults(data) })
       .catch(err => console.error(err))
     return () => { cancelled = true }
-  }, [asnLookupOpen, asnLookupSearch])
+  }, [asnLookupOpen, asnLookupSearch, tracking])
 
-  // Pre-fill shipment details form with today's date/time
+  // ── Pre-fill shipment details form ─────────────────────────
   useEffect(() => {
     if (!shipmentDetailsOpen) return
     const now = new Date()
@@ -517,7 +229,7 @@ export default function GoodsMovement() {
     setShipmentDetailsError('')
   }, [shipmentDetailsOpen])
 
-  // Close modals on Escape
+  // ── Escape key closes modals ────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'Escape') {
@@ -544,7 +256,6 @@ export default function GoodsMovement() {
 
   const handleEditMovement = () => {
     if (!tracking) return
-    // Pass tracking data to CreateMovement for pre-filling
     setEditTrackingData(tracking)
     setShowCreateMovement(true)
   }
@@ -553,7 +264,6 @@ export default function GoodsMovement() {
     if (!tracking) return
     try {
       await goodsMovementApi.cancelTracking(tracking.id)
-      // Optionally refresh list or show feedback
       console.log('Cancelled:', tracking.id)
     } catch (err) {
       console.error(err)
@@ -565,10 +275,8 @@ export default function GoodsMovement() {
     try { await goodsMovementApi.printTracking(tracking.id) } catch (err) { console.error(err) }
   }
 
-  // ── Start Shipment flow ──
-  const handleStartShipmentClick = () => {
-    setStartWarningOpen(true)
-  }
+  // ── Start Shipment flow ──────────────────────────────────────
+  const handleStartShipmentClick = () => setStartWarningOpen(true)
 
   const handleWarningOk = () => {
     setStartWarningOpen(false)
@@ -585,7 +293,7 @@ export default function GoodsMovement() {
     try {
       await goodsMovementApi.startShipment(tracking.id, shipmentDetailsForm)
       setShipmentDetailsOpen(false)
-      // Optimistic: update status to Shipped
+      // Optimistic update
       setTracking(prev => prev ? {
         ...prev,
         status: 'Shipped',
@@ -602,11 +310,11 @@ export default function GoodsMovement() {
     }
   }
 
-  // ── Open / close Update modal ──
+  // ── Open / close Update modal ────────────────────────────────
   const openUpdateModal = () => {
     if (!tracking) return
     setUpdateForm({
-      asn: tracking.asns?.[0]?.asnId?.replace('...', '') || '',
+      asn:           tracking.asns?.[0]?.asnId || '',
       vehicleNumber: tracking.vehicleRegNo || '',
       invoiceNumber: tracking.asns?.[0]?.invoiceNumber || '',
     })
@@ -644,10 +352,11 @@ export default function GoodsMovement() {
     }
   }
 
+  // asnLookupResults now contain { asnId, invoiceNumber, transporter }
   const handlePickAsn = (row) => {
     setUpdateForm(f => ({
       ...f,
-      asn: row.asnId,
+      asn:           row.asnId,
       invoiceNumber: f.invoiceNumber || row.invoiceNumber,
     }))
     setAsnLookupOpen(false)
@@ -660,7 +369,7 @@ export default function GoodsMovement() {
     return isUpdatableStatus(tracking.status) ? [...BASE_TABS, UPDATE_TAB] : BASE_TABS
   }, [tracking])
 
-  // ── Sidebar inner content ──
+  // ── Sidebar inner content ────────────────────────────────────
   const SidebarContent = () => (
     <>
       {/* Header */}
@@ -669,7 +378,7 @@ export default function GoodsMovement() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold text-[#32363a]">Tracking Number List</h3>
             <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">
-              {trackings.length} of {SHIPMENT_TRACKINGS.length}
+              {trackings.length} of {totalCount}
             </span>
           </div>
         )}
@@ -694,7 +403,10 @@ export default function GoodsMovement() {
                   <X size={15} />
                 </button>
               )}
-              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
+              <button
+                onClick={() => setSearchQuery(q => q)}
+                className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110"
+              >
                 <RefreshCw size={14} />
               </button>
             </div>
@@ -768,7 +480,7 @@ export default function GoodsMovement() {
     </>
   )
 
-  // ── Timeline tab ──
+  // ── Timeline tab ─────────────────────────────────────────────
   const renderTimeline = () => {
     if (!tracking) return null
     const steps = TIMELINE_STEPS.map(s => {
@@ -833,7 +545,7 @@ export default function GoodsMovement() {
     )
   }
 
-  // ── ASN tab ──
+  // ── ASN tab ──────────────────────────────────────────────────
   const renderAsn = () => {
     if (!tracking) return null
     return (
@@ -876,7 +588,7 @@ export default function GoodsMovement() {
     )
   }
 
-  // ── Update Shipment tab ──
+  // ── Update Shipment tab ──────────────────────────────────────
   const renderUpdate = () => {
     if (!tracking) return null
     return (
@@ -925,8 +637,8 @@ export default function GoodsMovement() {
 
   const tabContent = {
     timeline: renderTimeline,
-    asn: renderAsn,
-    update: renderUpdate,
+    asn:      renderAsn,
+    update:   renderUpdate,
   }
 
   if (showCreateMovement) {
@@ -962,7 +674,7 @@ export default function GoodsMovement() {
       {/* Top context bar */}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
         <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (FIEM Industries Limited)</span>
-        <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
+        <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> {tracking?.vendorName || 'Kunstocom(India) Ltd'}</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>
 
@@ -1042,16 +754,16 @@ export default function GoodsMovement() {
                   {/* Info fields row */}
                   <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-3">
                     {[
-                      { Icon: Truck, label: 'Transporter', value: tracking.transporter },
-                      { Icon: CalendarDays, label: 'ETA Date', value: tracking.etaDate },
-                      { Icon: User, label: 'Driver Name', value: tracking.driverName },
-                      { Icon: ShieldCheck, label: 'Safety Equipments', value: tracking.safetyEquipments },
-                      { Icon: Phone, label: 'Contact', value: tracking.contact },
-                      { Icon: HardHat, label: 'Safety Guard for Material', value: tracking.safetyGuardForMaterial },
-                      { Icon: Car, label: 'Transportation Mode', value: tracking.transportationMode },
-                      { Icon: Hash, label: 'Vehicle Reg. No. / Docket', value: tracking.vehicleRegNo },
-                      { Icon: ClipboardCheck, label: 'Pollution Certificate', value: tracking.pollutionCertificateApplicable },
-                      { Icon: Banknote, label: 'Total ASN Amount', value: tracking.totalAsnAmount.toFixed(2) },
+                      { Icon: Truck,          label: 'Transporter',              value: tracking.transporter          },
+                      { Icon: CalendarDays,   label: 'ETA Date',                 value: tracking.etaDate              },
+                      { Icon: User,           label: 'Driver Name',              value: tracking.driverName           },
+                      { Icon: ShieldCheck,    label: 'Safety Equipments',        value: tracking.safetyEquipments     },
+                      { Icon: Phone,          label: 'Contact',                  value: tracking.contact              },
+                      { Icon: HardHat,        label: 'Safety Guard for Material',value: tracking.safetyGuardForMaterial},
+                      { Icon: Car,            label: 'Transportation Mode',      value: tracking.transportationMode   },
+                      { Icon: Hash,           label: 'Vehicle Reg. No. / Docket',value: tracking.vehicleRegNo         },
+                      { Icon: ClipboardCheck, label: 'Pollution Certificate',    value: tracking.pollutionCertificateApplicable },
+                      { Icon: Banknote,       label: 'Total ASN Amount',         value: tracking.totalAsnAmount.toFixed(2)     },
                     ].map(({ Icon, label, value }) => (
                       <div key={label} className="flex items-start gap-2">
                         <Icon size={14} className="text-[#6a6d70] mt-[3px] flex-shrink-0" strokeWidth={1.8} />
@@ -1109,7 +821,6 @@ export default function GoodsMovement() {
 
       {/* ─────────── Bottom action bar ─────────── */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex items-center gap-3 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-        {/* Always show Create */}
         <button
           onClick={handleCreateMovement}
           className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
@@ -1124,7 +835,6 @@ export default function GoodsMovement() {
           Print
         </button>
 
-        {/* Start Shipment / Edit / Cancel — only when status is Created */}
         {tracking && isCreatedStatus(tracking.status) && (
           <>
             <button
@@ -1200,7 +910,7 @@ export default function GoodsMovement() {
                   type="text"
                   value={updateForm.vehicleNumber}
                   onChange={(e) => setUpdateForm(f => ({ ...f, vehicleNumber: e.target.value }))}
-                  placeholder="e.g. UP67 AB 1234"
+                  placeholder="e.g. MH70AA4444"
                   className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                 />
               </div>
@@ -1213,7 +923,7 @@ export default function GoodsMovement() {
                   type="text"
                   value={updateForm.invoiceNumber}
                   onChange={(e) => setUpdateForm(f => ({ ...f, invoiceNumber: e.target.value }))}
-                  placeholder="e.g. INV-0044"
+                  placeholder="e.g. INB867"
                   className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                 />
               </div>
@@ -1266,7 +976,7 @@ export default function GoodsMovement() {
                   type="text"
                   value={asnLookupSearch}
                   onChange={(e) => setAsnLookupSearch(e.target.value)}
-                  placeholder="Search ASN, IBD, plant or invoice"
+                  placeholder="Search ASN or invoice"
                   className="w-full h-10 pl-9 pr-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                 />
               </div>
@@ -1277,10 +987,8 @@ export default function GoodsMovement() {
                 <thead className="sticky top-0 bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5]">
                   <tr className="text-[#6a6d70]">
                     <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">ASN</th>
-                    <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">IBD Number</th>
-                    <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Plant</th>
                     <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Invoice No</th>
-                    <th className="text-right font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Amount</th>
+                    <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Transporter</th>
                   </tr>
                 </thead>
                 <tbody className="row-stagger">
@@ -1290,15 +998,13 @@ export default function GoodsMovement() {
                       className="border-b border-[#f0f0f0] hover:bg-[#ebf5ff] cursor-pointer transition-colors"
                     >
                       <td className="py-3 px-4 font-semibold text-[#0a6ed1]">{row.asnId}</td>
-                      <td className="py-3 px-4 text-[#32363a]">{row.ibdNumber}</td>
-                      <td className="py-3 px-4 text-[#32363a] font-medium">{row.plant}</td>
                       <td className="py-3 px-4 text-[#32363a]">{row.invoiceNumber}</td>
-                      <td className="py-3 px-4 text-right font-semibold text-[#32363a]">{row.invoiceAmount.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-[#32363a]">{row.transporter}</td>
                     </tr>
                   ))}
                   {asnLookupResults.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center text-[#6a6d70]">
+                      <td colSpan={3} className="py-12 text-center text-[#6a6d70]">
                         <Search size={32} className="mx-auto mb-2 opacity-40" />
                         <div className="text-[13px]">No ASNs found</div>
                       </td>
@@ -1325,22 +1031,17 @@ export default function GoodsMovement() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={() => setStartWarningOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[440px] anim-modal">
-            {/* Header */}
             <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e5e5e5]">
               <div className="w-9 h-9 rounded-full bg-[#fff3e8] flex items-center justify-center flex-shrink-0">
                 <AlertTriangle size={18} className="text-[#e76500]" />
               </div>
               <h4 className="text-[15px] font-bold text-[#32363a]">Warning</h4>
             </div>
-
-            {/* Body */}
             <div className="px-6 py-5">
               <p className="text-[14px] text-[#32363a] leading-relaxed">
                 Please note that once you start the shipment, you'll not be able to modify the document.
               </p>
             </div>
-
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
               <button
                 onClick={() => setStartWarningOpen(false)}
@@ -1364,14 +1065,10 @@ export default function GoodsMovement() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShipmentDetailsOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[380px] anim-modal">
-            {/* Header */}
             <div className="px-6 py-4 border-b border-[#e5e5e5] text-center">
               <h4 className="text-[16px] font-bold text-[#32363a]">Shipment Details</h4>
             </div>
-
-            {/* Body */}
             <div className="px-6 py-5 space-y-4">
-              {/* Date */}
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
                   Date: <span className="text-[#cc1c14]">*</span>
@@ -1383,8 +1080,6 @@ export default function GoodsMovement() {
                   className="w-full h-10 px-3 text-[14px] border border-[#0a6ed1] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                 />
               </div>
-
-              {/* Time */}
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
                   Time: <span className="text-[#cc1c14]">*</span>
@@ -1404,8 +1099,6 @@ export default function GoodsMovement() {
                   </div>
                 </div>
               </div>
-
-              {/* ETA Date */}
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">
                   ETA (Delivery Date): <span className="text-[#cc1c14]">*</span>
@@ -1422,15 +1115,12 @@ export default function GoodsMovement() {
                   </div>
                 </div>
               </div>
-
               {shipmentDetailsError && (
                 <div className="text-[13px] text-[#cc1c14] bg-[#fce8e6] border border-[#f5b3ae] rounded-lg px-3 py-2">
                   {shipmentDetailsError}
                 </div>
               )}
             </div>
-
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
               <button
                 onClick={() => setShipmentDetailsOpen(false)}
