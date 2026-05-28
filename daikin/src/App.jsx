@@ -5,23 +5,40 @@ import './app.css'
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
-import OpenPOReport from './pages/purchasing/OpenPOReport.jsx'
+import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'  //20th May Requirement
 import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Requirement given on 14th May
+
+//Reports
+import ForecastReport from './pages/reports/ForecastReport.jsx'
+import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
+//goodsreceipt
+import GateInMIGO from './pages/goodsreceipt/GateInMIGO.jsx'
+//logistics
+import DeliverySchedule from './pages/logistics/DeliverySchedule.jsx'
+//asnreport
+import Asnreport from './pages/asn/Asnreport.jsx'
+  
 
 // Shipment
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
 import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
 import GateInGateOut from './pages/shipment/gateingateout.jsx'
+import CreateASN from './pages/purchasing/createASN.jsx'
+import PageLayout from './layouts/PageLayout.jsx'
 
 // Landing
 import LandingPage from './components/landingpage.jsx'
 
+
 export default function App() {
   return (
+    
     <Routes>
 
       {/* First Page */}
       <Route path="/" element={<Navigate to="/landing" replace />} />
+      {/* Create ASN - New Route */}
+      <Route path="/purchasing/create-asn" element={<CreateASN />} />
 
       {/* Landing Page */}
       <Route path="/landing" element={<LandingPage />} />
@@ -41,13 +58,34 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/open-po"
-        element={<OpenPOReport />}
+        path="/purchasing/po-schedule-report"
+        element={<POScheduleReport />}
       />
 
       <Route
         path="/purchasing/schedule-generate"
         element={<ScheduleGenerate />}
+      />
+
+      {/* Reports */}
+      <Route
+        path="/reports/forecast-report" element={<ForecastReport />}
+      />
+
+      <Route
+        path="/reports/vendor-ledger-report" element={<VendorLedgerReport />}
+      />
+      {/*goods receipt*/}
+      <Route
+        path="/goodsreceipt/gatein-to-migo" element={<GateInMIGO />}
+      />
+      {/*logistics*/}
+      <Route
+        path="/logistics/delivery-schedule" element={<DeliverySchedule />}
+      />
+      {/*asn*/}
+      <Route
+        path="/asn/asn-report" element={<Asnreport />}
       />
 
       {/* Shipment */}

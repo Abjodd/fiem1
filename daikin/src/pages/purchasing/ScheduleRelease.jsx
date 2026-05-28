@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-
+import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import CreateASN from './createASN.jsx'
 import { scheduleReleaseApi } from '../../services/Schedulerelease.js'
@@ -27,7 +27,7 @@ const parseDeliveryDate = (s) => new Date(s)
 
 export default function ScheduleRelease() {
   const [showCreateAsn, setShowCreateAsn] = useState(false)
-
+  const navigate = useNavigate()
   const [agreements, setAgreements] = useState([])
   const [agreement, setAgreement] = useState(null)
   const [selectedAgreementId, setSelectedAgreementId] = useState(null)
@@ -166,6 +166,10 @@ useEffect(() => {
     if (selectedPlants.includes(plant)) setSelectedPlants(selectedPlants.filter(p => p !== plant))
     else setSelectedPlants([...selectedPlants, plant])
   }
+
+  // const handleCreateAsn = () => {
+  //   setShowCreateAsn(true)
+  // }
 
   const handleCreateAsn = () => {
     navigate('/purchasing/create-asn', { state: { agreement } })

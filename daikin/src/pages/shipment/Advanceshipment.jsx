@@ -91,7 +91,7 @@ function CancelConfirmDialog({ asnId, onConfirm, onDismiss, loading }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
@@ -131,12 +131,6 @@ export default function AdvanceShippingNote() {
   }, [asns, selectedAsnId])
 
   // ── Fetch ASN detail + attachments ──
-  useEffect(() => {
-    if (!selectedAsnId && asns.length > 0) {
-      setSelectedAsnId(asns[0].id)
-    }
-  }, [asns, selectedAsnId])
-
   useEffect(() => {
     let cancelled = false
     if (!selectedAsnId) { setAsn(null); return }
@@ -565,24 +559,24 @@ export default function AdvanceShippingNote() {
   return (
     <PageLayout>
       <style>{`
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes slideInLeft { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-          @keyframes slideInRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
-          @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-          @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-          .anim-fade { animation: fadeIn 0.35s ease-out both; }
-          .anim-slide-l { animation: slideInLeft 0.3s ease-out both; }
-          .anim-slide-r { animation: slideInRight 0.35s ease-out both; }
-          .anim-scale { animation: scaleIn 0.25s ease-out both; }
-          .anim-drawer { animation: slideInDrawer 0.28s ease-out both; }
-          .row-stagger > * { animation: fadeIn 0.4s ease-out both; }
-          .row-stagger > *:nth-child(1) { animation-delay: 0.02s; }
-          .row-stagger > *:nth-child(2) { animation-delay: 0.06s; }
-          .row-stagger > *:nth-child(3) { animation-delay: 0.10s; }
-          .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
-          .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
-          .sidebar-transition { transition: width 0.25s ease; }
-        `}</style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .anim-fade { animation: fadeIn 0.35s ease-out both; }
+        .anim-slide-l { animation: slideInLeft 0.3s ease-out both; }
+        .anim-slide-r { animation: slideInRight 0.35s ease-out both; }
+        .anim-scale { animation: scaleIn 0.25s ease-out both; }
+        .anim-drawer { animation: slideInDrawer 0.28s ease-out both; }
+        .row-stagger > * { animation: fadeIn 0.4s ease-out both; }
+        .row-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+        .row-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+        .row-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+        .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+        .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+        .sidebar-transition { transition: width 0.25s ease; }
+      `}</style>
 
       {cancelDialogOpen && asn && (
         <CancelConfirmDialog asnId={asn.id} onConfirm={handleCancelConfirm} onDismiss={handleCancelDismiss} loading={cancelLoading} />

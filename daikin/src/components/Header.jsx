@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { findModuleByTilePath, NAV_MODULES } from '../router/index.jsx'
 
 const COMPANY = 'DSAL'
-const COMPANY_FULL = 'Daikin Airconditioning India Pvt. Ltd.'
+const COMPANY_FULL = 'FIEM Industries Limited'
 const SUPPLIER = 'Kunstocom (India) Ltd'
 const LOCATION = 'Neemrana, Alwar'
 

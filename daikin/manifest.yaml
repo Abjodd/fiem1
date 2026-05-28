@@ -1,0 +1,7 @@
+applications:
+  - name: FIEM
+    memory: 128M
+    buildpacks:
+      - staticfile_buildpack
+    path: dist
+    description: A sample application manifest
