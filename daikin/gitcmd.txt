@@ -1,0 +1,7 @@
+To go to our branch : git checkout <our_branch_name>
+
+to get main changes to our branch: git pull origin main
+
+to push all changes from your branch : git push origin <your_branch>
+
+to merge from our branch to main: git merge main or git merge master (depening on our name)
