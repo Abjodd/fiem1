@@ -1,0 +1,52 @@
+_schema-version: "3.1"
+ID: FIEM-app
+version: 1.0.0
+
+modules:
+
+  - name: FIEM-ui
+    type: html5
+    path: .
+    build-parameters:
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      build-result: approuter/resources
+      supported-platforms: []   
+
+  - name: FIEM-app
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      memory: 256M
+      disk-quota: 512M
+    requires:
+      - name: FIEM-destination-service
+      - name: FIEM-connectivity-service
+      - name: FIEM-xsuaa-service
+    provides:
+      - name: approuter-api
+        properties:
+          url: ${default-url}
+
+resources:
+
+  - name: FIEM-destination-service
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+
+  - name: FIEM-connectivity-service
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+
+  - name: FIEM-xsuaa-service
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
