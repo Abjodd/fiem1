@@ -123,7 +123,7 @@ const VH_OPTIONS = {
 }
 
 const STATUS_OPTIONS = ['', 'GR Completed', 'GR Pending', 'INV. Completed', 'INV. Pending', 'ASN-In Transit']
-
+const companyCode = 'FIEM (FIEM Industries Limited)'
 // ═══════════════════════════════════════════════════════════════
 // API STRUCTURE
 // ═══════════════════════════════════════════════════════════════
@@ -350,6 +350,11 @@ function AsnDetailPage({ row, onBack }) {
 
         <div className="px-4 sm:px-6 lg:px-10 pt-6 pb-8">
           {/* Company Code */}
+          <div className="px-4 sm:px-6 lg:px-10 pt-3 pb-2 bg-white border-b border-[#e5e5e5] flex-shrink-0">
+            <div className="text-[13px] text-[#32363a] text-center font-medium">
+              Company Code: <strong>{companyCode}</strong>
+            </div>
+          </div>
           
 
           {/* ASN card */}

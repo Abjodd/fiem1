@@ -550,7 +550,7 @@ export default function ForecastReport() {
           {/* ── Page meta header ── */}
           <div className="px-4 sm:px-6 lg:px-10 pt-4 pb-2 bg-white border-b border-[#e5e5e5] flex-shrink-0">
             <div className="flex flex-wrap gap-x-8 gap-y-1 text-[13px] text-[#6a6d70]">
-              <span>Company Code: <strong className="text-[#32363a]">FIEM (FIEM Industries Limited)</strong></span>
+              
               <span className="hidden sm:inline">Supplier Name: <strong className="text-[#32363a]">{vendor}</strong></span>
               <span className="hidden lg:inline">Supplier Location: <strong className="text-[#32363a]">Alwar</strong></span>
             </div>

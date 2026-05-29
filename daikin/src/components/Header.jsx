@@ -590,14 +590,14 @@ export default function Header() {
         {/* Logo */}
         <Link to="/" className="hdr-logo">
           <img
-            src="/daikin.png"
-            alt="Daikin Logo"
+            src={import.meta.env.BASE_URL + 'daikin.png'}
+            alt="FIEM Logo"
             className="hdr-logo-img"
             onError={(e) => {
               e.target.style.display = 'none'
               const span = document.createElement('span')
               span.className = 'hdr-logo-fallback'
-              span.textContent = 'DAIKIN'
+              span.textContent = 'FIEM'
               e.target.parentNode.appendChild(span)
             }}
           />

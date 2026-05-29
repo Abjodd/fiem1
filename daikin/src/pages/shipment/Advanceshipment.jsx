@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { asnApi } from '../../services/Advanceshipment.js'
+
 
 // ═══════════════════════════════════════════════════════════════
 // TABS CONFIG
@@ -92,15 +94,171 @@ function CancelConfirmDialog({ asnId, onConfirm, onDismiss, loading }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SIDEBAR — extracted OUTSIDE to fix input losing focus bug
+// ═══════════════════════════════════════════════════════════════
+function SidebarContent({
+  asns, loading, error, searchQuery, sidebarCollapsed, selectedAsnId,
+  plants, selectedPlants, filterOpen, filterRef,
+  onSearchChange, onSelectAsn, onToggleCollapse, onToggleFilter,
+  onTogglePlant, onClearPlants, statusStyle,
+}) {
+  return (
+    <>
+      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
+        {!sidebarCollapsed && (
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[15px] font-semibold text-[#32363a]">Advance Shipping Notes</h3>
+            <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">{asns.length}</span>
+          </div>
+        )}
+        {sidebarCollapsed ? (
+          <div className="flex justify-center">
+            <button className="w-9 h-9 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded-lg hover:bg-[#f0f7ff] transition-all">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <input type="text" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search by ID or plant"
+              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
+            />
+            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+              {searchQuery && (
+                <button onClick={() => onSearchChange('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-[#6a6d70] text-[13px]">
+            <svg className="animate-spin mr-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25" /><path d="M21 12a9 9 0 00-9-9" />
+            </svg>
+            Loading…
+          </div>
+        ) : error ? (
+          <div className="px-4 py-8 text-center text-[13px] text-[#cc1c14]">{error}</div>
+        ) : sidebarCollapsed ? (
+          asns.map((a) => {
+            const isSelected = a.id === selectedAsnId
+            return (
+              <button key={a.id} onClick={() => onSelectAsn(a.id)} title={a.id}
+                className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
+              >
+                <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>{a.id.slice(0, 4)}</span>
+              </button>
+            )
+          })
+        ) : (
+          <>
+            {asns.map((a) => {
+              const isSelected = a.id === selectedAsnId
+              return (
+                <button key={a.id} onClick={() => onSelectAsn(a.id)}
+                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[14px] font-semibold text-[#0a6ed1]">{a.id}</span>
+                    <span className="text-[14px] font-bold text-[#32363a]">{a.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="text-[12px] text-[#6a6d70] font-medium mb-1">{a.currency}</div>
+                  <div className="text-[13px] text-[#6a6d70] mb-1">{a.baseDocument}</div>
+                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
+                    <span>{a.plant} / {a.date}</span>
+                    {a.status && (
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(a.statusColor)}`}>
+                        {a.status}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[12px] text-[#6a6d70] mt-0.5">{a.vendor}</div>
+                </button>
+              )
+            })}
+            {asns.length === 0 && (
+              <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
+                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                </svg>
+                No ASNs found
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
+        <div className="relative">
+          <button onClick={onToggleFilter}
+            className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:scale-105 ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
+            title="Filter by plant"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18l-7 9v6l-4-2v-4L3 4z" /></svg>
+            {selectedPlants.length > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                {selectedPlants.length}
+              </span>
+            )}
+          </button>
+          {filterOpen && (
+            <div className="absolute bottom-11 left-0 w-60 bg-white border border-[#d9d9d9] rounded-lg shadow-xl z-50 anim-scale">
+              <div className="px-3.5 py-2.5 border-b border-[#e5e5e5] flex items-center justify-between">
+                <span className="text-[13px] font-semibold text-[#32363a]">Filter by Plant</span>
+                {selectedPlants.length > 0 && (
+                  <button onClick={onClearPlants} className="text-[12px] text-[#0a6ed1] hover:underline">Clear</button>
+                )}
+              </div>
+              <div className="max-h-60 overflow-y-auto py-1">
+                {plants.map((p) => (
+                  <label key={p.code} className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#f5f6f7] cursor-pointer text-[13px] transition-colors">
+                    <input type="checkbox" checked={selectedPlants.includes(p.code)} onChange={() => onTogglePlant(p.code)} className="accent-[#0a6ed1] w-4 h-4" />
+                    <span className="text-[#32363a]"><span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span></span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <button onClick={onToggleCollapse}
+          className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}>
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
+  const navigate = useNavigate()
   const [asns, setAsns] = useState([])
   const [asn, setAsn] = useState(null)
   const [selectedAsnId, setSelectedAsnId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [downloadingFile, setDownloadingFile] = useState(null) // track which file is downloading
+  const [downloadingFile, setDownloadingFile] = useState(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPlants, setSelectedPlants] = useState([])
@@ -112,6 +270,15 @@ export default function AdvanceShippingNote() {
   const [cancelLoading, setCancelLoading] = useState(false)
 
   const filterRef = useRef(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const asnParam = params.get('asn')
+    if (asnParam) {
+      setSelectedAsnId(asnParam)
+      setSearchQuery(asnParam)
+    }
+  }, [])
 
   // ── Fetch list ──
   useEffect(() => {
@@ -138,7 +305,6 @@ export default function AdvanceShippingNote() {
     asnApi.getAsn(selectedAsnId)
       .then(async (data) => {
         if (cancelled || !data) return
-        // fetch attachments separately, don't block on failure
         try {
           data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear)
         } catch (e) {
@@ -205,9 +371,8 @@ export default function AdvanceShippingNote() {
 
   const handleCancelDismiss = () => { if (!cancelLoading) setCancelDialogOpen(false) }
 
-  // ── Download handler — passes full attachment object ──
   const handleDownload = async (attachment) => {
-    if (downloadingFile === attachment.name) return // already in progress
+    if (downloadingFile === attachment.name) return
     setDownloadingFile(attachment.name)
     try {
       await asnApi.downloadAttachment(asn.asnNum, asn.fisYear, attachment)
@@ -225,153 +390,18 @@ export default function AdvanceShippingNote() {
     return 'text-[#107e3e] bg-[#e8f5ec]'
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // SIDEBAR
-  // ═══════════════════════════════════════════════════════════════
-  const SidebarContent = () => (
-    <>
-      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
-        {!sidebarCollapsed && (
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[15px] font-semibold text-[#32363a]">Advance Shipping Notes</h3>
-            <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">{asns.length}</span>
-          </div>
-        )}
-        {sidebarCollapsed ? (
-          <div className="flex justify-center">
-            <button className="w-9 h-9 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded-lg hover:bg-[#f0f7ff] transition-all">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <div className="relative">
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by ID or plant"
-              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-            />
-            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-[#6a6d70] text-[13px]">
-            <svg className="animate-spin mr-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25" /><path d="M21 12a9 9 0 00-9-9" />
-            </svg>
-            Loading…
-          </div>
-        ) : error ? (
-          <div className="px-4 py-8 text-center text-[13px] text-[#cc1c14]">{error}</div>
-        ) : sidebarCollapsed ? (
-          asns.map((a) => {
-            const isSelected = a.id === selectedAsnId
-            return (
-              <button key={a.id} onClick={() => handleSelectAsn(a.id)} title={a.id}
-                className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
-              >
-                <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>{a.id.slice(0, 4)}</span>
-              </button>
-            )
-          })
-        ) : (
-          <>
-            {asns.map((a) => {
-              const isSelected = a.id === selectedAsnId
-              return (
-                <button key={a.id} onClick={() => handleSelectAsn(a.id)}
-                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[14px] font-semibold text-[#0a6ed1]">{a.id}</span>
-                    <span className="text-[14px] font-bold text-[#32363a]">{a.amount.toFixed(2)}</span>
-                  </div>
-                  <div className="text-[12px] text-[#6a6d70] font-medium mb-1">{a.currency}</div>
-                  <div className="text-[13px] text-[#6a6d70] mb-1">{a.baseDocument}</div>
-                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
-                    <span>{a.plant} / {a.date}</span>
-                    {a.status && (
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(a.statusColor)}`}>
-                        {a.status}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-[#6a6d70] mt-0.5">{a.vendor}</div>
-                </button>
-              )
-            })}
-            {asns.length === 0 && (
-              <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
-                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-                </svg>
-                No ASNs found
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
-        <div className="relative">
-          <button onClick={() => setFilterOpen(!filterOpen)}
-            className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:scale-105 ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
-            title="Filter by plant"
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18l-7 9v6l-4-2v-4L3 4z" /></svg>
-            {selectedPlants.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                {selectedPlants.length}
-              </span>
-            )}
-          </button>
-          {filterOpen && (
-            <div className="absolute bottom-11 left-0 w-60 bg-white border border-[#d9d9d9] rounded-lg shadow-xl z-50 anim-scale">
-              <div className="px-3.5 py-2.5 border-b border-[#e5e5e5] flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-[#32363a]">Filter by Plant</span>
-                {selectedPlants.length > 0 && (
-                  <button onClick={() => setSelectedPlants([])} className="text-[12px] text-[#0a6ed1] hover:underline">Clear</button>
-                )}
-              </div>
-              <div className="max-h-60 overflow-y-auto py-1">
-                {plants.map((p) => (
-                  <label key={p.code} className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#f5f6f7] cursor-pointer text-[13px] transition-colors">
-                    <input type="checkbox" checked={selectedPlants.includes(p.code)} onChange={() => togglePlant(p.code)} className="accent-[#0a6ed1] w-4 h-4" />
-                    <span className="text-[#32363a]"><span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span></span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}>
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
-    </>
-  )
+  // ── Sidebar props ──
+  const sidebarProps = {
+    asns, loading, error, searchQuery, sidebarCollapsed, selectedAsnId,
+    plants, selectedPlants, filterOpen, filterRef,
+    onSearchChange: setSearchQuery,
+    onSelectAsn: handleSelectAsn,
+    onToggleCollapse: () => setSidebarCollapsed(c => !c),
+    onToggleFilter: () => setFilterOpen(f => !f),
+    onTogglePlant: togglePlant,
+    onClearPlants: () => setSelectedPlants([]),
+    statusStyle,
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // TAB RENDERERS
@@ -437,7 +467,6 @@ export default function AdvanceShippingNote() {
             </tbody>
           </table>
         </div>
-        {/* Tax summary */}
         <div className="flex justify-end">
           <div className="w-full sm:w-[320px] rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
             <div className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] px-5 py-3 border-b border-[#e5e5e5]">
@@ -469,7 +498,7 @@ export default function AdvanceShippingNote() {
     if (!asn) return null
     const s = asn.shipment
     const fields = [
-      { label: 'Tracking No.', value: s.trackingNo, highlight: true },
+      { label: 'Tracking No.', value: s.trackingNo, highlight: true, clickable: true },
       { label: 'Transport Mode', value: s.transportMode },
       { label: 'Driver Name', value: s.driverName },
       { label: 'Vehicle Reg. No. / Docket', value: s.vehicleRegNo },
@@ -482,12 +511,17 @@ export default function AdvanceShippingNote() {
       <div className="anim-fade px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
         <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden max-w-3xl">
           <div className="grid grid-cols-1 sm:grid-cols-2">
-            {fields.map(({ label, value, highlight }, idx) => (
+            {fields.map(({ label, value, highlight, clickable }, idx) => (
               <div key={label}
                 className={`flex flex-col px-5 py-4 border-b border-[#f0f0f0] ${idx % 2 === 1 ? 'sm:border-l border-[#f0f0f0]' : ''} last:border-b-0 hover:bg-[#fafbfc] transition-colors`}
               >
                 <span className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">{label}</span>
-                <span className={`text-[15px] font-semibold ${highlight ? 'text-[#0a6ed1]' : 'text-[#32363a]'}`}>{value}</span>
+                <span
+                  className={`text-[15px] font-semibold ${highlight ? 'text-[#0a6ed1] cursor-pointer hover:underline' : 'text-[#32363a]'}`}
+                  onClick={clickable ? () => navigate(`/shipment/goods-movement?track=${encodeURIComponent(s.trackingNo)}`) : undefined}
+                >
+                  {value}
+                </span>
               </div>
             ))}
           </div>
@@ -583,7 +617,6 @@ export default function AdvanceShippingNote() {
       )}
 
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
-        <span><span className="font-semibold text-[#32363a]">Company Code:</span> DSAL (FIEM Industries Limited)</span>
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>
@@ -607,13 +640,13 @@ export default function AdvanceShippingNote() {
                 </svg>
               </button>
             </div>
-            <SidebarContent />
+            <SidebarContent {...sidebarProps} />
           </aside>
 
           <aside data-sidebar
             className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
           >
-            <SidebarContent />
+            <SidebarContent {...sidebarProps} />
           </aside>
 
           <main className="flex-1 bg-white overflow-y-auto anim-slide-r min-w-0">

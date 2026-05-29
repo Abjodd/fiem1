@@ -1,5 +1,5 @@
 {
-  "welcomeFile": "/index.html",
+  "welcomeFile": "index.html",
   "authenticationMethod": "none",
   "routes": [
     {
@@ -9,19 +9,19 @@
       "csrfProtection": false
     },
     {
-      "source": "^/index.html$",
+      "source": "^/assets/(.*)$",
       "localDir": "resources",
       "authenticationType": "none"
     },
     {
-      "source": "^/(assets|static)/(.*)$",
+      "source": "^/(.*\\.(png|svg|ico|jpg|jpeg|gif|css|js|woff|woff2|ttf|json|map))$",
       "localDir": "resources",
       "authenticationType": "none"
     },
     {
-      "source": "^(.*)$",
+      "source": "^/.*$",
       "localDir": "resources",
-      "target": "/index.html",
+      "target": "index.html",
       "authenticationType": "none"
     }
   ]

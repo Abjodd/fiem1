@@ -380,7 +380,7 @@ export default function DaikinPortal() {
                 <div className="max-w-[1480px] mx-auto px-8 py-5 flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-3">
-                        <img src="/daikin.png" alt="Daikin Logo" className="w-24 md:w-28 object-contain" />
+                        <img src={import.meta.env.BASE_URL + 'daikin.png'} alt="FIEM Logo" className="w-24 md:w-28 object-contain" />
                         <span className="hidden md:inline text-sm font-mono ml-2 pl-3"
                             style={{ color: t.logoSub, borderLeft: `1px solid ${t.logoSubBorder}` }}>
                             SAP PORTAL
@@ -570,8 +570,8 @@ export default function DaikinPortal() {
                                     <div className="absolute inset-0 blur-3xl anim-pulse-glow"
                                         style={{ background: t.logoGlow, opacity: t.logoGlowOp }} />
                                     <img
-                                        src="/dd.png"
-                                        alt="Daikin Logo"
+                                        src={import.meta.env.BASE_URL + 'dd.png'}
+                                        alt="FIEM Logo"
                                         className="relative w-32 h-40 object-contain"
                                         style={{ filter: `drop-shadow(0 4px 24px ${t.logoDropShadow})` }}
                                     />
@@ -676,8 +676,8 @@ export default function DaikinPortal() {
                 <div className="max-w-[1480px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-3">
                         <img
-                                        src="/dd.png"
-                                        alt="Daikin Logo"
+                                        src={import.meta.env.BASE_URL + 'dd.png'}
+                                        alt="FIEM Logo"
                                         className="relative w-10 h-12 object-contain"
                                         style={{ filter: `drop-shadow(0 4px 24px ${t.logoDropShadow})` }}
                                     />
