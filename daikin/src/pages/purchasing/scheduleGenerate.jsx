@@ -1,320 +1,203 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
-
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import ScheduleCreation from './scheduleCreation.jsx'
 
 // ═══════════════════════════════════════════════════════════════
-// DUMMY DATA (currently in use)
+// MOCK DATA — replace with OData service when ready
 // ═══════════════════════════════════════════════════════════════
-const SCHEDULE_AGREEMENTS = [
-  {
-    id: '5501000391',
-    plant: 'NM01',
-    plantName: 'FIEM-NMR (NMR)',
-    plantShort: 'Nmr',
-    date: 'Aug 01, 2026',
-    companyCode: 'DSAL',
-    type: 'Manual',
-    vendor: 'Kunstocom(India) Ltd',
-    items: [
+const MOCK_SUPPLIERS = {
+  'FS859': {
+    code: 'FS859',
+    name: 'The Supreme Industries Ltd',
+    agreements: [
       {
-        itemNo: '10',
-        materialName: 'Flare cap packing',
-        materialNumber: '3P4876',
-        hsnCode: '84159000',
-        storageLocation: 'RM01',
-        deliverySchedule: 2000,
-        scheduledQuantity: 0,
-        unitPrice: '0.78',
-        status: 'Not Generated',
-        vendorAllocations: [
-          { vendorId: 'V001', vendorName: 'Vendor 1', allocatedQuantity: 1000 },
-          { vendorId: 'V002', vendorName: 'Vendor 2', allocatedQuantity: 1000 },
-        ],
-      },
-      {
-        itemNo: '20',
-        materialName: 'Flare cap packing',
-        materialNumber: '3P4876-2',
-        hsnCode: '84159000',
-        storageLocation: 'RM01',
-        deliverySchedule: 1000,
-        scheduledQuantity: 0,
-        unitPrice: '0.65',
-        status: 'Not Generated',
-        vendorAllocations: [
-          { vendorId: 'V001', vendorName: 'Vendor 1', allocatedQuantity: 500 },
-          { vendorId: 'V002', vendorName: 'Vendor 2', allocatedQuantity: 500 },
+        id: '5501000391',
+        date: '01.08.2026',
+        companyCode: 'DSAL',
+        plant: 'NM01',
+        plantName: 'FIEM-NMR (NMR)',
+        items: [
+          { itemNo: '10', sapCode: '3p566', description: 'flare cap', hsnCode: '84159000', totalQuantity: 2000, unitPrice: 0.78, indicator: '', status: 'Not Generated' },
+          { itemNo: '20', sapCode: '3p567', description: 'FLARE CAP PACKAGING', hsnCode: '84159000', totalQuantity: 1000, unitPrice: 0.65, indicator: '', status: 'Not Generated' },
+          { itemNo: '30', sapCode: '3p568', description: 'FLARE CAP PACKAGING', hsnCode: '84159000', totalQuantity: 2500, unitPrice: 0.65, indicator: '', status: 'Not Generated' },
         ],
       },
     ],
   },
-  {
-    id: '5501000392',
-    plant: 'NM01',
-    plantName: 'FIEM-NMR (NMR)',
-    plantShort: 'Nmr',
-    date: 'Aug 01, 2026',
-    companyCode: 'DSAL',
-    type: 'Manual',
-    vendor: 'Kunstocom(India) Ltd',
-    items: [
+  'FS833': {
+    code: 'FS833',
+    name: 'Ravi Industries',
+    agreements: [
       {
-        itemNo: '10',
-        materialName: 'Copper braze ring',
-        materialNumber: '3P5012',
-        hsnCode: '74199990',
-        storageLocation: 'RM02',
-        deliverySchedule: 1500,
-        scheduledQuantity: 1500,
-        unitPrice: '1.24',
-        status: 'Generated',
-        vendorAllocations: [
-          { vendorId: 'V003', vendorName: 'Vendor 3', allocatedQuantity: 1500 },
-        ],
-      },
-      {
-        itemNo: '20',
-        materialName: 'Insulation foam strip',
-        materialNumber: '3P5018',
-        hsnCode: '39261099',
-        storageLocation: 'RM03',
-        deliverySchedule: 800,
-        scheduledQuantity: 0,
-        unitPrice: '0.42',
-        status: 'Not Generated',
-        vendorAllocations: [
-          { vendorId: 'V001', vendorName: 'Vendor 1', allocatedQuantity: 500 },
-          { vendorId: 'V004', vendorName: 'Vendor 4', allocatedQuantity: 300 },
+        id: '5501000405',
+        date: '05.08.2026',
+        companyCode: 'DSAL',
+        plant: 'SR01',
+        plantName: 'Sri City FG',
+        items: [
+          { itemNo: '10', sapCode: '3P6201', description: 'Compressor mount bracket', hsnCode: '73269099', totalQuantity: 600, unitPrice: 4.10, indicator: '', status: 'Not Generated' },
+          { itemNo: '20', sapCode: '3P6202', description: 'Motor housing plate', hsnCode: '73269099', totalQuantity: 1200, unitPrice: 2.85, indicator: '', status: 'Not Generated' },
         ],
       },
     ],
   },
-  {
-    id: '5501000405',
-    plant: 'SR01',
-    plantName: 'Sri City FG',
-    plantShort: 'SRC',
-    date: 'Aug 05, 2026',
-    companyCode: 'DSAL',
-    type: 'Manual',
-    vendor: 'Kunstocom(India) Ltd',
-    items: [
+  'FS827': {
+    code: 'FS827',
+    name: 'Salim Enterprises',
+    agreements: [
       {
-        itemNo: '10',
-        materialName: 'Compressor mount bracket',
-        materialNumber: '3P6201',
-        hsnCode: '73269099',
-        storageLocation: 'RM01',
-        deliverySchedule: 600,
-        scheduledQuantity: 0,
-        unitPrice: '4.10',
-        status: 'Not Generated',
-        vendorAllocations: [
-          { vendorId: 'V002', vendorName: 'Vendor 2', allocatedQuantity: 600 },
+        id: '5501000407',
+        date: '18.07.2026',
+        companyCode: 'DSAL',
+        plant: 'NM01',
+        plantName: 'FIEM-NMR (NMR)',
+        items: [
+          { itemNo: '10', sapCode: '3P7104', description: 'Drain pan assembly', hsnCode: '84159000', totalQuantity: 800, unitPrice: 2.40, indicator: '', status: 'Not Generated' },
         ],
       },
     ],
   },
-  {
-    id: '5501000407',
-    plant: 'NM01',
-    plantName: 'FIEM-NMR (NMR)',
-    plantShort: 'Nmr',
-    date: 'Jul 18, 2026',
-    companyCode: 'DSAL',
-    type: 'Manual',
-    vendor: 'Kunstocom(India) Ltd',
-    items: [
-      {
-        itemNo: '10',
-        materialName: 'Drain pan assembly',
-        materialNumber: '3P7104',
-        hsnCode: '84159000',
-        storageLocation: 'RM02',
-        deliverySchedule: 800,
-        scheduledQuantity: 0,
-        unitPrice: '2.40',
-        status: 'Not Generated',
-        vendorAllocations: [
-          { vendorId: 'V005', vendorName: 'Vendor 5', allocatedQuantity: 800 },
-        ],
-      },
-    ],
-  },
-  {
-    id: '5501000408',
-    plant: 'SR01',
-    plantName: 'Sri City FG',
-    plantShort: 'SRC',
-    date: 'Jul 15, 2026',
-    companyCode: 'DSAL',
-    type: 'Manual',
-    vendor: 'Kunstocom(India) Ltd',
-    items: [
-      {
-        itemNo: '10',
-        materialName: 'Capillary tube',
-        materialNumber: '3P7250',
-        hsnCode: '74111090',
-        storageLocation: 'RM03',
-        deliverySchedule: 2400,
-        scheduledQuantity: 2400,
-        unitPrice: '0.32',
-        status: 'Generated',
-        vendorAllocations: [
-          { vendorId: 'V001', vendorName: 'Vendor 1', allocatedQuantity: 1200 },
-          { vendorId: 'V002', vendorName: 'Vendor 2', allocatedQuantity: 1200 },
-        ],
-      },
-    ],
-  },
-]
+}
 
 // ═══════════════════════════════════════════════════════════════
-// API STRUCTURE — for future backend integration
+// API STRUCTURE — for future OData integration
 // ═══════════════════════════════════════════════════════════════
-const API_BASE_URL = '/api/v1'
 const USE_MOCK = true
 
 export const scheduleGenerateApi = {
-  async listAgreements({ search = '', plants = [] } = {}) {
+  // GET SupplierHelpSet or similar
+  async fetchSupplier(code) {
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      return SCHEDULE_AGREEMENTS.filter(a => {
-        const q = search.trim().toLowerCase()
-        const matchSearch = !q ||
-          a.id.toLowerCase().includes(q) ||
-          a.plantName.toLowerCase().includes(q) ||
-          a.plant.toLowerCase().includes(q)
-        const matchPlant = plants.length === 0 || plants.includes(a.plant)
-        return matchSearch && matchPlant
-      })
+      await new Promise(r => setTimeout(r, 200))
+      return MOCK_SUPPLIERS[code] || null
     }
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    if (plants.length) params.set('plants', plants.join(','))
-    const res = await fetch(`${API_BASE_URL}/scheduling-agreements?${params}`)
-    if (!res.ok) throw new Error('Failed to fetch agreements')
-    return res.json()
+    // const data = await odata(`/SupplierSet('${code}')?$expand=AgreementNav`)
+    // return mapSupplier(data.d)
   },
 
-  async getAgreement(id) {
+  // GET ScheduleAgreementSet(id)?$expand=ItemNav
+  async fetchAgreement(supplierId, agreementId) {
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      return SCHEDULE_AGREEMENTS.find(a => a.id === id) || null
+      await new Promise(r => setTimeout(r, 150))
+      const supp = MOCK_SUPPLIERS[supplierId]
+      return supp?.agreements.find(a => a.id === agreementId) || null
     }
-    const res = await fetch(`${API_BASE_URL}/scheduling-agreements/${id}`)
-    if (!res.ok) throw new Error('Failed to fetch agreement')
-    return res.json()
+    // const data = await odata(`/ScheduleAgreementSet('${agreementId}')?$expand=ItemNav`)
+    // return mapAgreement(data.d)
   },
 
-  async getAgreementItems(id, { fromDate, toDate, storageLocations = [] } = {}) {
+  // POST ScheduleLineSet — save generated schedule lines
+  async saveScheduleLines(agreementId, lines) {
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 100))
-      const a = SCHEDULE_AGREEMENTS.find(x => x.id === id)
-      return a ? a.items : []
+      await new Promise(r => setTimeout(r, 300))
+      return { success: true }
     }
-    const params = new URLSearchParams()
-    if (fromDate) params.set('fromDate', fromDate)
-    if (toDate) params.set('toDate', toDate)
-    if (storageLocations.length) params.set('storage', storageLocations.join(','))
-    const res = await fetch(`${API_BASE_URL}/scheduling-agreements/${id}/items?${params}`)
-    if (!res.ok) throw new Error('Failed to fetch items')
-    return res.json()
+    // return odataWrite('/ScheduleLineSet', { AgreementId: agreementId, Lines: lines })
   },
 
-  async refreshItemStatus(agreementId, itemNo) {
+  // POST ApproveSet — send for approval
+  async approveSchedule(agreementId, itemNos) {
     if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 50))
-      return true
+      await new Promise(r => setTimeout(r, 300))
+      return { success: true }
     }
-    const res = await fetch(`${API_BASE_URL}/scheduling-agreements/${agreementId}/items/${itemNo}/refresh`, { method: 'POST' })
-    if (!res.ok) throw new Error('Failed to refresh')
-    return res.json()
+    // return odataWrite('/ApproveSet', { AgreementId: agreementId, Items: itemNos })
   },
 }
 
-export const _MOCK_STORE = SCHEDULE_AGREEMENTS
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+const DAYS = Array.from({ length: 30 }, (_, i) => i + 1)
 
-// ═══════════════════════════════════════════════════════════════
-// DATE HELPERS
-// ═══════════════════════════════════════════════════════════════
-const ddmmyyyyToIso = (s) => {
-  if (!s) return ''
-  const parts = s.split('.')
-  if (parts.length !== 3) return ''
-  const [d, m, y] = parts
-  if (!d || !m || !y) return ''
-  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
-}
-const isoToDdmmyyyy = (s) => {
-  if (!s) return ''
-  const [y, m, d] = s.split('-')
-  if (!y || !m || !d) return ''
-  return `${d}.${m}.${y}`
-}
-const parseDdmmyyyy = (s) => {
-  const iso = ddmmyyyyToIso(s)
-  return iso ? new Date(iso) : null
-}
+function generateScheduleForItem(item, mode, dayCount) {
+  const total = item.totalQuantity
+  const days = new Array(30).fill(0)
 
-// ═══════════════════════════════════════════════════════════════
-// SCHEDULE CREATION MODAL WRAPPER
-// ═══════════════════════════════════════════════════════════════
-function ScheduleCreationModal({ activeMaterial, onClose }) {
-  // Close on backdrop click
-  const handleBackdrop = (e) => {
-    if (e.target === e.currentTarget) onClose(false)
+  if (mode === 'week') {
+    // Divide by 4 weeks, place on days 1, 8, 15, 22
+    const weekDays = [0, 7, 14, 21] // indices for days 1, 8, 15, 22
+    const perWeek = Math.floor(total / 4)
+    const remainder = total - perWeek * 4
+    weekDays.forEach((d, i) => {
+      days[d] = perWeek + (i < remainder ? 1 : 0)
+    })
+  } else {
+    // Day mode: divide by dayCount, place on consecutive days
+    const n = Math.min(dayCount, 30)
+    const perDay = Math.floor(total / n)
+    const remainder = total - perDay * n
+    for (let i = 0; i < n; i++) {
+      days[i] = perDay + (i < remainder ? 1 : 0)
+    }
   }
 
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(false) }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
+  return {
+    itemNo: item.itemNo,
+    sapCode: item.sapCode,
+    description: item.description,
+    hsnCode: item.hsnCode,
+    totalQuantity: item.totalQuantity,
+    days,
+    total: days.reduce((s, v) => s + v, 0),
+    forecast: [0, 0, 0],
+  }
+}
 
-  // Lock body scroll while modal open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
+// ═══════════════════════════════════════════════════════════════
+// SUPPLIER CODE POPUP
+// ═══════════════════════════════════════════════════════════════
+function SupplierPopup({ onSubmit }) {
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!code.trim()) { setError('Please enter a supplier code.'); return }
+    setLoading(true); setError('')
+    try {
+      const supp = await scheduleGenerateApi.fetchSupplier(code.trim().toUpperCase())
+      if (!supp) { setError(`Supplier "${code}" not found.`); setLoading(false); return }
+      onSubmit(supp)
+    } catch (err) {
+      setError(err.message || 'Failed to fetch supplier')
+      setLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e) => { if (e.key === 'Enter') handleSubmit() }
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
-style={{ backgroundColor: 'rgba(0,0,0,0.5)', top: '104px' }}
-      onClick={handleBackdrop}
-    >
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        style={{
-          width: '100%',
-          maxWidth: '900px',
-          maxHeight: 'calc(100vh - 120px)',
-          animation: 'modalSlideIn 0.28s ease-out both',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close X button */}
-        <button
-          onClick={() => onClose(false)}
-          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all"
-          title="Close"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-
-        {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto min-h-0 relative">
-          <ScheduleCreation
-            agreementId={activeMaterial.agreementId}
-            itemNo={activeMaterial.itemNo}
-            onClose={onClose}
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] anim-modal overflow-hidden">
+        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5">
+          <h2 className="text-[18px] font-bold text-white">Schedule Generate</h2>
+          <p className="text-[13px] text-white/80 mt-1">Enter the supplier code to load Schedule Agreements</p>
+        </div>
+        <div className="px-6 py-6">
+          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">Supplier Code <span className="text-[#cc1c14]">*</span></label>
+          <input
+            autoFocus type="text" value={code}
+            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
+            onKeyDown={handleKeyDown}
+            placeholder="e.g. FS859"
+            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
           />
+          <div className="mt-2 text-[11px] text-[#6a6d70]">
+            Available: <span className="font-semibold text-[#0a6ed1]">FS859</span>, <span className="font-semibold text-[#0a6ed1]">FS833</span>, <span className="font-semibold text-[#0a6ed1]">FS827</span>
+          </div>
+          {error && (
+            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              {error}
+            </div>
+          )}
+        </div>
+        <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end">
+          <button onClick={handleSubmit} disabled={loading}
+            className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60">
+            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+            {loading ? 'Loading…' : 'Load Agreements'}
+          </button>
         </div>
       </div>
     </div>
@@ -322,625 +205,532 @@ style={{ backgroundColor: 'rgba(0,0,0,0.5)', top: '104px' }}
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COMPONENT
+// DAY COUNT POPUP
 // ═══════════════════════════════════════════════════════════════
-export default function ScheduleGenerate() {
-  const [activeMaterial, setActiveMaterial] = useState(null)
-
-  const [agreements, setAgreements] = useState([])
-  const [agreement, setAgreement] = useState(null)
-  const [selectedAgreementId, setSelectedAgreementId] = useState('5501000391')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedPlants, setSelectedPlants] = useState([])
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
-  const [storageSearch, setStorageSearch] = useState('')
-  const filterRef = useRef(null)
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-    scheduleGenerateApi.listAgreements({ search: searchQuery, plants: selectedPlants })
-      .then(data => { if (!cancelled) setAgreements(data) })
-      .catch(err => console.error(err))
-    return () => { cancelled = true }
-  }, [searchQuery, selectedPlants, refreshKey])
-
-  useEffect(() => {
-    let cancelled = false
-    if (!selectedAgreementId) { setAgreement(null); return }
-    scheduleGenerateApi.getAgreement(selectedAgreementId)
-      .then(data => { if (!cancelled) setAgreement(data) })
-      .catch(err => console.error(err))
-    return () => { cancelled = true }
-  }, [selectedAgreementId, refreshKey])
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  useEffect(() => {
-    if (!mobileSidebarOpen) return
-    const handler = (e) => {
-      if (!e.target.closest('[data-sidebar]') && !e.target.closest('[data-sidebar-toggle]')) {
-        setMobileSidebarOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [mobileSidebarOpen])
-
-  const plants = useMemo(() => {
-    const map = new Map()
-    SCHEDULE_AGREEMENTS.forEach((a) => map.set(a.plant, a.plantName))
-    return Array.from(map, ([code, name]) => ({ code, name }))
-  }, [])
-
-  const dateError = useMemo(() => {
-    if (!fromDate || !toDate) return null
-    const f = parseDdmmyyyy(fromDate)
-    const t = parseDdmmyyyy(toDate)
-    if (!f || !t) return null
-    return f > t ? 'From Date must be earlier than To Date' : null
-  }, [fromDate, toDate])
-
-  const filteredItems = useMemo(() => {
-    if (!agreement) return []
-    const storageTerms = storageSearch.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
-    return agreement.items.filter(item => {
-      const matchStorage = storageTerms.length === 0 ||
-        storageTerms.some(t => item.storageLocation.toLowerCase().includes(t))
-      return matchStorage
-    })
-  }, [agreement, storageSearch])
-
-  const handleClearFilters = () => {
-    setFromDate('')
-    setToDate('')
-    setStorageSearch('')
+function DayCountPopup({ onSubmit, onCancel }) {
+  const [days, setDays] = useState('')
+  const handleSubmit = () => {
+    const n = parseInt(days, 10)
+    if (!n || n < 1 || n > 30) return
+    onSubmit(n)
   }
-
-  const handleSelectAgreement = (id) => {
-    setSelectedAgreementId(id)
-    setMobileSidebarOpen(false)
-  }
-
-  const togglePlant = (plant) => {
-    if (selectedPlants.includes(plant)) setSelectedPlants(selectedPlants.filter(p => p !== plant))
-    else setSelectedPlants([...selectedPlants, plant])
-  }
-
-  const handleOpenMaterial = (item) => {
-    setActiveMaterial({
-      agreementId: agreement.id,
-      itemNo: item.itemNo,
-      item,
-    })
-  }
-
-  // Called from modal on close/save
-  const handleScheduleCreationClose = (didSave) => {
-    setActiveMaterial(null)
-    if (didSave) setRefreshKey(k => k + 1)
-  }
-
-  // ── Sidebar inner content ──
-  const SidebarContent = () => (
-    <>
-      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
-        {!sidebarCollapsed && (
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[15px] font-semibold text-[#32363a]">Schedule Agreements</h3>
-            <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">
-              {agreements.length} of {SCHEDULE_AGREEMENTS.length}
-            </span>
-          </div>
-        )}
-        {sidebarCollapsed ? (
-          <div className="flex justify-center">
-            <button className="w-9 h-9 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded-lg hover:bg-[#f0f7ff] transition-all">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by ID or plant"
-              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-            />
-            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
-        {sidebarCollapsed ? (
-          agreements.map((a) => {
-            const isSelected = a.id === selectedAgreementId
-            return (
-              <button
-                key={a.id}
-                onClick={() => handleSelectAgreement(a.id)}
-                title={a.id}
-                className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
-              >
-                <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>
-                  {a.id.slice(-3)}
-                </span>
-              </button>
-            )
-          })
-        ) : (
-          <>
-            {agreements.map((a) => {
-              const isSelected = a.id === selectedAgreementId
-              return (
-                <button
-                  key={a.id}
-                  onClick={() => handleSelectAgreement(a.id)}
-                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
-                >
-                  <div className="text-[14px] font-semibold text-[#0a6ed1] mb-1">{a.id}</div>
-                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
-                    <span>Plant: {a.plantShort}</span>
-                    <span>{a.date}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70] mt-1">
-                    <span>Company code: {a.companyCode}</span>
-                    <span className="px-2 py-0.5 bg-[#f0f0f0] rounded text-[11px] font-medium">{a.type}</span>
-                  </div>
-                </button>
-              )
-            })}
-            {agreements.length === 0 && (
-              <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-                No agreements found
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
-        <div className="relative">
-          <button
-            onClick={() => setFilterOpen(!filterOpen)}
-            className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:scale-105 ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
-            title="Filter by plant"
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 4h18l-7 9v6l-4-2v-4L3 4z" />
-            </svg>
-            {selectedPlants.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                {selectedPlants.length}
-              </span>
-            )}
-          </button>
-
-          {filterOpen && (
-            <div className="absolute bottom-11 left-0 w-60 bg-white border border-[#d9d9d9] rounded-lg shadow-xl z-50 anim-scale">
-              <div className="px-3.5 py-2.5 border-b border-[#e5e5e5] flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-[#32363a]">Filter by Plant</span>
-                {selectedPlants.length > 0 && (
-                  <button onClick={() => setSelectedPlants([])} className="text-[12px] text-[#0a6ed1] hover:underline">
-                    Clear
-                  </button>
-                )}
-              </div>
-              <div className="max-h-60 overflow-y-auto py-1">
-                {plants.map((p) => (
-                  <label key={p.code} className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#f5f6f7] cursor-pointer text-[13px] transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={selectedPlants.includes(p.code)}
-                      onChange={() => togglePlant(p.code)}
-                      className="accent-[#0a6ed1] w-4 h-4"
-                    />
-                    <span className="text-[#32363a]">
-                      <span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[340px] anim-modal">
+        <div className="px-6 py-4 border-b border-[#e5e5e5]">
+          <h3 className="text-[15px] font-bold text-[#32363a]">No. of Days</h3>
+          <p className="text-[12px] text-[#6a6d70] mt-0.5">Total quantity will be divided equally across these days</p>
         </div>
+        <div className="px-6 py-5">
+          <input autoFocus type="number" min="1" max="30" value={days}
+            onChange={e => setDays(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+            placeholder="e.g. 5"
+            className="w-full h-11 px-4 text-[16px] font-bold text-center border border-[#0a6ed1] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+        </div>
+        <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end gap-2">
+          <button onClick={onCancel} className="px-4 h-9 text-[13px] font-semibold text-[#6a6d70] hover:bg-[#f5f6f7] rounded-lg transition-all">Cancel</button>
+          <button onClick={handleSubmit} disabled={!days || parseInt(days) < 1}
+            className="px-5 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-50">
+            Generate
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <svg
-            width="17" height="17" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+// ═══════════════════════════════════════════════════════════════
+// SCHEDULE LINES GRID
+// ═══════════════════════════════════════════════════════════════
+function ScheduleGrid({ lines, editable, onChange, onCancel, onSave, saving }) {
+  const handleCellChange = (lineIdx, dayIdx, value) => {
+    if (!onChange) return
+    const newLines = lines.map((l, i) => {
+      if (i !== lineIdx) return l
+      const newDays = [...l.days]
+      newDays[dayIdx] = Math.max(0, parseInt(value) || 0)
+      const total = newDays.reduce((s, v) => s + v, 0)
+      return { ...l, days: newDays, total }
+    })
+    onChange(newLines)
+  }
+
+  return (
+    <div className="anim-fade">
+      <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
+        <div className="px-4 py-2.5 bg-[#fafbfc] border-b border-[#e5e5e5] flex items-center justify-between">
+          <span className="text-[13px] font-semibold text-[#32363a]">
+            {editable ? 'Schedule Line Editable' : 'Schedule Lines'} — {lines.length} item{lines.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <div className="overflow-auto" style={{ maxHeight: '45vh' }}>
+          <table className="border-collapse text-[12px]" style={{ minWidth: '1800px' }}>
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] text-[#6a6d70]">
+                <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] whitespace-nowrap sticky left-0 bg-[#f5f6f7] z-20" style={{ minWidth: 60 }}>Item</th>
+                <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] whitespace-nowrap" style={{ minWidth: 80 }}>Sap Code</th>
+                <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] whitespace-nowrap" style={{ minWidth: 140 }}>Description</th>
+                <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] whitespace-nowrap" style={{ minWidth: 85 }}>HSN Code</th>
+                <th className="text-center font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] whitespace-nowrap" style={{ minWidth: 80 }}>Total Qty</th>
+                {/* Firm days 1-30 */}
+                <th colSpan={30} className="text-center font-semibold py-1 px-0 border-b border-r border-[#e5e5e5] bg-[#ebf5ff] text-[#0a6ed1]">
+                  Firm
+                </th>
+                <th className="text-center font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] whitespace-nowrap bg-[#e8f5ec] text-[#107e3e]" style={{ minWidth: 70 }}>Total</th>
+                <th colSpan={3} className="text-center font-semibold py-1 px-0 border-b border-[#e5e5e5] bg-[#fef7e6] text-[#b45309]">
+                  Forecast
+                </th>
+              </tr>
+              <tr className="bg-[#fafbfc] text-[#6a6d70]">
+                <th className="border-b border-r border-[#e5e5e5] sticky left-0 bg-[#fafbfc] z-20" />
+                <th className="border-b border-r border-[#e5e5e5]" />
+                <th className="border-b border-r border-[#e5e5e5]" />
+                <th className="border-b border-r border-[#e5e5e5]" />
+                <th className="border-b border-r border-[#e5e5e5]" />
+                {DAYS.map(d => (
+                  <th key={d} className="text-center font-semibold py-1.5 px-0 border-b border-r border-[#e5e5e5] text-[10px] bg-[#f8fbff]" style={{ minWidth: 38 }}>{d}</th>
+                ))}
+                <th className="border-b border-r border-[#e5e5e5] bg-[#e8f5ec]" />
+                {['N1', 'N2', 'N3'].map(n => (
+                  <th key={n} className="text-center font-semibold py-1.5 px-2 border-b border-r border-[#e5e5e5] text-[10px] bg-[#fef7e6]" style={{ minWidth: 38 }}>{n}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((line, li) => (
+                <tr key={line.itemNo} className="border-b border-[#f0f0f0] hover:bg-[#fafbfc] transition-colors">
+                  <td className="py-2 px-3 border-r border-[#f0f0f0] font-semibold text-[#32363a] sticky left-0 bg-white z-20">{line.itemNo}</td>
+                  <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#0a6ed1] font-semibold">{line.sapCode}</td>
+                  <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#32363a]">{line.description}</td>
+                  <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#32363a]">{line.hsnCode}</td>
+                  <td className="py-2 px-3 border-r border-[#f0f0f0] text-center font-bold text-[#32363a]">{line.totalQuantity}</td>
+                  {DAYS.map((_, di) => (
+                    <td key={di} className="py-1 px-0 border-r border-[#f0f0f0] text-center">
+                      {editable ? (
+                        <input type="number" min="0"
+                          value={line.days[di] || ''}
+                          onChange={e => handleCellChange(li, di, e.target.value)}
+                          className="w-full h-7 text-center text-[11px] font-semibold border-0 bg-transparent focus:bg-[#ebf5ff] focus:outline-none focus:ring-1 focus:ring-[#0a6ed1] rounded transition-all tabular-nums"
+                        />
+                      ) : (
+                        <span className={`text-[11px] tabular-nums ${line.days[di] > 0 ? 'font-bold text-[#32363a]' : 'text-[#d9d9d9]'}`}>
+                          {line.days[di] || ''}
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                  <td className="py-2 px-3 border-r border-[#f0f0f0] text-center font-bold text-[#107e3e] bg-[#f0fff4]">{line.total}</td>
+                  {line.forecast.map((f, fi) => (
+                    <td key={fi} className="py-2 px-2 border-r border-[#f0f0f0] text-center text-[11px] text-[#b45309] bg-[#fffdf5]">{f || ''}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-3 mt-4">
+        <button onClick={onCancel} disabled={saving}
+          className="px-5 h-9 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all disabled:opacity-50">
+          Cancel
+        </button>
+        <button onClick={onSave} disabled={saving}
+          className="flex items-center gap-2 px-5 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-md disabled:opacity-50">
+          {saving && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+          {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
-    </>
+    </div>
   )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
+export default function ScheduleGenerate() {
+  // ── Supplier popup ──
+  const [supplier, setSupplier] = useState(null)
+
+  // ── Agreement ──
+  const [agreement, setAgreement] = useState(null)
+  const [items, setItems] = useState([])
+
+  // ── Filters ──
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+
+  // ── Selection ──
+  const [selectedItems, setSelectedItems] = useState(new Set())
+
+  // ── Schedule mode ──
+  const [showDayPopup, setShowDayPopup] = useState(false)
+
+  // ── Generated schedule lines ──
+  const [scheduleLines, setScheduleLines] = useState([])
+  const [scheduleMode, setScheduleMode] = useState(null) // 'week' | 'day'
+
+  // ── Edit mode ──
+  const [editLines, setEditLines] = useState([])
+  const [editMode, setEditMode] = useState(false)
+
+  // ── Saving ──
+  const [saving, setSaving] = useState(false)
+
+  // ── When supplier selected, load first agreement ──
+  const handleSupplierSubmit = (supp) => {
+    setSupplier(supp)
+    if (supp.agreements.length > 0) {
+      const ag = supp.agreements[0]
+      setAgreement(ag)
+      setItems(ag.items.map(it => ({ ...it })))
+      setSelectedItems(new Set())
+      setScheduleLines([])
+      setScheduleMode(null)
+      setEditMode(false)
+    }
+  }
+
+  // ── Toggle item selection ──
+  const toggleItem = (itemNo) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev)
+      next.has(itemNo) ? next.delete(itemNo) : next.add(itemNo)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set())
+    } else {
+      setSelectedItems(new Set(items.map(it => it.itemNo)))
+    }
+  }
+
+  // ── Generate: Week ──
+  const handleWeek = () => {
+    if (selectedItems.size === 0) return
+    const selected = items.filter(it => selectedItems.has(it.itemNo))
+    const lines = selected.map(it => generateScheduleForItem(it, 'week', 0))
+    setScheduleLines(lines)
+    setScheduleMode('week')
+    setEditMode(false)
+    // Update indicator on items
+    setItems(prev => prev.map(it => selectedItems.has(it.itemNo) ? { ...it, indicator: 'W' } : it))
+  }
+
+  // ── Generate: Day ──
+  const handleDayClick = () => {
+    if (selectedItems.size === 0) return
+    setShowDayPopup(true)
+  }
+
+  const handleDayGenerate = (dayCount) => {
+    setShowDayPopup(false)
+    const selected = items.filter(it => selectedItems.has(it.itemNo))
+    const lines = selected.map(it => generateScheduleForItem(it, 'day', dayCount))
+    setScheduleLines(lines)
+    setScheduleMode('day')
+    setEditMode(false)
+    setItems(prev => prev.map(it => selectedItems.has(it.itemNo) ? { ...it, indicator: 'D' } : it))
+  }
+
+  // ── Edit ──
+  const handleEdit = () => {
+    if (selectedItems.size === 0) return
+    // If schedule already generated for selected items, use those. Otherwise generate fresh
+    const selected = items.filter(it => selectedItems.has(it.itemNo))
+    const existing = scheduleLines.filter(sl => selectedItems.has(sl.itemNo))
+    if (existing.length > 0) {
+      setEditLines(existing.map(l => ({ ...l, days: [...l.days], forecast: [...l.forecast] })))
+    } else {
+      // Default: generate day=5 for editing
+      setEditLines(selected.map(it => generateScheduleForItem(it, 'day', 5)))
+    }
+    setEditMode(true)
+  }
+
+  // ── Save schedule ──
+  const handleSaveSchedule = async () => {
+    setSaving(true)
+    try {
+      await scheduleGenerateApi.saveScheduleLines(agreement.id, scheduleLines)
+      // Update status to In Draft
+      setItems(prev => prev.map(it => {
+        const inSchedule = scheduleLines.find(sl => sl.itemNo === it.itemNo)
+        return inSchedule ? { ...it, status: 'In Draft' } : it
+      }))
+      setScheduleLines([])
+      setScheduleMode(null)
+    } catch (err) { console.error(err) }
+    finally { setSaving(false) }
+  }
+
+  const handleCancelSchedule = () => {
+    setScheduleLines([])
+    setScheduleMode(null)
+  }
+
+  // ── Save edit ──
+  const handleSaveEdit = async () => {
+    setSaving(true)
+    try {
+      await scheduleGenerateApi.saveScheduleLines(agreement.id, editLines)
+      setItems(prev => prev.map(it => {
+        const inEdit = editLines.find(el => el.itemNo === it.itemNo)
+        return inEdit ? { ...it, status: 'In Draft' } : it
+      }))
+      setEditMode(false)
+      setEditLines([])
+    } catch (err) { console.error(err) }
+    finally { setSaving(false) }
+  }
+
+  const handleCancelEdit = () => {
+    setEditMode(false)
+    setEditLines([])
+  }
+
+  // ── Approve ──
+  const handleApprove = async () => {
+    if (selectedItems.size === 0) return
+    setSaving(true)
+    try {
+      await scheduleGenerateApi.approveSchedule(agreement.id, Array.from(selectedItems))
+      setItems(prev => prev.map(it => {
+        if (!selectedItems.has(it.itemNo)) return it
+        if (it.status === 'In Draft') return { ...it, status: 'In Approval' }
+        if (it.status === 'In Approval') return { ...it, status: 'Generated' }
+        return it
+      }))
+    } catch (err) { console.error(err) }
+    finally { setSaving(false) }
+  }
+
+  // ── Clear filters ──
+  const handleClear = () => { setFromDate(''); setToDate('') }
+
+  // ── Status style ──
+  const statusStyle = (status) => {
+    switch (status) {
+      case 'Generated':     return 'text-[#107e3e] bg-[#e8f5ec]'
+      case 'In Approval':   return 'text-[#0a6ed1] bg-[#ebf5ff]'
+      case 'In Draft':      return 'text-[#e76500] bg-[#fff3e8]'
+      default:              return 'text-[#b45309] bg-[#fef7e6]'
+    }
+  }
+
+  const statusDot = (status) => {
+    switch (status) {
+      case 'Generated':     return '#107e3e'
+      case 'In Approval':   return '#0a6ed1'
+      case 'In Draft':      return '#e76500'
+      default:              return '#b45309'
+    }
+  }
+
+  // ── Show supplier popup if no supplier ──
+  if (!supplier) {
+    return (
+      <PageLayout>
+        <style>{`@keyframes modalIn{from{opacity:0;transform:scale(0.94) translateY(-8px)}to{opacity:1;transform:scale(1) translateY(0)}}.anim-modal{animation:modalIn .22s ease-out both}`}</style>
+        <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)] flex items-center justify-center">
+          <SupplierPopup onSubmit={handleSupplierSubmit} />
+        </div>
+      </PageLayout>
+    )
+  }
+
+  if (!agreement) {
+    return <PageLayout><div className="flex items-center justify-center h-64 text-[#6a6d70]">No agreements found for this supplier.</div></PageLayout>
+  }
 
   return (
     <PageLayout>
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .anim-fade { animation: fadeIn 0.35s ease-out both; }
-        .anim-slide-l { animation: slideInLeft 0.3s ease-out both; }
-        .anim-slide-r { animation: slideInRight 0.35s ease-out both; }
-        .anim-scale { animation: scaleIn 0.25s ease-out both; }
-        .anim-drawer { animation: slideInDrawer 0.28s ease-out both; }
-        .row-stagger > * { animation: fadeIn 0.4s ease-out both; }
-        .row-stagger > *:nth-child(1) { animation-delay: 0.02s; }
-        .row-stagger > *:nth-child(2) { animation-delay: 0.06s; }
-        .row-stagger > *:nth-child(3) { animation-delay: 0.10s; }
-        .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
-        .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
-        .row-stagger > *:nth-child(6) { animation-delay: 0.22s; }
-        .sidebar-transition { transition: width 0.25s ease; }
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes modalIn{from{opacity:0;transform:scale(0.94) translateY(-8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+        .anim-fade{animation:fadeIn .3s ease-out both}
+        .anim-modal{animation:modalIn .22s ease-out both}
+        .row-stagger>*{animation:fadeIn .3s ease-out both}
+        .row-stagger>*:nth-child(1){animation-delay:.02s}.row-stagger>*:nth-child(2){animation-delay:.05s}
+        .row-stagger>*:nth-child(3){animation-delay:.08s}.row-stagger>*:nth-child(4){animation-delay:.11s}
+        .row-stagger>*:nth-child(5){animation-delay:.14s}
       `}</style>
 
-      <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
-        <div className="flex" style={{ minHeight: 'calc(100vh - 220px)' }}>
+      {showDayPopup && <DayCountPopup onSubmit={handleDayGenerate} onCancel={() => setShowDayPopup(false)} />}
 
-          {/* ─── MOBILE: overlay backdrop ─── */}
-          {mobileSidebarOpen && (
-            <div
-              className="fixed inset-0 bg-black/40 z-40 md:hidden"
-              onClick={() => setMobileSidebarOpen(false)}
-            />
+      <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
+        <main className="bg-white" style={{ minHeight: 'calc(100vh - 220px)' }}>
+
+          {/* ── Header ── */}
+          <div className="px-4 sm:px-6 lg:px-10 pt-5 pb-4 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Schedule Agreement</div>
+                <h1 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{agreement.id}</h1>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                <span className="text-[14px] font-semibold text-[#32363a] bg-white px-4 py-2 rounded-lg border border-[#e5e5e5] shadow-sm">{agreement.date}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[13px]">
+              <div>
+                <span className="text-[#6a6d70] text-[11px] uppercase tracking-wider font-semibold">Vendor Code</span>
+                <div className="text-[#32363a] font-semibold mt-0.5">{supplier.code}</div>
+              </div>
+              <div>
+                <span className="text-[#6a6d70] text-[11px] uppercase tracking-wider font-semibold">Vendor Name</span>
+                <div className="text-[#32363a] font-semibold mt-0.5">{supplier.name}</div>
+              </div>
+              <div>
+                <span className="text-[#6a6d70] text-[11px] uppercase tracking-wider font-semibold">Plant</span>
+                <div className="text-[#32363a] font-semibold mt-0.5">{agreement.plantName}</div>
+              </div>
+              <div>
+                <span className="text-[#6a6d70] text-[11px] uppercase tracking-wider font-semibold">Company Code</span>
+                <div className="text-[#32363a] font-semibold mt-0.5">{agreement.companyCode}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Action bar: Edit / Approve + Filters + Week/Day ── */}
+          <div className="px-4 sm:px-6 lg:px-10 py-4 border-b border-[#e5e5e5] bg-[#fafbfc]">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+
+              {/* Filters */}
+              <div className="flex flex-wrap items-end gap-3 flex-1">
+                <div className="w-[170px]">
+                  <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Delivery From Date</label>
+                  <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                    className="w-full h-9 pl-3 pr-2 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+                </div>
+                <div className="w-[170px]">
+                  <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">To Date</label>
+                  <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                    className="w-full h-9 pl-3 pr-2 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+                </div>
+                <button onClick={handleClear} className="h-9 px-4 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all">Clear</button>
+              </div>
+
+              {/* Week/Day + Edit/Approve */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Week / Day radio buttons */}
+                <div className="flex items-center border border-[#d9d9d9] rounded-lg overflow-hidden bg-white">
+                  <button onClick={handleWeek} disabled={selectedItems.size === 0}
+                    className={`flex items-center gap-1.5 px-3 h-9 text-[12px] font-semibold transition-all disabled:opacity-40 ${scheduleMode === 'week' ? 'bg-[#0a6ed1] text-white' : 'text-[#32363a] hover:bg-[#f5f6f7]'}`}>
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${scheduleMode === 'week' ? 'border-white' : 'border-[#0a6ed1]'}`}>
+                      {scheduleMode === 'week' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    Week
+                  </button>
+                  <div className="w-px h-5 bg-[#d9d9d9]" />
+                  <button onClick={handleDayClick} disabled={selectedItems.size === 0}
+                    className={`flex items-center gap-1.5 px-3 h-9 text-[12px] font-semibold transition-all disabled:opacity-40 ${scheduleMode === 'day' ? 'bg-[#0a6ed1] text-white' : 'text-[#32363a] hover:bg-[#f5f6f7]'}`}>
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${scheduleMode === 'day' ? 'border-white' : 'border-[#0a6ed1]'}`}>
+                      {scheduleMode === 'day' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    Day
+                  </button>
+                </div>
+
+                <button onClick={handleEdit} disabled={selectedItems.size === 0}
+                  className="h-9 px-4 text-[13px] font-semibold text-white bg-[#e76500] rounded-lg hover:bg-[#c55600] transition-all shadow-sm disabled:opacity-40">
+                  Edit
+                </button>
+                <button onClick={handleApprove} disabled={selectedItems.size === 0}
+                  className="h-9 px-4 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40">
+                  Approve
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Items Table ── */}
+          <div className="px-4 sm:px-6 lg:px-10 py-4">
+            <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
+              <div className="overflow-auto">
+                <table className="w-full text-[13px] border-collapse" style={{ minWidth: '900px' }}>
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] text-[#6a6d70]">
+                      <th className="py-3 px-3 border-b border-r border-[#e5e5e5] w-10 text-center">
+                        <input type="checkbox" checked={selectedItems.size === items.length && items.length > 0}
+                          onChange={toggleAll} className="accent-[#0a6ed1] w-4 h-4 cursor-pointer" />
+                      </th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">Item No.</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">Sap Code</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">Description</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">HSN Code</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">Total Monthly Schedule</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">Unit Price</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[11px]">Indicator</th>
+                      <th className="text-center font-semibold py-3 px-3 border-b border-[#e5e5e5] uppercase tracking-wider text-[11px]">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="row-stagger">
+                    {items.map(item => {
+                      const checked = selectedItems.has(item.itemNo)
+                      return (
+                        <tr key={item.itemNo} className={`border-b border-[#f0f0f0] transition-colors ${checked ? 'bg-[#ebf5ff]' : 'hover:bg-[#fafbfc]'}`}>
+                          <td className="py-3 px-3 text-center border-r border-[#f0f0f0]">
+                            <input type="checkbox" checked={checked} onChange={() => toggleItem(item.itemNo)} className="accent-[#0a6ed1] w-4 h-4 cursor-pointer" />
+                          </td>
+                          <td className="py-3 px-3 text-center font-semibold text-[#32363a] border-r border-[#f0f0f0]">{item.itemNo}</td>
+                          <td className="py-3 px-3 text-center font-semibold text-[#0a6ed1] border-r border-[#f0f0f0]">{item.sapCode}</td>
+                          <td className="py-3 px-3 text-center text-[#32363a] font-medium border-r border-[#f0f0f0]">{item.description}</td>
+                          <td className="py-3 px-3 text-center text-[#32363a] border-r border-[#f0f0f0]">{item.hsnCode}</td>
+                          <td className="py-3 px-3 text-center font-bold text-[#32363a] tabular-nums border-r border-[#f0f0f0]">{item.totalQuantity.toLocaleString()}</td>
+                          <td className="py-3 px-3 text-center font-semibold text-[#32363a] tabular-nums border-r border-[#f0f0f0]">{item.unitPrice.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-center border-r border-[#f0f0f0]">
+                            {item.indicator ? (
+                              <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[12px] font-bold ${item.indicator === 'W' ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'bg-[#fff3e8] text-[#e76500]'}`}>{item.indicator}</span>
+                            ) : <span className="text-[#d9d9d9]">—</span>}
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusStyle(item.status)}`}>
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusDot(item.status) }} />
+                              {item.status}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Schedule Lines Grid (generated) ── */}
+          {scheduleLines.length > 0 && !editMode && (
+            <div className="px-4 sm:px-6 lg:px-10 pb-6">
+              <ScheduleGrid
+                lines={scheduleLines}
+                editable={false}
+                onCancel={handleCancelSchedule}
+                onSave={handleSaveSchedule}
+                saving={saving}
+              />
+            </div>
           )}
 
-          {/* ─── MOBILE: sidebar drawer ─── */}
-          <aside
-            data-sidebar
-            className={`
-              fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50
-              md:hidden anim-drawer
-              ${mobileSidebarOpen ? 'flex' : 'hidden'}
-            `}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e5] bg-[#fafbfc]">
-              <span className="text-[14px] font-semibold text-[#32363a]">Schedule Agreements</span>
-              <button
-                onClick={() => setMobileSidebarOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
+          {/* ── Edit Grid ── */}
+          {editMode && editLines.length > 0 && (
+            <div className="px-4 sm:px-6 lg:px-10 pb-6">
+              <ScheduleGrid
+                lines={editLines}
+                editable={true}
+                onChange={setEditLines}
+                onCancel={handleCancelEdit}
+                onSave={handleSaveEdit}
+                saving={saving}
+              />
             </div>
-            <SidebarContent />
-          </aside>
+          )}
 
-          {/* ─── DESKTOP: sidebar ─── */}
-          <aside
-            data-sidebar
-            className={`
-              hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0
-              ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}
-            `}
-          >
-            <SidebarContent />
-          </aside>
-
-          {/* ─── RIGHT PANE ─── */}
-          <main className="flex-1 bg-white overflow-hidden flex flex-col anim-slide-r min-w-0">
-            {agreement && (
-              <>
-                {/* ── Header ── */}
-                <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 sm:pb-6 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white flex-shrink-0">
-                  <div className="flex items-center gap-3 mb-4 md:hidden">
-                    <button
-                      data-sidebar-toggle
-                      onClick={() => setMobileSidebarOpen(true)}
-                      className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M3 6h18M3 12h18M3 18h18" />
-                      </svg>
-                    </button>
-                    <span className="text-[13px] text-[#6a6d70]">Agreements</span>
-                  </div>
-
-                  <div className="flex items-start justify-between mb-4 sm:mb-5">
-                    <div>
-                      <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">
-                        Schedule Agreement
-                      </div>
-                      <h2 className="text-[20px] sm:text-[24px] font-bold text-[#0a6ed1] tracking-tight">{agreement.id}</h2>
-                    </div>
-                    <span className="text-[13px] sm:text-[14px] text-[#6a6d70] bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-[#e5e5e5] shadow-sm whitespace-nowrap ml-3">
-                      {agreement.date}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 text-[14px]">
-                    <div>
-                      <div className="text-[#6a6d70] text-[12px] uppercase tracking-wider mb-1 font-semibold">Plant</div>
-                      <div className="text-[#32363a] font-medium">{agreement.plantName}</div>
-                    </div>
-                    <div>
-                      <div className="text-[#6a6d70] text-[12px] uppercase tracking-wider mb-1 font-semibold">Company Code</div>
-                      <div className="text-[#32363a] font-medium">{agreement.companyCode}</div>
-                    </div>
-                    <div>
-                      <div className="text-[#6a6d70] text-[12px] uppercase tracking-wider mb-1 font-semibold">Vendor</div>
-                      <div className="text-[#32363a] font-medium">{agreement.vendor}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── Tab indicator ── */}
-                <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-6 flex-shrink-0">
-                  <div className="inline-flex flex-col items-center pb-2.5 border-b-2 border-[#0a6ed1]">
-                    <div className="w-10 h-10 rounded-full bg-[#0a6ed1] flex items-center justify-center mb-1.5 shadow-md transition-transform hover:scale-110">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <path d="M9 9h6M9 12h6M9 15h4"/>
-                      </svg>
-                    </div>
-                    <span className="text-[13px] text-[#0a6ed1] font-semibold">Items</span>
-                  </div>
-                </div>
-
-                {/* ── Filters ── */}
-                <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-[#e5e5e5] flex-shrink-0">
-                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-end">
-                    <div className="w-full sm:w-auto sm:min-w-[160px] sm:flex-1 sm:max-w-[200px]">
-                      <label className="block text-[13px] text-[#6a6d70] mb-1.5 font-semibold">Delivery From Date</label>
-                      <input
-                        type="date"
-                        value={ddmmyyyyToIso(fromDate)}
-                        onChange={(e) => setFromDate(isoToDdmmyyyy(e.target.value))}
-                        max={toDate ? ddmmyyyyToIso(toDate) : undefined}
-                        className={`w-full h-10 pl-3 pr-2 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all duration-200 ${dateError ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
-                      />
-                    </div>
-
-                    <div className="w-full sm:w-auto sm:min-w-[160px] sm:flex-1 sm:max-w-[200px]">
-                      <label className="block text-[13px] text-[#6a6d70] mb-1.5 font-semibold">To Date</label>
-                      <input
-                        type="date"
-                        value={ddmmyyyyToIso(toDate)}
-                        onChange={(e) => setToDate(isoToDdmmyyyy(e.target.value))}
-                        min={fromDate ? ddmmyyyyToIso(fromDate) : undefined}
-                        className={`w-full h-10 pl-3 pr-2 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all duration-200 ${dateError ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
-                      />
-                    </div>
-
-                    <div className="w-full sm:flex-[2]">
-                      <label className="block text-[13px] text-[#6a6d70] mb-1.5 font-semibold">
-                        Enter Storage Location (comma-separated)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={storageSearch}
-                          onChange={(e) => setStorageSearch(e.target.value)}
-                          placeholder="e.g. RM01, RM02"
-                          className="w-full h-10 pl-3.5 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-                        />
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-3 text-[#6a6d70]">
-                          <circle cx="11" cy="11" r="7" />
-                          <path d="m21 21-4.3-4.3" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    <div className="w-full sm:w-auto sm:self-end">
-                      <button
-                        onClick={handleClearFilters}
-                        className="w-full sm:w-auto h-10 px-5 text-[14px] font-semibold text-[#cc1c14] bg-[#fce8e6] border border-[#fce8e6] rounded-lg hover:bg-[#fad6d3] hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-
-                  {dateError && (
-                    <div className="mt-2 flex items-center gap-1.5 text-[13px] text-[#cc1c14] anim-fade">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 8v4M12 16h.01" />
-                      </svg>
-                      {dateError}
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Items table ── */}
-                <div
-                  className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-6 overflow-hidden flex flex-col"
-                  style={{ height: '50vh' }}
-                >
-                  <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden flex-1">
-
-                    <div className="overflow-auto h-full">
-                      <table
-                        className="w-full min-w-[900px] table-fixed text-[14px] border-collapse"
-                      >
-                        {/* HEADER */}
-                        <thead className="sticky top-0 z-10">
-                          <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            <th className="text-center font-semibold py-3.5 px-4 w-[90px]">
-                              Item No.
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[150px]">
-                              Material
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[120px]">
-                              HSN Code
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[120px]">
-                              Storage
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[160px]">
-                              Delivery Schedule
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[160px]">
-                              Scheduled Qty
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[140px]">
-                              Unit Price
-                            </th>
-
-                            <th className="text-center font-semibold py-3.5 px-4 w-[150px]">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-
-                        {/* BODY */}
-                        <tbody className="row-stagger bg-white">
-                          {filteredItems.length === 0 && (
-                            <tr>
-                              <td
-                                colSpan={8}
-                                className="py-12 text-center text-[14px] text-[#6a6d70]"
-                              >
-                                No items match the current filters
-                              </td>
-                            </tr>
-                          )}
-
-                          {filteredItems.map((item) => (
-                            <tr
-                              key={`${item.itemNo}-${item.materialNumber}`}
-                              className="border-b border-[#f0f0f0] hover:bg-[#fafbfc] text-center transition-all duration-200"
-                            >
-                              <td className="py-3.5 px-4 text-center text-[#32363a] font-semibold">
-                                {item.itemNo}
-                              </td>
-
-                              <td className="text-center py-3.5 px-4">
-                                <button
-                                  onClick={() => handleOpenMaterial(item)}
-                                  className="text-center group"
-                                >
-                                  <div className="text-[#32363a] text-center font-medium group-hover:text-[#0a6ed1]">
-                                    {item.materialName}
-                                  </div>
-
-                                  <div className="text-[#0a6ed1] text-center font-semibold text-[13px] underline underline-offset-2">
-                                    {item.materialNumber}
-                                  </div>
-                                </button>
-                              </td>
-
-                              <td className="py-3.5 px-4 text-center text-[#32363a]">
-                                {item.hsnCode}
-                              </td>
-
-                              <td className="py-3.5 px-4">
-                                <span className="px-2.5 py-1 bg-[#f0f4f8] text-center text-[#32363a] rounded-md text-[13px] font-semibold">
-                                  {item.storageLocation}
-                                </span>
-                              </td>
-
-                              <td className="py-3.5 px-4 text-[#32363a] text-center font-semibold tabular-nums">
-                                {Number(item.deliverySchedule).toLocaleString()}
-                              </td>
-
-                              <td className="py-3.5 px-4 text-center text-[#32363a] tabular-nums">
-                                <span
-                                  className={
-                                    item.scheduledQuantity > 0
-                                      ? 'font-semibold text-[#107e3e]'
-                                      : 'text-[#6a6d70]'
-                                  }
-                                >
-                                  {Number(item.scheduledQuantity).toLocaleString()}
-                                </span>
-                              </td>
-
-                              <td className="py-3.5 px-4 text-center text-[#32363a] font-semibold tabular-nums">
-                                {item.unitPrice}
-                              </td>
-
-                              <td className="text-center py-3.5 px-4">
-                                {item.status === 'Generated' ? (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5ec] text-[#107e3e] rounded-full text-[13px] font-semibold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#107e3e] animate-pulse"></span>
-                                    {item.status}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#fef7e6] text-[#b45309] rounded-full text-[13px] font-semibold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#b45309]"></span>
-                                    {item.status}
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                  </div>
-                </div>
-              </>
-            )}
-          </main>
-        </div>
+        </main>
       </div>
-
-      {/* ─── SCHEDULE CREATION MODAL ─── */}
-      {activeMaterial && (
-        <ScheduleCreationModal
-          activeMaterial={activeMaterial}
-          onClose={handleScheduleCreationClose}
-        />
-      )}
     </PageLayout>
   )
 }
