@@ -30,6 +30,7 @@ const DEFAULT_ITEMS = [
         deliveredUnit: 'NO',
         asnCreated: '1.00',
         avlAsnQty: '99.00',
+        fgStock: '',
         netPrice: '10.00',
         supplierNetPrice: '10.00',
         taxMismatch: false,
@@ -57,6 +58,7 @@ const DEFAULT_ITEMS = [
         deliveredUnit: 'KG',
         asnCreated: '0.00',
         avlAsnQty: '100.00',
+        fgStock: '',
         netPrice: '70.23',
         supplierNetPrice: '70.23',
         taxMismatch: false,
@@ -503,6 +505,25 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
                         <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
                     </div>
                     <div className="mb-3">
+                        <label className="block text-[12px] font-semibold text-[#374151] mb-1">FG Stock</label>
+                        <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={item.fgStock}
+                            onChange={e => onUpdate('fgStock', e.target.value)}
+                            placeholder="0"
+                            className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all ${
+                                item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0)
+                                    ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                                    : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+                            }`}
+                        />
+                        {item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) && (
+                            <p className="text-[11px] text-[#cc1c14] font-semibold mt-1">Must be greater than {item.avlAsnQty}</p>
+                        )}
+                    </div>
+                    <div className="mb-3">
                         <label className="block text-[12px] font-semibold text-[#374151] mb-1">Supplier Net Price</label>
                         <input type="text" value={item.supplierNetPrice} onChange={e => onUpdate('supplierNetPrice', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
                     </div>
@@ -623,7 +644,7 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
             <div className="px-4 py-3 space-y-3">
 
                 {/* ROW 1 — quantity read-only fields + editable avlAsnQty + prices */}
-                <div className="grid grid-cols-7 gap-3">
+                <div className="grid grid-cols-8 gap-3">
                     <Field label="Total Qty">
                         <ReadonlyVal value={`${item.totalQty} ${item.totalUnit}`} accent />
                     </Field>
@@ -644,6 +665,27 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
                             className={inputCls + ' font-semibold text-[#0a6ed1]'}
                         />
                     </Field>
+                    <Field label="FG Stock">
+                            <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={item.fgStock}
+                                onChange={e => onUpdate('fgStock', e.target.value)}
+                                placeholder="0"
+                                className={
+                                    inputCls +
+                                    (item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0)
+                                        ? ' border-[#cc1c14] ring-1 ring-[#cc1c14]/30'
+                                        : '')
+                                }
+                            />
+                            {item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) && (
+                                <span className="text-[10px] text-[#cc1c14] font-semibold leading-tight">
+                                    Must be &gt; {item.avlAsnQty}
+                                </span>
+                            )}
+                        </Field>
                     <Field label="Net Price">
                         <ReadonlyVal value={item.netPrice} />
                     </Field>
@@ -920,6 +962,9 @@ export default function CreateASN({ agreement: propAgreement }) {
         if (!invoiceAmount) errors.push('Invoice Amount is required.')
         // if (pdirAttachments.length === 0) errors.push('At least one PDIR Attachment is required (Attachments → PDIR Attachment).')
 
+        const fgVal = parseFloat(it.fgStock)
+        const asnVal = parseFloat(it.avlAsnQty || 0)
+
         const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
         selectedItems.forEach(it => {
             if (it.batches && it.batches.length > 0) {
@@ -930,6 +975,14 @@ export default function CreateASN({ agreement: propAgreement }) {
                 }
                 const bad = it.batches.find(b => !b.batchCode || !b.quantity)
                 if (bad) errors.push(`Item ${it.itemNo}: incomplete batch row(s). Each row needs Batch/Heat Code and Quantity.`)
+            }
+
+            const fgVal = parseFloat(it.fgStock)
+            const asnVal = parseFloat(it.avlAsnQty || 0)
+            if (it.fgStock === '' || isNaN(fgVal)) {
+                errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock is required.`)
+            } else if (fgVal <= asnVal) {
+                errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${asnVal}).`)
             }
         })
         return errors
