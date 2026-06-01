@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { findModuleByTilePath, NAV_MODULES } from '../router/index.jsx'
+import { getUser, logout } from '../lib/auth'
 
 const COMPANY = 'DSAL'
 const COMPANY_FULL = 'FIEM Industries Limited'
@@ -48,7 +49,6 @@ const CSS = `
     font-family: var(--sans);
   }
 
-  /* ── LOGO ── */
   .hdr-logo {
     display: flex;
     align-items: center;
@@ -57,18 +57,13 @@ const CSS = `
     padding: 4px 4px 4px 0;
     transition: opacity 0.18s ease;
   }
-
-  .hdr-logo:hover {
-    opacity: 0.8;
-  } 
-
+  .hdr-logo:hover { opacity: 0.8; }
   .hdr-logo-img {
     width: 80px;
     height: auto;
     object-fit: contain;
     display: block;
   }
-
   .hdr-logo-fallback {
     font-family: var(--sans);
     font-size: 16px;
@@ -77,7 +72,6 @@ const CSS = `
     letter-spacing: 0.06em;
   }
 
-  /* ── DIVIDER ── */
   .hdr-div {
     width: 1px;
     height: 22px;
@@ -86,7 +80,6 @@ const CSS = `
     flex-shrink: 0;
   }
 
-  /* ── BREADCRUMB ── */
   .hdr-nav {
     display: flex;
     align-items: center;
@@ -97,7 +90,6 @@ const CSS = `
     flex-shrink: 0;
     font-family: var(--sans);
   }
-
   .hdr-crumb-home {
     font-weight: 500;
     color: var(--ink-2);
@@ -106,23 +98,19 @@ const CSS = `
     transition: color 0.15s ease;
     letter-spacing: -0.005em;
   }
-
   .hdr-crumb-home:hover { color: var(--accent); }
-
   .hdr-crumb-sep {
     color: var(--muted);
     font-size: 14px;
     flex-shrink: 0;
     opacity: 0.6;
   }
-
   .hdr-crumb-module {
     color: var(--ink-2);
     flex-shrink: 0;
     font-weight: 400;
     letter-spacing: -0.005em;
   }
-
   .hdr-crumb-tile {
     font-weight: 500;
     color: var(--accent);
@@ -138,7 +126,6 @@ const CSS = `
     font-size: 11px;
   }
 
-  /* ── SEARCH ── */
   .hdr-search-wrap {
     flex: 1;
     display: flex;
@@ -149,13 +136,11 @@ const CSS = `
     position: relative;
     z-index: 2100;
   }
-
   .hdr-search-box {
     position: relative;
     width: 100%;
     max-width: 380px;
   }
-
   .hdr-search-icon {
     position: absolute;
     left: 11px;
@@ -166,7 +151,6 @@ const CSS = `
     display: flex;
     align-items: center;
   }
-
   .hdr-search-input {
     width: 100%;
     height: 34px;
@@ -182,21 +166,17 @@ const CSS = `
     letter-spacing: -0.005em;
     box-sizing: border-box;
   }
-
   .hdr-search-input::placeholder { color: var(--muted); }
-
   .hdr-search-input:focus {
     border-color: var(--accent);
     background: #ffffff;
     box-shadow: 0 0 0 4px rgba(11,61,145,0.10);
   }
-
   .hdr-search-input:focus + .hdr-search-kbd {
     color: var(--accent);
     border-color: var(--accent-brd);
     background: rgba(11,61,145,0.06);
   }
-
   .hdr-search-kbd {
     position: absolute;
     right: 10px;
@@ -214,8 +194,6 @@ const CSS = `
     pointer-events: none;
     transition: all 0.18s ease;
   }
-
-  /* Search dropdown */
   .hdr-search-drop {
     position: absolute;
     z-index: 2200;
@@ -228,23 +206,14 @@ const CSS = `
     border: 1px solid var(--border-hard);
     border-radius: 14px;
     overflow: hidden;
-    box-shadow:
-      0 1px 0 rgba(255,255,255,0.6) inset,
-      0 16px 40px -8px rgba(11,61,145,0.18),
-      0 4px 12px rgba(11,61,145,0.08);
-    z-index: 999;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 16px 40px -8px rgba(11,61,145,0.18), 0 4px 12px rgba(11,61,145,0.08);
     max-height: 360px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--border-hard) transparent;
   }
-
   .hdr-search-drop::-webkit-scrollbar { width: 4px; }
-  .hdr-search-drop::-webkit-scrollbar-thumb {
-    background: var(--border-hard);
-    border-radius: 4px;
-  }
-
+  .hdr-search-drop::-webkit-scrollbar-thumb { background: var(--border-hard); border-radius: 4px; }
   .hdr-search-group-label {
     font-family: var(--mono);
     font-size: 9px;
@@ -256,7 +225,6 @@ const CSS = `
     background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
-
   .hdr-search-item {
     display: flex;
     align-items: center;
@@ -266,12 +234,8 @@ const CSS = `
     transition: background 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
-
   .hdr-search-item:hover,
-  .hdr-search-item.focused {
-    background: var(--accent-soft);
-  }
-
+  .hdr-search-item.focused { background: var(--accent-soft); }
   .hdr-search-item-icon {
     width: 30px;
     height: 30px;
@@ -285,16 +249,13 @@ const CSS = `
     color: var(--accent);
     transition: all 0.15s ease;
   }
-
   .hdr-search-item:hover .hdr-search-item-icon,
   .hdr-search-item.focused .hdr-search-item-icon {
     background: var(--accent);
     color: #ffffff;
     border-color: var(--accent);
   }
-
   .hdr-search-item-text { flex: 1; min-width: 0; }
-
   .hdr-search-item-label {
     font-size: 12.5px;
     font-weight: 500;
@@ -305,13 +266,11 @@ const CSS = `
     font-family: var(--sans);
     letter-spacing: -0.005em;
   }
-
   .hdr-search-item-label mark {
     background: transparent;
     color: var(--accent);
     font-weight: 600;
   }
-
   .hdr-search-item-module {
     font-size: 10px;
     color: var(--muted);
@@ -319,19 +278,16 @@ const CSS = `
     font-family: var(--mono);
     letter-spacing: 0.02em;
   }
-
   .hdr-search-arrow {
     color: var(--muted);
     flex-shrink: 0;
     transition: transform 0.2s ease, color 0.15s ease;
   }
-
   .hdr-search-item:hover .hdr-search-arrow,
   .hdr-search-item.focused .hdr-search-arrow {
     color: var(--accent);
     transform: translateX(2px);
   }
-
   .hdr-search-empty {
     padding: 28px 16px;
     text-align: center;
@@ -340,7 +296,6 @@ const CSS = `
     font-family: var(--sans);
   }
 
-  /* ── COMPANY BLOCK ── */
   .hdr-company {
     display: none;
     flex-direction: column;
@@ -348,15 +303,12 @@ const CSS = `
     gap: 3px;
     flex-shrink: 0;
   }
-
   @media (min-width: 1024px) { .hdr-company { display: flex; } }
-
   .hdr-company-row1 {
     display: flex;
     align-items: center;
     gap: 8px;
   }
-
   .hdr-badge {
     font-family: var(--mono);
     font-size: 9.5px;
@@ -367,7 +319,6 @@ const CSS = `
     background: var(--accent);
     color: #ffffff;
   }
-
   .hdr-company-name {
     font-family: var(--sans);
     font-size: 12px;
@@ -379,7 +330,6 @@ const CSS = `
     white-space: nowrap;
     letter-spacing: -0.005em;
   }
-
   .hdr-company-row2 {
     display: flex;
     align-items: center;
@@ -389,14 +339,12 @@ const CSS = `
     font-family: var(--sans);
     letter-spacing: -0.005em;
   }
-
   .hdr-loc {
     display: flex;
     align-items: center;
     gap: 4px;
   }
 
-  /* ── ACTIONS ── */
   .hdr-actions {
     display: flex;
     align-items: center;
@@ -404,7 +352,6 @@ const CSS = `
     margin-left: 8px;
     flex-shrink: 0;
   }
-
   .hdr-icon-btn {
     position: relative;
     width: 36px;
@@ -419,13 +366,11 @@ const CSS = `
     justify-content: center;
     transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   }
-
   .hdr-icon-btn:hover {
     background: var(--accent-soft);
     color: var(--accent);
     border-color: var(--accent-brd);
   }
-
   .hdr-notif-dot {
     position: absolute;
     top: 7px;
@@ -437,7 +382,6 @@ const CSS = `
     border: 2px solid var(--bg);
     box-shadow: 0 0 0 1px rgba(11,61,145,0.2);
   }
-
   .hdr-avatar {
     width: 36px;
     height: 36px;
@@ -455,7 +399,6 @@ const CSS = `
     cursor: pointer;
     transition: box-shadow 0.18s ease, transform 0.18s ease;
   }
-
   .hdr-avatar:hover {
     box-shadow: 0 0 0 4px rgba(11,61,145,0.15);
     transform: translateY(-1px);
@@ -468,7 +411,6 @@ const CSS = `
     .hdr-nav { display: none; }
     .hdr-search-wrap { padding: 0 8px 0 0; }
   }
-
   @media (max-width: 480px) {
     .hdr-search-kbd { display: none; }
   }
@@ -511,8 +453,19 @@ export default function Header() {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [focusedIdx, setFocusedIdx] = useState(0)
+  const [showMenu, setShowMenu] = useState(false)
+
   const inputRef = useRef(null)
   const wrapRef = useRef(null)
+  const menuRef = useRef(null)
+
+  const user = getUser()
+  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U'
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   const allItems = buildSearchIndex()
 
@@ -530,6 +483,7 @@ export default function Header() {
     return acc
   }, {})
 
+  // Global keyboard shortcuts
   useEffect(() => {
     const onKey = (e) => {
       if ((e.key === '/' || (e.ctrlKey && e.key === 'k')) && document.activeElement !== inputRef.current) {
@@ -538,6 +492,7 @@ export default function Header() {
       }
       if (e.key === 'Escape') {
         setOpen(false)
+        setShowMenu(false)
         inputRef.current?.blur()
       }
     }
@@ -545,10 +500,22 @@ export default function Header() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Close search on outside click
   useEffect(() => {
     const onClickOutside = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) {
         setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  // Close avatar menu on outside click
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false)
       }
     }
     document.addEventListener('mousedown', onClickOutside)
@@ -573,9 +540,7 @@ export default function Header() {
   }
 
   const handleSelect = (item) => {
-    if (item.tile.path) {
-      navigate(item.tile.path)
-    }
+    if (item.tile.path) navigate(item.tile.path)
     setOpen(false)
     setQuery('')
   }
@@ -702,6 +667,8 @@ export default function Header() {
         {/* Actions */}
         <div className="hdr-actions">
           <div className="hdr-div" style={{ margin: '0 4px' }} />
+
+          {/* Notifications */}
           <button className="hdr-icon-btn" aria-label="Notifications">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -709,7 +676,82 @@ export default function Header() {
             </svg>
             <span className="hdr-notif-dot" />
           </button>
-          <button className="hdr-avatar" aria-label="Profile">AW</button>
+
+          {/* Avatar + dropdown */}
+          <div style={{ position: 'relative' }} ref={menuRef}>
+            <button
+              className="hdr-avatar"
+              aria-label="Profile"
+              onClick={() => setShowMenu(v => !v)}
+            >
+              {initials}
+            </button>
+
+            {showMenu && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                background: '#fff', border: '1px solid rgba(15,23,42,0.12)',
+                borderRadius: '12px', minWidth: '210px',
+                boxShadow: '0 16px 40px -8px rgba(11,61,145,0.18), 0 4px 12px rgba(11,61,145,0.08)',
+                overflow: 'hidden', zIndex: 3000
+              }}>
+
+                {/* User info */}
+                <div style={{
+                  padding: '14px 16px',
+                  borderBottom: '1px solid rgba(15,23,42,0.08)',
+                  background: '#f4f6fa'
+                }}>
+                  <div style={{
+                    fontFamily: 'Geist, sans-serif', fontSize: '13px',
+                    fontWeight: 600, color: '#0f172a', marginBottom: '2px'
+                  }}>
+                    {user?.name ?? 'User'}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Geist Mono, monospace', fontSize: '10.5px',
+                    color: '#94a3b8', marginBottom: '8px',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                  }}>
+                    {user?.email}
+                  </div>
+                  <span style={{
+                    fontFamily: 'Geist Mono, monospace', fontSize: '9px',
+                    fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase',
+                    background: '#0b3d91', color: '#fff',
+                    padding: '3px 9px', borderRadius: '5px',
+                    display: 'inline-block'
+                  }}>
+                    {user?.role}
+                  </span>
+                </div>
+
+                {/* Sign out */}
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    width: '100%', padding: '11px 16px',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    fontFamily: 'Geist, sans-serif', fontSize: '13px',
+                    color: '#e74c3c', textAlign: 'left',
+                    transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#fdecea'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sign out
+                </button>
+
+              </div>
+            )}
+          </div>
+
         </div>
 
       </header>

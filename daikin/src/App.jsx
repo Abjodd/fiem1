@@ -1,111 +1,78 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+import LoginPage from './pages/LoginPage.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
 import './app.css'
 
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
-import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'  //20th May Requirement
-import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'  //New Requirement given on 14th May
+import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'
+import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'
 
-//Reports
+// Reports
 import ForecastReport from './pages/reports/ForecastReport.jsx'
 import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
-//goodsreceipt
+
+// Goods Receipt
 import GateInMIGO from './pages/goodsreceipt/GateInMIGO.jsx'
-//logistics
+
+// Logistics
 import DeliverySchedule from './pages/logistics/DeliverySchedule.jsx'
-//asnreport
+
+// ASN
 import Asnreport from './pages/asn/Asnreport.jsx'
-  
 
 // Shipment
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
 import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
 import GateInGateOut from './pages/shipment/gateingateout.jsx'
+
+// Other
 import CreateASN from './pages/purchasing/createASN.jsx'
-import PageLayout from './layouts/PageLayout.jsx'
-
-// Landing
 import LandingPage from './components/landingpage.jsx'
-
 
 export default function App() {
   return (
-    
     <Routes>
 
-      {/* First Page */}
-      <Route path="/" element={<Navigate to="/landing" replace />} />
-      {/* Create ASN - New Route */}
-      <Route path="/purchasing/create-asn" element={<CreateASN />} />
+      {/* Public */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* Landing Page */}
-      <Route path="/landing" element={<LandingPage />} />
+      {/* Landing */}
+      <Route path="/landing" element={<ProtectedRoute><LandingPage /></ProtectedRoute>} />
 
-      {/* Dashboard / Main Layout */}
-      <Route path="/dashboard" element={<MainLayout />} />
+      {/* Dashboard */}
+      <Route path="/dashboard" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
 
       {/* Purchasing */}
-      <Route
-        path="/purchasing/schedule-release"
-        element={<ScheduleRelease />}
-      />
-
-      <Route
-        path="/purchasing/purchase-order"
-        element={<PurchaseOrder />}
-      />
-
-      <Route
-        path="/purchasing/po-schedule-report"
-        element={<POScheduleReport />}
-      />
-
-      <Route
-        path="/purchasing/schedule-generate"
-        element={<ScheduleGenerate />}
-      />
+      <Route path="/purchasing/create-asn"         element={<ProtectedRoute><CreateASN /></ProtectedRoute>} />
+      <Route path="/purchasing/schedule-release"   element={<ProtectedRoute><ScheduleRelease /></ProtectedRoute>} />
+      <Route path="/purchasing/purchase-order"     element={<ProtectedRoute><PurchaseOrder /></ProtectedRoute>} />
+      <Route path="/purchasing/po-schedule-report" element={<ProtectedRoute><POScheduleReport /></ProtectedRoute>} />
+      <Route path="/purchasing/schedule-generate"  element={<ProtectedRoute><ScheduleGenerate /></ProtectedRoute>} />
 
       {/* Reports */}
-      <Route
-        path="/reports/forecast-report" element={<ForecastReport />}
-      />
+      <Route path="/reports/forecast-report"       element={<ProtectedRoute><ForecastReport /></ProtectedRoute>} />
+      <Route path="/reports/vendor-ledger-report"  element={<ProtectedRoute><VendorLedgerReport /></ProtectedRoute>} />
 
-      <Route
-        path="/reports/vendor-ledger-report" element={<VendorLedgerReport />}
-      />
-      {/*goods receipt*/}
-      <Route
-        path="/goodsreceipt/gatein-to-migo" element={<GateInMIGO />}
-      />
-      {/*logistics*/}
-      <Route
-        path="/logistics/delivery-schedule" element={<DeliverySchedule />}
-      />
-      {/*asn*/}
-      <Route
-        path="/asn/asn-report" element={<Asnreport />}
-      />
+      {/* Goods Receipt */}
+      <Route path="/goodsreceipt/gatein-to-migo"   element={<ProtectedRoute><GateInMIGO /></ProtectedRoute>} />
+
+      {/* Logistics */}
+      <Route path="/logistics/delivery-schedule"   element={<ProtectedRoute><DeliverySchedule /></ProtectedRoute>} />
+
+      {/* ASN */}
+      <Route path="/asn/asn-report"                element={<ProtectedRoute><Asnreport /></ProtectedRoute>} />
 
       {/* Shipment */}
-      <Route
-        path="/shipment/advance-shipping-note"
-        element={<Advanceshipment />}
-      />
-
-      <Route
-        path="/shipment/goods-movement"
-        element={<GoodsMovement />}
-      />
-
-      <Route
-        path="/shipment/gatein-gateout"
-        element={<GateInGateOut />}
-      />
+      <Route path="/shipment/advance-shipping-note" element={<ProtectedRoute><Advanceshipment /></ProtectedRoute>} />
+      <Route path="/shipment/goods-movement"        element={<ProtectedRoute><GoodsMovement /></ProtectedRoute>} />
+      <Route path="/shipment/gatein-gateout"        element={<ProtectedRoute><GateInGateOut /></ProtectedRoute>} />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/landing" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
 
     </Routes>
   )
