@@ -68,18 +68,22 @@ export default function PurchaseOrder() {
     return () => { cancelled = true }
   }, [])
 
-  // ── Load detail when selection changes ──
+  // Select first id
   useEffect(() => {
-    if (!selectedAgreementId) { setAgreement(null); return }
-    let cancelled = false
-    setDetailLoading(true)
-    setDetailError(null)
-    purchaseOrderApi.getAsnHeader(selectedAgreementId)
-      .then(data => { if (!cancelled) setAgreement(data) })
-      .catch(err => { if (!cancelled) setDetailError(err.message) })
-      .finally(() => { if (!cancelled) setDetailLoading(false) })
-    return () => { cancelled = true }
-  }, [selectedAgreementId])
+      if (!selectedAgreementId && agreements.length > 0) {
+        setSelectedAgreementId(agreements[0].id)
+      }
+    }, [agreements, selectedAgreementId])
+
+      // ── load selected agreement detail ──
+      useEffect(() => {
+        let cancelled = false
+        if (!selectedAgreementId) { setAgreement(null); return }
+        purchaseOrderApi.getAsnHeader(selectedAgreementId)
+          .then(data => { if (!cancelled) setAgreement(data) })
+          .catch(err => { if (!cancelled) setError(err.message) })
+        return () => { cancelled = true }
+      }, [selectedAgreementId])
 
   // ── Close filter on outside click ──
   useEffect(() => {
@@ -169,7 +173,7 @@ export default function PurchaseOrder() {
   const handleClearFilters = () => {
     setFromDate('')
     setToDate('')
-    setStorageSearch('')
+    //setStorageSearch('')
   }
 
   const handleCreateAsn = async () => {
@@ -484,7 +488,7 @@ export default function PurchaseOrder() {
 
                   {/* Filters */}
                   <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-[#e5e5e5] flex-shrink-0">
-                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-end">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
                       <div className="w-full sm:w-auto sm:min-w-[160px] sm:flex-1 sm:max-w-[200px]">
                         <label className="block text-[13px] text-[#6a6d70] mb-1.5 font-semibold">Delivery From Date</label>
                         <input type="date"
@@ -503,19 +507,10 @@ export default function PurchaseOrder() {
                           className={`w-full h-10 pl-3 pr-2 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all duration-200 ${dateError ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
                         />
                       </div>
-                      <div className="w-full sm:flex-[2]">
-                        <label className="block text-[13px] text-[#6a6d70] mb-1.5 font-semibold">Enter Storage Location (comma-separated)</label>
-                        <div className="relative">
-                          <input type="text" value={storageSearch} onChange={(e) => setStorageSearch(e.target.value)}
-                            placeholder="e.g. RM01, RM02"
-                            className="w-full h-10 pl-3.5 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-                          />
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-3 text-[#6a6d70]">
-                            <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="w-full sm:w-auto sm:self-end">
+                      {/* Clear button — vertically centered via items-center on the parent row,
+                          with a top label spacer so it sits flush with the inputs */}
+                      <div className="w-full sm:w-auto sm:self-auto flex flex-col">
+                        <span className="hidden sm:block text-[13px] mb-1.5 select-none opacity-0 pointer-events-none font-semibold">Clear</span>
                         <button onClick={handleClearFilters}
                           className="w-full sm:w-auto h-10 px-5 text-[14px] font-semibold text-[#cc1c14] bg-[#fce8e6] border border-[#fce8e6] rounded-lg hover:bg-[#fad6d3] hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap">
                           Clear
@@ -532,74 +527,64 @@ export default function PurchaseOrder() {
                     )}
                   </div>
 
-                  {/* Items table */}
+                  {/* Items table — single table with sticky thead for perfect column alignment */}
                   <div className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-0 overflow-hidden flex flex-col" style={{ height: '40vh' }}>
-                    <div className="rounded-xl border border-[#e5e5e5] shadow-sm flex flex-col overflow-hidden flex-1">
-                      <table className="w-full text-[14px] flex-shrink-0" style={{ minWidth: '640px' }}>
-                        <thead>
+                    <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-auto flex-1">
+                      <table className="w-full text-[14px]" style={{ minWidth: '640px', borderCollapse: 'collapse' }}>
+                        <thead className="sticky top-0 z-10">
                           <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Item No.</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Material</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">HSN Code</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Storage</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">PO Qty</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">ASN Created</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Unit Price</th>
-                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Status</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[90px]">Item No.</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[100px]">Material</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[110px]">HSN Code</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[100px]">PO Qty</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[110px]">ASN Created</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[110px]">Unit Price</th>
+                            <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider w-[120px]">Status</th>
                             <th className="w-10"></th>
                           </tr>
                         </thead>
+                        <tbody className="row-stagger">
+                          {filteredItems.length === 0 && (
+                            <tr>
+                              <td colSpan={8} className="py-12 text-center text-[14px] text-[#6a6d70]">
+                                No items match the current filters
+                              </td>
+                            </tr>
+                          )}
+                          {filteredItems.map((item, idx) => (
+                            <tr key={`${item.itemNo}-${idx}`}
+                              onClick={() => setSelectedItem({ poNo: agreement.poNo, itemNo: item.itemNo })}
+                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-all duration-200 group">
+                              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.itemNo}</td>
+                              <td className="py-3.5 px-4">
+                                <div className="text-[#32363a] font-medium">{item.materialName}</div>
+                                <div className="text-[#0a6ed1] font-medium text-[13px]">{item.materialNumber}</div>
+                              </td>
+                              <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode}</td>
+                              <td className="py-3.5 px-4 text-[#32363a]">
+                                <span className="font-semibold">{item.poQty}</span>{' '}
+                                <span className="text-[#6a6d70] text-[13px]">{item.deliveryUnit}</span>
+                              </td>
+                              <td className="py-3.5 px-4 text-[#32363a]">
+                                {item.deliveredQty} <span className="text-[#6a6d70] text-[13px]">{item.deliveryUnit}</span>
+                              </td>
+                              <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.unitPrice}</td>
+                              <td className="py-3.5 px-4">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5ec] text-[#107e3e] rounded-full text-[13px] font-semibold">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#107e3e] animate-pulse"></span>
+                                  {item.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-3">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                                  className="text-[#0a6ed1] group-hover:translate-x-1.5 transition-transform duration-200">
+                                  <path d="M9 18l6-6-6-6" />
+                                </svg>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
                       </table>
-                      <div className="flex-1 overflow-y-auto min-h-0">
-                        <table className="w-full text-[14px]" style={{ minWidth: '640px' }}>
-                          <tbody className="row-stagger">
-                            {filteredItems.length === 0 && (
-                              <tr>
-                                <td colSpan={9} className="py-12 text-center text-[14px] text-[#6a6d70]">
-                                  No items match the current filters
-                                </td>
-                              </tr>
-                            )}
-                            {filteredItems.map((item, idx) => (
-                              <tr key={`${item.itemNo}-${idx}`}
-                                onClick={() => setSelectedItem({ poNo: agreement.poNo, itemNo: item.itemNo })}
-                                className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-all duration-200 group">
-                                <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.itemNo}</td>
-                                <td className="py-3.5 px-4">
-                                  <div className="text-[#32363a] font-medium">{item.materialName}</div>
-                                  <div className="text-[#0a6ed1] font-medium text-[13px]">{item.materialNumber}</div>
-                                </td>
-                                <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode}</td>
-                                <td className="py-3.5 px-4">
-                                  <span className="px-2.5 py-1 bg-[#f0f4f8] text-[#32363a] rounded-md text-[13px] font-semibold">
-                                    {item.storageLocation || '—'}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4 text-[#32363a]">
-                                  <span className="font-semibold">{item.poQty}</span>{' '}
-                                  <span className="text-[#6a6d70] text-[13px]">{item.deliveryUnit}</span>
-                                </td>
-                                <td className="py-3.5 px-4 text-[#32363a]">
-                                  {item.deliveredQty} <span className="text-[#6a6d70] text-[13px]">{item.deliveryUnit}</span>
-                                </td>
-                                <td className="py-3.5 px-4 text-[#32363a] font-semibold">{item.unitPrice}</td>
-                                <td className="py-3.5 px-4">
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5ec] text-[#107e3e] rounded-full text-[13px] font-semibold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#107e3e] animate-pulse"></span>
-                                    {item.status}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-3">
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                                    className="text-[#0a6ed1] group-hover:translate-x-1.5 transition-transform duration-200">
-                                    <path d="M9 18l6-6-6-6" />
-                                  </svg>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
                     </div>
                   </div>
 
@@ -649,7 +634,7 @@ export default function PurchaseOrder() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 bg-[#fafbfc] rounded-xl border border-[#e5e5e5]">
                     {[
                       ['HSN Code', drilledItem.hsnCode],
-                      ['Storage Location', drilledItem.storageLocation || '—'],
+                      // ['Storage Location', drilledItem.storageLocation || '—'],
                       ['PO Qty', `${drilledItem.poQty} ${drilledItem.deliveryUnit}`],
                       ['ASN Created', `${drilledItem.deliveredQty} ${drilledItem.deliveryUnit}`],
                       ['Unit Price', `${drilledItem.unitPrice} ${drilledItem.currency}`],

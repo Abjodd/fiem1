@@ -432,100 +432,124 @@ export default function POScheduleReport() {
                   </span>
                 </div>
 
-                <div className="flex-1 overflow-auto min-h-0">
-                  <table className="w-full text-[13px] border-collapse" style={{ minWidth: '1900px', tableLayout: 'fixed' }}>
-                    <colgroup>
-                      <col style={{ width: '130px' }} /> {/* PO/SA Number */}
-                      <col style={{ width: '68px'  }} /> {/* PO Item */}
-                      <col style={{ width: '170px' }} /> {/* Material */}
-                      <col style={{ width: '145px' }} /> {/* Plant */}
-                      <col style={{ width: '150px' }} /> {/* Vendor */}
-                      <col style={{ width: '100px' }} /> {/* Challan */}
-                      <col style={{ width: '115px' }} /> {/* Exp Ship */}
-                      <col style={{ width: '105px' }} /> {/* Delivery */}
-                      <col style={{ width: '85px'  }} /> {/* PO Qty */}
-                      <col style={{ width: '95px'  }} /> {/* Conf Qty */}
-                      <col style={{ width: '95px'  }} /> {/* Del Qty */}
-                      <col style={{ width: '80px'  }} /> {/* ASN */}
-                      <col style={{ width: '95px'  }} /> {/* Pending ASN Qty (NEW) */}
-                      <col style={{ width: '105px' }} /> {/* Pending Confirm Qty (NEW) */}
-                      <col style={{ width: '90px'  }} /> {/* Purchase Group (NEW) */}
-                      <col style={{ width: '90px'  }} /> {/* Doc Type (NEW) */}
-                      <col style={{ width: '125px' }} /> {/* Adherence */}
-                    </colgroup>
+                
+                <div className="overflow-auto flex-1" style={{ minHeight: 0 }}>
+                  <table className="w-full text-[13px]" style={{ minWidth: '1400px', borderCollapse: 'collapse' }}>
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] text-[#6a6d70]">
-                        {['PO/SA Number','PO Item','Material','Plant','Vendor','Challan No.','Exp. Ship Date','Delivery Date','PO Qty','Conf. Qty','Del. Qty','ASN Created','Pending ASN','Pending Confirm','Pur. Group','Doc Type','Adherence %'].map(h => (
-                          <th key={h} className="text-left font-semibold py-3 px-3 text-[11px] uppercase tracking-wider border-b border-[#e5e5e5] whitespace-nowrap">{h}</th>
+                        {[
+                          { label: 'PO/SA Number',    w: 'w-[120px]' },
+                          { label: 'PO Item',         w: 'w-[70px]'  },
+                          { label: 'Material',        w: 'w-[160px]' },
+                          { label: 'Plant',           w: 'w-[110px]' },
+                          { label: 'Vendor',          w: 'w-[130px]' },
+                          { label: 'Challan No.',     w: 'w-[100px]' },
+                          { label: 'Exp. Ship Date',  w: 'w-[110px]' },
+                          { label: 'Delivery Date',   w: 'w-[100px]' },
+                          { label: 'PO Qty',          w: 'w-[80px]'  },
+                          { label: 'Conf. Qty',       w: 'w-[80px]'  },
+                          { label: 'Del. Qty',        w: 'w-[80px]'  },
+                          { label: 'ASN Created',     w: 'w-[90px]'  },
+                          { label: 'Pending ASN',     w: 'w-[90px]'  },
+                          { label: 'Pending Confirm', w: 'w-[110px]' },
+                          { label: 'Pur. Group',      w: 'w-[90px]'  },
+                          { label: 'Doc Type',        w: 'w-[80px]'  },
+                          { label: 'Adherence %',     w: 'w-[90px]'  },
+                        ].map(({ label, w }) => (
+                          <th key={label} className={`text-left font-semibold py-3 px-3 text-[11px] uppercase tracking-wider border-b border-[#e5e5e5] whitespace-nowrap ${w}`}>
+                            {label}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="row-stagger">
                       {rows.length === 0 ? (
-                        <tr><td colSpan={17} className="py-12 text-center text-[14px] text-[#6a6d70]">No records found</td></tr>
+                        <tr>
+                          <td colSpan={17} className="py-12 text-center text-[14px] text-[#6a6d70]">No records found</td>
+                        </tr>
                       ) : rows.map((row, idx) => {
                         const adh = calcAdherence(row.poQty, row.deliveredQty)
                         const adhColor = adh === null ? 'text-[#6a6d70]' : adh === 0 ? 'text-[#107e3e]' : adh <= 25 ? 'text-[#b45309]' : 'text-[#cc1c14]'
-                        const adhBg = adh === null ? 'bg-[#f5f6f7]' : adh === 0 ? 'bg-[#e8f5ec]' : adh <= 25 ? 'bg-[#fef7e6]' : 'bg-[#fce8e6]'
+                        const adhBg    = adh === null ? 'bg-[#f5f6f7]'  : adh === 0 ? 'bg-[#e8f5ec]'  : adh <= 25 ? 'bg-[#fef7e6]'  : 'bg-[#fce8e6]'
                         return (
-                          <tr key={`${row.poSaNumber}-${row.poItem}-${idx}`} className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors">
+                          <tr key={`${row.poSaNumber}-${row.poItem}-${idx}`}
+                            className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors">
+
                             <td className="py-3 px-3 text-[#0a6ed1] font-semibold truncate">{row.poSaNumber}</td>
+
                             <td className="py-3 px-3 text-[#32363a] font-semibold text-center">{row.poItem}</td>
+
                             <td className="py-3 px-3">
                               <div className="text-[#32363a] font-semibold text-[12px] truncate">{row.materialNumber}</div>
                               <div className="text-[#6a6d70] text-[11px] mt-0.5 truncate">{row.materialName}</div>
                             </td>
+
                             <td className="py-3 px-3">
                               <div className="text-[#32363a] font-semibold text-[12px]">{row.plantCode}</div>
                               <div className="text-[#6a6d70] text-[11px] mt-0.5 truncate">{row.plantName}</div>
                             </td>
+
                             <td className="py-3 px-3">
                               <div className="text-[#32363a] font-semibold text-[12px]">{row.vendorCode}</div>
                               <div className="text-[#6a6d70] text-[11px] mt-0.5 truncate">{row.vendorName}</div>
                             </td>
+
                             <td className="py-3 px-3">
-                              {row.challanNo ? <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-medium">{row.challanNo}</span> : <span className="text-[#94a3b8] text-[12px]">—</span>}
+                              {row.challanNo
+                                ? <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-medium">{row.challanNo}</span>
+                                : <span className="text-[#94a3b8] text-[12px]">—</span>}
                             </td>
+
                             <td className="py-3 px-3 text-[#32363a] text-[12px]">{row.expectedShipmentDate}</td>
                             <td className="py-3 px-3 text-[#32363a] text-[12px]">{row.deliveryDate}</td>
+
                             <td className="py-3 px-3 text-right">
                               <span className="font-semibold text-[#32363a]">{row.poQty.toLocaleString()}</span>
                               <span className="text-[#6a6d70] text-[11px] ml-1">{row.poUnit}</span>
                             </td>
+
                             <td className="py-3 px-3 text-right">
                               <span className="font-semibold text-[#32363a]">{row.confirmedQty.toLocaleString()}</span>
                             </td>
-                            <td className="py-3 px-3 text-right">
-                              <span className={`font-semibold ${row.deliveredQty > 0 ? 'text-[#107e3e]' : 'text-[#6a6d70]'}`}>{row.deliveredQty.toLocaleString()}</span>
-                            </td>
-                            <td className="py-3 px-3 text-right font-semibold text-[#32363a]">{row.asnCreated.toLocaleString()}</td>
 
-                            {/* NEW: Pending ASN Qty */}
+                            <td className="py-3 px-3 text-right">
+                              <span className={`font-semibold ${row.deliveredQty > 0 ? 'text-[#107e3e]' : 'text-[#6a6d70]'}`}>
+                                {row.deliveredQty.toLocaleString()}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3 text-right font-semibold text-[#32363a]">
+                              {row.asnCreated.toLocaleString()}
+                            </td>
+
                             <td className="py-3 px-3 text-right">
                               <span className={`font-semibold tabular-nums ${row.pendingAsnQty > 0 ? 'text-[#b45309]' : 'text-[#6a6d70]'}`}>
                                 {row.pendingAsnQty.toLocaleString()}
                               </span>
                             </td>
 
-                            {/* NEW: Pending Confirm Qty */}
                             <td className="py-3 px-3 text-right">
                               <span className={`font-semibold tabular-nums ${row.pendingConfirmQty > 0 ? 'text-[#cc1c14]' : 'text-[#6a6d70]'}`}>
                                 {row.pendingConfirmQty.toLocaleString()}
                               </span>
                             </td>
 
-                            {/* NEW: Purchase Group */}
                             <td className="py-3 px-3">
-                              <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">{row.purchaseGroup || '—'}</span>
+                              <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">
+                                {row.purchaseGroup || '—'}
+                              </span>
                             </td>
 
-                            {/* NEW: PO Doc Type */}
                             <td className="py-3 px-3">
-                              <span className="px-2 py-0.5 bg-[#ebf5ff] text-[#0a6ed1] rounded text-[11px] font-semibold">{row.docType || '—'}</span>
+                              <span className="px-2 py-0.5 bg-[#ebf5ff] text-[#0a6ed1] rounded text-[11px] font-semibold">
+                                {row.docType || '—'}
+                              </span>
                             </td>
 
                             <td className="py-3 px-3 text-right">
-                              {adh === null ? <span className="text-[#94a3b8] text-[12px]">—</span> : (
+                              {adh === null ? (
+                                <span className="text-[#94a3b8] text-[12px]">—</span>
+                              ) : (
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums ${adhBg} ${adhColor}`}>
                                   {adh === 0
                                     ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7"/></svg>

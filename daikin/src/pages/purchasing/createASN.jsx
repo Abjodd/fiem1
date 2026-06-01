@@ -794,7 +794,7 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove, requiredHint }) {
                     <h3 className="text-[18px] font-bold text-[#32363a]">
                         {kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})
                     </h3>
-                    {requiredHint && <p className="text-[12px] text-[#cc1c14] mt-0.5 font-semibold">{requiredHint}</p>}
+                    {/* {requiredHint && <p className="text-[12px] text-[#cc1c14] mt-0.5 font-semibold">{requiredHint}</p>} */}
                 </div>
                 <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-4 h-9 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98] transition-all">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -918,7 +918,7 @@ export default function CreateASN({ agreement: propAgreement }) {
         if (selectedItemNos.length === 0) errors.push('Select at least one item to create ASN.')
         if (!invoiceNumber) errors.push('Invoice Number is required.')
         if (!invoiceAmount) errors.push('Invoice Amount is required.')
-        if (pdirAttachments.length === 0) errors.push('At least one PDIR Attachment is required (Attachments → PDIR Attachment).')
+        // if (pdirAttachments.length === 0) errors.push('At least one PDIR Attachment is required (Attachments → PDIR Attachment).')
 
         const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
         selectedItems.forEach(it => {
@@ -1084,9 +1084,9 @@ export default function CreateASN({ agreement: propAgreement }) {
                                     {totalAttachments}
                                 </span>
                             )}
-                            {pdirAttachments.length === 0 && (
+                            {/* {pdirAttachments.length === 0 && (
                                 <span className="absolute top-1 right-1 w-2 h-2 bg-[#cc1c14] rounded-full" title="PDIR Attachment required" />
-                            )}
+                            )} */}
                         </button>
                     </div>
                 </div>
@@ -1313,13 +1313,13 @@ export default function CreateASN({ agreement: propAgreement }) {
                                 onClick={() => setAttachmentsSubTab('pdir')}
                                 className={`relative px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${attachmentsSubTab === 'pdir' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1]'}`}
                             >
-                                PDIR Attachment <span className="text-[#cc1c14]">*</span>
+                                PDIR Attachment <span className="text-[#cc1c14]"></span>
                                 {pdirAttachments.length > 0 && (
                                     <span className="ml-2 px-1.5 py-0.5 bg-[#107e3e] text-white rounded-full text-[10px] font-bold">{pdirAttachments.length}</span>
                                 )}
-                                {pdirAttachments.length === 0 && (
+                                {/* {pdirAttachments.length === 0 && (
                                     <span className="absolute top-2 right-2 w-2 h-2 bg-[#cc1c14] rounded-full" />
-                                )}
+                                )} */}
                             </button>
                         </div>
 
@@ -1337,7 +1337,7 @@ export default function CreateASN({ agreement: propAgreement }) {
                             <AttachmentsPanel
                                 kind="pdir"
                                 items={pdirAttachments}
-                                requiredHint={pdirAttachments.length === 0 ? 'Required · At least one PDIR file must be uploaded before creating ASN.' : null}
+                                // requiredHint={pdirAttachments.length === 0 ? 'Required · At least one PDIR file must be uploaded before creating ASN.' : null}
                                 onUpload={(att, errMsg) => {
                                     if (errMsg) { setModal({ kind: 'error', title: 'Upload rejected', message: errMsg, primaryLabel: 'OK', onPrimary: () => setModal(null) }); return }
                                     setPdirAttachments(prev => [...prev, att])
