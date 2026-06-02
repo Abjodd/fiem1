@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MOCK_USERS, saveUser } from '../lib/auth';
 
 const HINTS = [
-  { role: 'admin', email: 'arbeel.admin@daikin.com', password: 'admin123', icon: '🛡️', desc: 'Full access' },
-  { role: 'user',  email: 'arbeel.user@daikin.com',  password: 'user123',  icon: '👤', desc: 'Limited access' },
+  { role: 'employee', email: 'arbeel.admin@daikin.com', password: 'admin123', icon: '🛡️', desc: 'Full access' },
+  { role: 'supplier',  email: 'arbeel.user@daikin.com',  password: 'user123',  icon: '👤', desc: 'Limited access' },
 ];
 
 const CSS = `

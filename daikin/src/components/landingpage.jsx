@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NAV_MODULES } from '../router/index';
+import { getUser } from '../lib/auth'
 import { ArrowRight, Bell, Search, Menu, Sun, Moon } from 'lucide-react';
 
 export default function DaikinPortal() {
-    const userName = "Chethan";
-    const [greeting, setGreeting]  = useState("Good Morning");
+    const currentUser = getUser();
+    const userName = currentUser?.name ?? 'User';
+    const [greeting, setGreeting] = useState("Good Morning");
     const [time, setTime] = useState(new Date());
     const [scrolled, setScrolled] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -46,192 +48,192 @@ export default function DaikinPortal() {
     // ── theme tokens ──────────────────────────────────────────
     const t = isDark ? {
         // DARK
-        pageBg:         '#05080d',
-        pageText:       'white',
-        navScrolledBg:  'rgba(5,8,13,0.85)',
+        pageBg: '#05080d',
+        pageText: 'white',
+        navScrolledBg: 'rgba(5,8,13,0.85)',
         navScrolledBorder: 'rgba(255,255,255,0.05)',
         navScrolledShadow: '',
-        logoSub:        'rgba(255,255,255,0.3)',
-        logoSubBorder:  'rgba(255,255,255,0.1)',
-        navActive:      'white',
-        navActiveLine:  '#00A2E8',
-        navInactive:    'rgba(255,255,255,0.55)',
-        iconColor:      'rgba(255,255,255,0.5)',
-        iconHover:      'white',
-        bellColor:      'rgba(255,255,255,0.7)',
-        bellDot:        '#00A2E8',
-        avatarFrom:     '#00A2E8',
-        avatarTo:       '#0066a8',
-        avatarText:     'white',
-        userRole:       'rgba(255,255,255,0.5)',
-        userName:       'white',
-        menuBtn:        'white',
-        toggleBg:       'rgba(255,255,255,0.08)',
-        toggleBorder:   'rgba(255,255,255,0.12)',
-        toggleColor:    'rgba(255,255,255,0.7)',
-        toggleHoverBg:  'rgba(255,255,255,0.14)',
-        gridLine:       'rgba(0,162,232,0.06)',
-        radialSpot:     'rgba(0,162,232,0.25)',
-        floatBlob:      'rgba(0,162,232,0.10)',
-        scanLine:       'rgba(0,162,232,0.8)',
-        badgeBorder:    'rgba(255,255,255,0.1)',
-        badgeBg:        'rgba(255,255,255,0.03)',
-        badgeText:      'rgba(255,255,255,0.7)',
-        badgeDot:       '#00A2E8',
-        h1Main:         'rgba(255,255,255,0.95)',
-        shimmerA:       '#ffffff',
-        shimmerB:       '#00A2E8',
-        shimmerC:       '#ffffff',
-        subText:        'rgba(255,255,255,0.55)',
-        subHighlight:   'rgba(255,255,255,0.8)',
-        btnBg:          '#00A2E8',
-        btnText:        '#05080d',
-        btnHoverBg:     'white',
-        btnShadow:      'rgba(0,162,232,0.4)',
+        logoSub: 'rgba(255,255,255,0.3)',
+        logoSubBorder: 'rgba(255,255,255,0.1)',
+        navActive: 'white',
+        navActiveLine: '#00A2E8',
+        navInactive: 'rgba(255,255,255,0.55)',
+        iconColor: 'rgba(255,255,255,0.5)',
+        iconHover: 'white',
+        bellColor: 'rgba(255,255,255,0.7)',
+        bellDot: '#00A2E8',
+        avatarFrom: '#00A2E8',
+        avatarTo: '#0066a8',
+        avatarText: 'white',
+        userRole: 'rgba(255,255,255,0.5)',
+        userName: 'white',
+        menuBtn: 'white',
+        toggleBg: 'rgba(255,255,255,0.08)',
+        toggleBorder: 'rgba(255,255,255,0.12)',
+        toggleColor: 'rgba(255,255,255,0.7)',
+        toggleHoverBg: 'rgba(255,255,255,0.14)',
+        gridLine: 'rgba(0,162,232,0.06)',
+        radialSpot: 'rgba(0,162,232,0.25)',
+        floatBlob: 'rgba(0,162,232,0.10)',
+        scanLine: 'rgba(0,162,232,0.8)',
+        badgeBorder: 'rgba(255,255,255,0.1)',
+        badgeBg: 'rgba(255,255,255,0.03)',
+        badgeText: 'rgba(255,255,255,0.7)',
+        badgeDot: '#00A2E8',
+        h1Main: 'rgba(255,255,255,0.95)',
+        shimmerA: '#ffffff',
+        shimmerB: '#00A2E8',
+        shimmerC: '#ffffff',
+        subText: 'rgba(255,255,255,0.55)',
+        subHighlight: 'rgba(255,255,255,0.8)',
+        btnBg: '#00A2E8',
+        btnText: '#05080d',
+        btnHoverBg: 'white',
+        btnShadow: 'rgba(0,162,232,0.4)',
         btnHoverShadow: 'rgba(0,162,232,0.6)',
-        ringA:          'rgba(0,162,232,0.20)',
-        ringB:          'rgba(0,162,232,0.30)',
-        ringC:          'rgba(0,162,232,0.40)',
-        ringD:          'rgba(0,162,232,0.50)',
-        gradStop1:      '#00A2E8',
-        gradStop2:      '#00A2E8',
-        gradStop3:      '#00A2E8',
-        outerDot:       '#00A2E8',
-        innerStroke:    '#00A2E8',
-        innerDot1:      '#00A2E8',
-        innerDot2:      '#00A2E8',
-        logoGlow:       'rgba(0,162,232,1)',
-        logoGlowOp:     '0.30',
+        ringA: 'rgba(0,162,232,0.20)',
+        ringB: 'rgba(0,162,232,0.30)',
+        ringC: 'rgba(0,162,232,0.40)',
+        ringD: 'rgba(0,162,232,0.50)',
+        gradStop1: '#00A2E8',
+        gradStop2: '#00A2E8',
+        gradStop3: '#00A2E8',
+        outerDot: '#00A2E8',
+        innerStroke: '#00A2E8',
+        innerDot1: '#00A2E8',
+        innerDot2: '#00A2E8',
+        logoGlow: 'rgba(0,162,232,1)',
+        logoGlowOp: '0.30',
         logoDropShadow: 'rgba(0,162,232,0.5)',
-        orbitDot:       '#00A2E8',
-        sideLabel:      'rgba(255,255,255,0.3)',
-        scrollText:     'rgba(255,255,255,0.4)',
-        scrollLine:     '#00A2E8',
-        sectionBorder:  'rgba(255,255,255,0.05)',
-        sectionGridOp:  '1',
-        modLabel:       '#00A2E8',
-        modH2:          'white',
-        modDesc:        'rgba(255,255,255,0.55)',
-        gridGap:        'rgba(255,255,255,0.05)',
-        gridBorder:     'rgba(255,255,255,0.05)',
-        cardBg:         '#05080d',
-        iconBoxBg:      'rgba(255,255,255,0.04)',
-        iconBoxBorder:  'rgba(255,255,255,0.10)',
-        iconDot:        '#00A2E8',
-        cardNum:        'rgba(255,255,255,0.3)',
-        cardCode:       '#00A2E8',
-        cardTitle:      'white',
-        cardSub:        'rgba(255,255,255,0.5)',
-        cardFooter:     'rgba(255,255,255,0.7)',
-        cardArrow:      'rgba(255,255,255,0.7)',
-        cardHoverCorner:'rgba(0,162,232,0.20)',
-        footerBorder:   'rgba(255,255,255,0.05)',
-        footerBg:       'transparent',
-        footerPoly1:    '#1a1a1a',
-        footerPoly2:    '#00A2E8',
-        footerText:     'rgba(255,255,255,0.6)',
-        footerLinks:    'rgba(255,255,255,0.5)',
+        orbitDot: '#00A2E8',
+        sideLabel: 'rgba(255,255,255,0.3)',
+        scrollText: 'rgba(255,255,255,0.4)',
+        scrollLine: '#00A2E8',
+        sectionBorder: 'rgba(255,255,255,0.05)',
+        sectionGridOp: '1',
+        modLabel: '#00A2E8',
+        modH2: 'white',
+        modDesc: 'rgba(255,255,255,0.55)',
+        gridGap: 'rgba(255,255,255,0.05)',
+        gridBorder: 'rgba(255,255,255,0.05)',
+        cardBg: '#05080d',
+        iconBoxBg: 'rgba(255,255,255,0.04)',
+        iconBoxBorder: 'rgba(255,255,255,0.10)',
+        iconDot: '#00A2E8',
+        cardNum: 'rgba(255,255,255,0.3)',
+        cardCode: '#00A2E8',
+        cardTitle: 'white',
+        cardSub: 'rgba(255,255,255,0.5)',
+        cardFooter: 'rgba(255,255,255,0.7)',
+        cardArrow: 'rgba(255,255,255,0.7)',
+        cardHoverCorner: 'rgba(0,162,232,0.20)',
+        footerBorder: 'rgba(255,255,255,0.05)',
+        footerBg: 'transparent',
+        footerPoly1: '#1a1a1a',
+        footerPoly2: '#00A2E8',
+        footerText: 'rgba(255,255,255,0.6)',
+        footerLinks: 'rgba(255,255,255,0.5)',
         footerLinksHov: 'white',
-        footerMono:     'rgba(255,255,255,0.3)',
-        moduleCardHoverBg:   'rgba(0,162,232,0.04)',
-        moduleCardHoverBorder:'rgba(0,162,232,0.5)',
+        footerMono: 'rgba(255,255,255,0.3)',
+        moduleCardHoverBg: 'rgba(0,162,232,0.04)',
+        moduleCardHoverBorder: 'rgba(0,162,232,0.5)',
         moduleCardHoverArrow: '#00A2E8',
-        moduleIconHoverBg:    'rgba(0,162,232,0.15)',
-        moduleIconHoverBorder:'rgba(0,162,232,0.4)',
+        moduleIconHoverBg: 'rgba(0,162,232,0.15)',
+        moduleIconHoverBorder: 'rgba(0,162,232,0.4)',
     } : {
         // LIGHT
-        pageBg:         '#e9edf3',
-        pageText:       '#0f172a',
-        navScrolledBg:  'rgba(255,255,255,0.90)',
+        pageBg: '#e9edf3',
+        pageText: '#0f172a',
+        navScrolledBg: 'rgba(255,255,255,0.90)',
         navScrolledBorder: 'rgba(11,61,145,0.10)',
         navScrolledShadow: '0 1px 8px rgba(11,61,145,0.06)',
-        logoSub:        '#64748b',
-        logoSubBorder:  'rgba(11,61,145,0.15)',
-        navActive:      '#0b3d91',
-        navActiveLine:  '#0b3d91',
-        navInactive:    '#64748b',
-        iconColor:      '#64748b',
-        iconHover:      '#0b3d91',
-        bellColor:      '#64748b',
-        bellDot:        '#0b3d91',
-        avatarFrom:     '#0b3d91',
-        avatarTo:       '#1e5dd6',
-        avatarText:     'white',
-        userRole:       '#64748b',
-        userName:       '#0f172a',
-        menuBtn:        '#0f172a',
-        toggleBg:       'rgba(11,61,145,0.06)',
-        toggleBorder:   'rgba(11,61,145,0.15)',
-        toggleColor:    '#64748b',
-        toggleHoverBg:  'rgba(11,61,145,0.12)',
-        gridLine:       'rgba(11,61,145,0.07)',
-        radialSpot:     'rgba(11,61,145,0.12)',
-        floatBlob:      'rgba(11,61,145,0.08)',
-        scanLine:       'rgba(11,61,145,0.3)',
-        badgeBorder:    'rgba(11,61,145,0.15)',
-        badgeBg:        'rgba(255,255,255,0.60)',
-        badgeText:      '#334155',
-        badgeDot:       '#0b3d91',
-        h1Main:         '#0f172a',
-        shimmerA:       '#07296b',
-        shimmerB:       '#1e5dd6',
-        shimmerC:       '#07296b',
-        subText:        '#64748b',
-        subHighlight:   '#334155',
-        btnBg:          '#0b3d91',
-        btnText:        'white',
-        btnHoverBg:     '#07296b',
-        btnShadow:      'rgba(11,61,145,0.3)',
+        logoSub: '#64748b',
+        logoSubBorder: 'rgba(11,61,145,0.15)',
+        navActive: '#0b3d91',
+        navActiveLine: '#0b3d91',
+        navInactive: '#64748b',
+        iconColor: '#64748b',
+        iconHover: '#0b3d91',
+        bellColor: '#64748b',
+        bellDot: '#0b3d91',
+        avatarFrom: '#0b3d91',
+        avatarTo: '#1e5dd6',
+        avatarText: 'white',
+        userRole: '#64748b',
+        userName: '#0f172a',
+        menuBtn: '#0f172a',
+        toggleBg: 'rgba(11,61,145,0.06)',
+        toggleBorder: 'rgba(11,61,145,0.15)',
+        toggleColor: '#64748b',
+        toggleHoverBg: 'rgba(11,61,145,0.12)',
+        gridLine: 'rgba(11,61,145,0.07)',
+        radialSpot: 'rgba(11,61,145,0.12)',
+        floatBlob: 'rgba(11,61,145,0.08)',
+        scanLine: 'rgba(11,61,145,0.3)',
+        badgeBorder: 'rgba(11,61,145,0.15)',
+        badgeBg: 'rgba(255,255,255,0.60)',
+        badgeText: '#334155',
+        badgeDot: '#0b3d91',
+        h1Main: '#0f172a',
+        shimmerA: '#07296b',
+        shimmerB: '#1e5dd6',
+        shimmerC: '#07296b',
+        subText: '#64748b',
+        subHighlight: '#334155',
+        btnBg: '#0b3d91',
+        btnText: 'white',
+        btnHoverBg: '#07296b',
+        btnShadow: 'rgba(11,61,145,0.3)',
         btnHoverShadow: 'rgba(11,61,145,0.4)',
-        ringA:          'rgba(11,61,145,0.15)',
-        ringB:          'rgba(11,61,145,0.20)',
-        ringC:          'rgba(11,61,145,0.28)',
-        ringD:          'rgba(11,61,145,0.35)',
-        gradStop1:      '#0b3d91',
-        gradStop2:      '#0b3d91',
-        gradStop3:      '#1e5dd6',
-        outerDot:       '#0b3d91',
-        innerStroke:    '#0b3d91',
-        innerDot1:      '#0b3d91',
-        innerDot2:      '#1e5dd6',
-        logoGlow:       'rgba(11,61,145,0.2)',
-        logoGlowOp:     '1',
+        ringA: 'rgba(11,61,145,0.15)',
+        ringB: 'rgba(11,61,145,0.20)',
+        ringC: 'rgba(11,61,145,0.28)',
+        ringD: 'rgba(11,61,145,0.35)',
+        gradStop1: '#0b3d91',
+        gradStop2: '#0b3d91',
+        gradStop3: '#1e5dd6',
+        outerDot: '#0b3d91',
+        innerStroke: '#0b3d91',
+        innerDot1: '#0b3d91',
+        innerDot2: '#1e5dd6',
+        logoGlow: 'rgba(11,61,145,0.2)',
+        logoGlowOp: '1',
         logoDropShadow: 'rgba(11,61,145,0.18)',
-        orbitDot:       '#0b3d91',
-        sideLabel:      '#94a3b8',
-        scrollText:     '#94a3b8',
-        scrollLine:     '#0b3d91',
-        sectionBorder:  'rgba(11,61,145,0.08)',
-        sectionGridOp:  '0.4',
-        modLabel:       '#0b3d91',
-        modH2:          '#0f172a',
-        modDesc:        '#64748b',
-        gridGap:        'rgba(11,61,145,0.08)',
-        gridBorder:     'rgba(11,61,145,0.10)',
-        cardBg:         'white',
-        iconBoxBg:      '#e9edf3',
-        iconBoxBorder:  'rgba(11,61,145,0.10)',
-        iconDot:        '#0b3d91',
-        cardNum:        '#94a3b8',
-        cardCode:       '#0b3d91',
-        cardTitle:      '#0f172a',
-        cardSub:        '#64748b',
-        cardFooter:     '#334155',
-        cardArrow:      '#94a3b8',
-        cardHoverCorner:'rgba(11,61,145,0.06)',
-        footerBorder:   'rgba(11,61,145,0.10)',
-        footerBg:       'white',
-        footerPoly1:    '#dee3ec',
-        footerPoly2:    '#0b3d91',
-        footerText:     '#64748b',
-        footerLinks:    '#94a3b8',
+        orbitDot: '#0b3d91',
+        sideLabel: '#94a3b8',
+        scrollText: '#94a3b8',
+        scrollLine: '#0b3d91',
+        sectionBorder: 'rgba(11,61,145,0.08)',
+        sectionGridOp: '0.4',
+        modLabel: '#0b3d91',
+        modH2: '#0f172a',
+        modDesc: '#64748b',
+        gridGap: 'rgba(11,61,145,0.08)',
+        gridBorder: 'rgba(11,61,145,0.10)',
+        cardBg: 'white',
+        iconBoxBg: '#e9edf3',
+        iconBoxBorder: 'rgba(11,61,145,0.10)',
+        iconDot: '#0b3d91',
+        cardNum: '#94a3b8',
+        cardCode: '#0b3d91',
+        cardTitle: '#0f172a',
+        cardSub: '#64748b',
+        cardFooter: '#334155',
+        cardArrow: '#94a3b8',
+        cardHoverCorner: 'rgba(11,61,145,0.06)',
+        footerBorder: 'rgba(11,61,145,0.10)',
+        footerBg: 'white',
+        footerPoly1: '#dee3ec',
+        footerPoly2: '#0b3d91',
+        footerText: '#64748b',
+        footerLinks: '#94a3b8',
         footerLinksHov: '#0b3d91',
-        footerMono:     '#94a3b8',
-        moduleCardHoverBg:    'rgba(11,61,145,0.03)',
-        moduleCardHoverBorder:'rgba(11,61,145,0.35)',
+        footerMono: '#94a3b8',
+        moduleCardHoverBg: 'rgba(11,61,145,0.03)',
+        moduleCardHoverBorder: 'rgba(11,61,145,0.35)',
         moduleCardHoverArrow: '#0b3d91',
-        moduleIconHoverBg:    'rgba(11,61,145,0.10)',
-        moduleIconHoverBorder:'rgba(11,61,145,0.30)',
+        moduleIconHoverBg: 'rgba(11,61,145,0.10)',
+        moduleIconHoverBorder: 'rgba(11,61,145,0.30)',
     };
 
     return (
@@ -406,10 +408,7 @@ export default function DaikinPortal() {
                     {/* Right actions */}
                     <div className="flex items-center gap-4">
                         {/* Search */}
-                        <button className="hidden md:flex items-center gap-2 text-sm transition"
-                            style={{ color: t.iconColor }}>
-                            <Search size={16} />
-                        </button>
+                        
 
                         {/* Theme Toggle — visible on ALL screen sizes incl. mobile */}
                         <button
@@ -428,12 +427,7 @@ export default function DaikinPortal() {
                             }
                         </button>
 
-                        {/* Bell */}
-                        <button className="relative transition" style={{ color: t.bellColor }}>
-                            <Bell size={18} />
-                            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full anim-pulse-glow"
-                                style={{ background: t.bellDot }} />
-                        </button>
+                        
 
                         {/* User */}
                         <div className="flex items-center gap-2.5 pl-4"
@@ -446,13 +440,15 @@ export default function DaikinPortal() {
                                 {userName[0]}
                             </div>
                             <div className="hidden md:block text-left">
-                                <div className="text-xs leading-tight" style={{ color: t.userRole }}>Employee</div>
+                                <div className="text-xs leading-tight" style={{ color: t.userRole }}>
+                                    {currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User'}
+                                </div>
                                 <div className="text-sm leading-tight" style={{ color: t.userName }}>{userName} </div>
                             </div>
                         </div>
 
-                            
-                            
+
+
                     </div>
                 </div>
             </nav>
@@ -676,14 +672,14 @@ export default function DaikinPortal() {
                 <div className="max-w-[1480px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-3">
                         <img
-                                        src={import.meta.env.BASE_URL + 'dd.png'}
-                                        alt="FIEM Logo"
-                                        className="relative w-10 h-12 object-contain"
-                                        style={{ filter: `drop-shadow(0 4px 24px ${t.logoDropShadow})` }}
-                                    />
+                            src={import.meta.env.BASE_URL + 'dd.png'}
+                            alt="FIEM Logo"
+                            className="relative w-10 h-12 object-contain"
+                            style={{ filter: `drop-shadow(0 4px 24px ${t.logoDropShadow})` }}
+                        />
                         <span className="text-sm" style={{ color: t.footerText }}>© 2026 FIEM Industries · Internal Portal</span>
                     </div>
-                    
+
                 </div>
             </footer>
         </div>
