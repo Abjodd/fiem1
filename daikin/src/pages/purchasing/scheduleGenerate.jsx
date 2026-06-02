@@ -154,13 +154,13 @@ function ScheduleGrid({ lines, editable, onChange }) {
                 <td key={di} className="py-1 px-0 border-r border-[#f0f0f0] text-center">
                   {editable ? (
                     <input type="number" min="0"
-                      value={line.days[di] || ''}
+                      value={line.days[di] ?? 0}
                       onChange={e => handleCellChange(li, di, e.target.value)}
                       className="w-full h-7 text-center text-[11px] font-semibold border-0 bg-transparent focus:bg-[#ebf5ff] focus:outline-none focus:ring-1 focus:ring-[#0a6ed1] rounded transition-all tabular-nums"
                     />
                   ) : (
                     <span className={`text-[11px] tabular-nums ${line.days[di] > 0 ? 'font-bold text-[#32363a]' : 'text-[#d9d9d9]'}`}>
-                      {line.days[di] || ''}
+                      {line.days[di] ?? 0}
                     </span>
                   )}
                 </td>
