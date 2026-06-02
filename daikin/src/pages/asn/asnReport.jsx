@@ -120,6 +120,7 @@ const VH_OPTIONS = {
   asn:       [{ code: '1200000060/2026', label: '' }, { code: '1200000059/2026', label: '' }, { code: '1200000058/2026', label: '' }],
   shipment:  [{ code: '3000000620', label: '' }, { code: '3000000619', label: '' }],
   ibd:       [{ code: '180001473', label: '' }, { code: '180001472', label: '' }],
+  plant:     [{ code: '1000', label: 'KRL' }, { code: '1001', label: 'MHR' }, { code: '1002', label: 'BLR' }],
 }
 
 const STATUS_OPTIONS = ['', 'GR Completed', 'GR Pending', 'INV. Completed', 'INV. Pending', 'ASN-In Transit']
@@ -131,7 +132,7 @@ const API_BASE_URL = '/api/v1'
 const USE_MOCK = true
 
 const AsnReportApi = {
-  async fetchReport({ asnDateFrom='', asnDateTo='', supplier='', material='', invoiceNo='', refDoc='', asnNo='', shipmentNo='', ibdNo='', status='' } = {}) {
+  async fetchReport({ asnDateFrom='', asnDateTo='', supplier='', material='', invoiceNo='', refDoc='', asnNo='', shipmentNo='', ibdNo='',  status='', plant=''} = {}) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 350))
       let rows = [...MOCK_ROWS]
@@ -141,6 +142,7 @@ const AsnReportApi = {
       if (refDoc)     rows = rows.filter(r => r.baseDocument.includes(refDoc))
       if (asnNo)      rows = rows.filter(r => r.asnNumber.includes(asnNo))
       if (shipmentNo) rows = rows.filter(r => r.shipmentNo.includes(shipmentNo))
+      if (plant)      rows = rows.filter(r => r.plant === plant) 
       if (ibdNo)      rows = rows.filter(r => r.ibdNo.includes(ibdNo))
       if (status) {
         if (status === 'GR Completed')    rows = rows.filter(r => r.grStatus === 'Completed')
@@ -426,6 +428,7 @@ export default function AsnReport() {
   const [asnNo,        setAsnNo]        = useState('')
   const [shipmentNo,   setShipmentNo]   = useState('')
   const [ibdNo,        setIbdNo]        = useState('')
+  const [plant, setPlant] = useState('')
   const [status,       setStatus]       = useState('')
 
   const [filterBarVisible, setFilterBarVisible] = useState(true)
@@ -451,7 +454,7 @@ export default function AsnReport() {
     return new Date(asnDateFrom) > new Date(asnDateTo) ? 'From date must be before To date' : null
   }, [asnDateFrom, asnDateTo])
 
-  const VH_TITLES = { supplier: 'Supplier', material: 'Material', invoice: 'Invoice Number', refDoc: 'Reference Document', asn: 'ASN Number', shipment: 'Shipment Number', ibd: 'IBD Number' }
+  const VH_TITLES = { supplier: 'Supplier', material: 'Material', invoice: 'Invoice Number', refDoc: 'Reference Document', asn: 'ASN Number', shipment: 'Shipment Number', ibd: 'IBD Number',plant: 'Plant'}
 
   const openVh = async (field) => {
     setVhModal(field)
@@ -463,7 +466,8 @@ export default function AsnReport() {
   }
 
   const handleVhSelect = (opt) => {
-    const map = { supplier: setSupplier, material: setMaterial, invoice: setInvoiceNo, refDoc: setRefDoc, asn: setAsnNo, shipment: setShipmentNo, ibd: setIbdNo }
+    const map = { plant: setPlant, supplier: setSupplier, material: setMaterial, invoice: setInvoiceNo,
+              refDoc: setRefDoc, asn: setAsnNo, shipment: setShipmentNo, ibd: setIbdNo }
     map[vhModal]?.(opt.code)
     setVhModal(null)
   }
@@ -473,7 +477,7 @@ export default function AsnReport() {
     setLoading(true)
     setError(null)
     try {
-      const data = await AsnReportApi.fetchReport({ asnDateFrom, asnDateTo, supplier, material, invoiceNo, refDoc, asnNo, shipmentNo, ibdNo, status })
+      const data = await AsnReportApi.fetchReport({ asnDateFrom, asnDateTo, supplier, material, invoiceNo, refDoc, asnNo, shipmentNo, ibdNo, plant, status })
       setRows(data)
       setHasSearched(true)
     } catch (err) {
@@ -488,6 +492,7 @@ export default function AsnReport() {
     setSupplier(''); setMaterial(''); setInvoiceNo(''); setRefDoc('')
     setAsnNo(''); setShipmentNo(''); setIbdNo(''); setStatus('')
     setRows([]); setHasSearched(false); setError(null)
+    setPlant('')
   }
 
   // ── Download ──
@@ -662,7 +667,7 @@ export default function AsnReport() {
               </div>
 
               {/* Row 2: 5 fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                 <div>
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">Reference Document:</label>
                   <VhInput placeholder="Select Reference Doc." value={refDoc} onOpen={() => openVh('refDoc')} />
@@ -679,6 +684,11 @@ export default function AsnReport() {
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">IBD Number:</label>
                   <VhInput placeholder="Select IBD No." value={ibdNo} onOpen={() => openVh('ibd')} />
                 </div>
+                <div>
+                  <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">Plant</label>
+                  <VhInput placeholder="Select Plant" value={plant} onOpen={() => openVh('plant')} />
+                </div>
+                
                 <div>
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">Status:</label>
                   <div className="relative">
