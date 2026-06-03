@@ -629,7 +629,7 @@ export default function DaikinPortal() {
                         {modules.map((m, i) => (
                             <div
                                 key={m.id}
-                                onClick={() => navigate(m.tiles[0]?.path)}
+                                onClick={() => navigate('/dashboard')}
                                 className="module-card group relative p-8 cursor-pointer"
                                 style={{ background: t.cardBg }}
                             >
