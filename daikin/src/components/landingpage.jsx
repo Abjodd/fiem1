@@ -502,7 +502,7 @@ export default function DaikinPortal() {
                         {/* CTA */}
                         <div className="anim-fade-up stagger-3 mt-10 flex flex-wrap items-center gap-4">
                             <button
-                                onClick={() => navigate(`/${m.id}/${m.tiles[0]?.path?.split('/').pop() || ''}`)}
+                                onClick={() => navigate('/dashboard')}
                                 className="btn-shine group relative inline-flex items-center gap-3 px-7 py-4 font-semibold tracking-wide rounded-full transition-all duration-300"
                                 style={{
                                     background: t.btnBg,
