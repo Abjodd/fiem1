@@ -29,22 +29,30 @@ function TrackingPopup({ onSubmit }) {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
-    const parts = combined.trim().split('/')
-    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
-      setError('Please enter in the format: TrackingNumber/Year (e.g. 000000000001/2024)')
-      return
-    }
-    const trackNo = parts[0].trim()
-    const year = parts[1].trim()
-    setLoading(true); setError('')
-    try {
-      const data = await gateEntryApi.getTracking(trackNo, year)
-      if (!data) { setError('Tracking not found.'); setLoading(false); return }
-      let summaryItems = []
-      try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
-      onSubmit({ ...data, summaryItems })
-    } catch (err) { setError(err.message || 'Failed to fetch'); setLoading(false) }
+  const parts = combined.trim().split('/')
+  if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+    setError('Please enter in the format: TrackingNumber/Year (e.g. 000000000001/2024)')
+    return
   }
+  const trackNo = parts[0].trim()
+  const year = parts[1].trim()
+  setLoading(true); setError('')
+  try {
+    const data = await gateEntryApi.getTracking(trackNo, year)
+    if (!data) { setError('Tracking not found.'); setLoading(false); return }
+    let summaryItems = []
+    try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
+    onSubmit({ ...data, summaryItems })
+  } catch (err) {
+    const msg = err.message || 'Failed to fetch'
+    // SAP returns error XML/JSON in message — extract readable part
+    const clean = msg.includes('No record found') || msg.includes('404')
+      ? 'Tracking number not found. Check number and year.'
+      : msg.length > 80 ? 'Invalid tracking number or year.' : msg
+    setError(clean)
+    setLoading(false)
+  }
+}
 
   const handleKeyDown = e => { if (e.key === 'Enter') handleSubmit() }
 
@@ -162,33 +170,33 @@ export default function GateInGateOut() {
   const handleLoaded = (data) => { setTracking(data); setShowLookup(false); setActiveTab('timeline') }
   const handleReset = () => { setShowLookup(true) }
 
-  const refreshTracking = async () => {
-    if (!tracking) return
-    try {
-      const data = await gateEntryApi.getTracking(tracking.trackingNo, tracking.year)
-      let summaryItems = []
-      try { summaryItems = await gateEntryApi.getAsnData(tracking.trackingNo, tracking.year) } catch {}
-      setTracking({ ...data, summaryItems })
-    } catch {}
-  }
+const refreshTracking = async (trackNo, year) => {
+  try {
+    const data = await gateEntryApi.getTracking(trackNo, year)
+    let summaryItems = []
+    try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
+    setTracking({ ...data, summaryItems })
+  } catch {}
+}
 
-  const handleGateReporting = async () => {
-    if (!tracking) return; setGateRepLoading(true)
-    try {
-      await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
-      setSuccessMsg('Gate reporting processed successfully.'); setSuccessOpen(true)
-      await refreshTracking()
-    } catch (err) { console.error(err) } finally { setGateRepLoading(false) }
-  }
+const handleGateReporting = async () => {
+  if (!tracking) return; setGateRepLoading(true)
+  try {
+    await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
+    setSuccessMsg('Gate reporting processed successfully.'); setSuccessOpen(true)
+    await refreshTracking(tracking.trackingNo, tracking.year)  // pass explicitly
+  } catch (err) { console.error(err) } finally { setGateRepLoading(false) }
+}
 
-  const handleGateIn = async () => {
-    if (!tracking) return; setGateInLoading(true)
-    try {
-      const result = await gateEntryApi.processGateIn(tracking.trackingNo, tracking.year)
-      setSuccessMsg(`Gate In processed. Gate Number: ${result.GateNo || '—'}`)
-      setSuccessOpen(true); await refreshTracking()
-    } catch (err) { console.error(err) } finally { setGateInLoading(false) }
-  }
+const handleGateIn = async () => {
+  if (!tracking) return; setGateInLoading(true)
+  try {
+    const result = await gateEntryApi.processGateIn(tracking.trackingNo, tracking.year)
+    setSuccessMsg(`Gate In processed and gate entry number ${result.GateNo || '—'} generated successfully for Reference document Number: ${result.RefDoc || result.Mblnr || '—'}`)
+    setSuccessOpen(true)
+    await refreshTracking(tracking.trackingNo, tracking.year)  // pass explicitly
+  } catch (err) { console.error(err) } finally { setGateInLoading(false) }
+}
 
   // ── Timeline ──
   const renderTimeline = () => {

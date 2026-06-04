@@ -137,15 +137,21 @@ async function odata(path) {
   return res.json()
 }
 
-async function fetchCsrfToken() {
-  const res = await fetch(`${SRV}/`, { method: 'GET', headers: { 'X-CSRF-Token': 'Fetch', Accept: 'application/json' }, credentials: 'include' })
-  return res.headers.get('X-CSRF-Token') || ''
-}
+// async function fetchCsrfToken() {
+//   const res = await fetch(`${SRV}/`, { method: 'GET', headers: { 'X-CSRF-Token': 'Fetch', Accept: 'application/json' }, credentials: 'include' })
+//   return res.headers.get('X-CSRF-Token') || ''
+// }
 
 async function odataWrite(path, payload, method = 'POST') {
-  const csrf = await fetchCsrfToken()
   const res = await fetch(`${SRV}${path}`, {
-    method, headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-Token': csrf }, credentials: 'include',
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Loginid: "vakeel.ahmad@daikinindia.com",
+      Logintype: "E",
+    },
+    credentials: 'include',
     body: JSON.stringify(payload),
   })
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`OData ${method} ${res.status}: ${t.slice(0, 200)}`) }
@@ -189,10 +195,10 @@ export const gateEntryApi = {
 
   // Gate In — GET GateNumberSet(TrackNo='...',Year='...')
   async processGateIn(trackNo, year) {
-    const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
-    const data = await odata(`/GateNumberSet(${key})`)
-    return data.d || {}
-  },
+  const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
+  const data = await odata(`/GateNumberSet(${key})`)
+  return data.d || {}
+},
 }
 
 export default gateEntryApi
