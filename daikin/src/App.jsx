@@ -1,7 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
+import LandingPage from './components/landingpage.jsx'
+import Home from './pages/Home.jsx'
+
 import './app.css'
 
 // Purchasing
@@ -30,49 +34,171 @@ import GateInGateOut from './pages/shipment/gateingateout.jsx'
 
 // Other
 import CreateASN from './pages/purchasing/createASN.jsx'
-import LandingPage from './components/landingpage.jsx'
 
 export default function App() {
   return (
     <Routes>
 
-      {/* Public */}
+      {/* Redirect index.html */}
+      <Route
+        path="/index.html"
+        element={<Navigate to="/" replace />}
+      />
+
+      {/* SAP Auth Check */}
+      <Route path="/" element={<Home />} />
+
+      {/* Manual Login */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Landing */}
-      <Route path="/landing" element={<ProtectedRoute><LandingPage /></ProtectedRoute>} />
+      <Route
+        path="/landing"
+        element={
+          <ProtectedRoute>
+            <LandingPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Dashboard */}
-      <Route path="/dashboard" element={<ProtectedRoute><MainLayout /></ProtectedRoute>} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Purchasing */}
-      <Route path="/purchasing/create-asn"         element={<ProtectedRoute><CreateASN /></ProtectedRoute>} />
-      <Route path="/purchasing/schedule-release"   element={<ProtectedRoute><ScheduleRelease /></ProtectedRoute>} />
-      <Route path="/purchasing/purchase-order"     element={<ProtectedRoute><PurchaseOrder /></ProtectedRoute>} />
-      <Route path="/purchasing/po-schedule-report" element={<ProtectedRoute><POScheduleReport /></ProtectedRoute>} />
-      <Route path="/purchasing/schedule-generate"  element={<ProtectedRoute><ScheduleGenerate /></ProtectedRoute>} />
+      <Route
+        path="/purchasing/create-asn"
+        element={
+          <ProtectedRoute>
+            <CreateASN />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/purchasing/schedule-release"
+        element={
+          <ProtectedRoute>
+            <ScheduleRelease />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/purchasing/purchase-order"
+        element={
+          <ProtectedRoute>
+            <PurchaseOrder />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/purchasing/po-schedule-report"
+        element={
+          <ProtectedRoute>
+            <POScheduleReport />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/purchasing/schedule-generate"
+        element={
+          <ProtectedRoute>
+            <ScheduleGenerate />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Reports */}
-      <Route path="/reports/forecast-report"       element={<ProtectedRoute><ForecastReport /></ProtectedRoute>} />
-      <Route path="/reports/vendor-ledger-report"  element={<ProtectedRoute><VendorLedgerReport /></ProtectedRoute>} />
+      <Route
+        path="/reports/forecast-report"
+        element={
+          <ProtectedRoute>
+            <ForecastReport />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reports/vendor-ledger-report"
+        element={
+          <ProtectedRoute>
+            <VendorLedgerReport />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Goods Receipt */}
-      <Route path="/goodsreceipt/gatein-to-migo"   element={<ProtectedRoute><GateInMIGO /></ProtectedRoute>} />
+      <Route
+        path="/goodsreceipt/gatein-to-migo"
+        element={
+          <ProtectedRoute>
+            <GateInMIGO />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Logistics */}
-      <Route path="/logistics/delivery-schedule"   element={<ProtectedRoute><DeliverySchedule /></ProtectedRoute>} />
+      <Route
+        path="/logistics/delivery-schedule"
+        element={
+          <ProtectedRoute>
+            <DeliverySchedule />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ASN */}
-      <Route path="/asn/asn-report"                element={<ProtectedRoute><Asnreport /></ProtectedRoute>} />
+      <Route
+        path="/asn/asn-report"
+        element={
+          <ProtectedRoute>
+            <Asnreport />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Shipment */}
-      <Route path="/shipment/advance-shipping-note" element={<ProtectedRoute><Advanceshipment /></ProtectedRoute>} />
-      <Route path="/shipment/goods-movement"        element={<ProtectedRoute><GoodsMovement /></ProtectedRoute>} />
-      <Route path="/shipment/gatein-gateout"        element={<ProtectedRoute><GateInGateOut /></ProtectedRoute>} />
+      <Route
+        path="/shipment/advance-shipping-note"
+        element={
+          <ProtectedRoute>
+            <Advanceshipment />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/shipment/goods-movement"
+        element={
+          <ProtectedRoute>
+            <GoodsMovement />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/shipment/gatein-gateout"
+        element={
+          <ProtectedRoute>
+            <GateInGateOut />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route
+        path="*"
+        element={<Navigate to="/" replace />}
+      />
 
     </Routes>
   )

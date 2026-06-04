@@ -6,7 +6,9 @@ import { ArrowRight, Bell, Search, Menu, Sun, Moon } from 'lucide-react';
 
 export default function DaikinPortal() {
     const currentUser = getUser();
-    const userName = currentUser?.name ?? 'User';
+    const userName = currentUser?.data?.firstname && currentUser?.data?.lastname
+  ? `${currentUser.data.firstname} ${currentUser.data.lastname}`
+  : currentUser?.data?.name ?? 'User';
     const [greeting, setGreeting] = useState("Good Morning");
     const [time, setTime] = useState(new Date());
     const [scrolled, setScrolled] = useState(false);
@@ -15,6 +17,8 @@ export default function DaikinPortal() {
     const [isDark, setIsDark] = useState(false);
     const heroRef = useRef(null);
     const navigate = useNavigate();
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         setMounted(true);
@@ -32,6 +36,17 @@ export default function DaikinPortal() {
             clearInterval(interval);
             window.removeEventListener('scroll', onScroll);
         };
+    }, []);
+
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleMouseMove = (e) => {
@@ -427,24 +442,63 @@ export default function DaikinPortal() {
                             }
                         </button>
 
-                        
-
-                        {/* User */}
-                        <div className="flex items-center gap-2.5 pl-4"
+                        {/* User with logout dropdown */}
+                        <div ref={dropdownRef} className="relative flex items-center gap-2.5 pl-4"
                             style={{ borderLeft: `1px solid ${t.logoSubBorder}` }}>
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
-                                style={{
-                                    background: `linear-gradient(135deg, ${t.avatarFrom}, ${t.avatarTo})`,
-                                    color: t.avatarText,
-                                }}>
-                                {userName[0]}
-                            </div>
-                            <div className="hidden md:block text-left">
-                                <div className="text-xs leading-tight" style={{ color: t.userRole }}>
-                                    {currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User'}
+
+                            <button onClick={() => setShowDropdown(!showDropdown)}
+                                className="flex items-center gap-2.5 cursor-pointer">
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${t.avatarFrom}, ${t.avatarTo})`,
+                                        color: t.avatarText,
+                                    }}>
+                                    {userName[0]?.toUpperCase()}
                                 </div>
-                                <div className="text-sm leading-tight" style={{ color: t.userName }}>{userName} </div>
-                            </div>
+                                <div className="hidden md:block text-left">
+                                    <div className="text-xs leading-tight" style={{ color: t.userRole }}>
+                                        {currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User'}
+                                    </div>
+                                    <div className="text-sm leading-tight" style={{ color: t.userName }}>{userName}</div>
+                                </div>
+                            </button>
+
+                            {showDropdown && (
+                                <div className="absolute right-0 top-12 w-56 rounded-xl overflow-hidden z-50"
+                                    style={{
+                                        background: isDark ? '#0f1520' : 'white',
+                                        border: `1px solid ${t.logoSubBorder}`,
+                                        boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(11,61,145,0.12)',
+                                    }}>
+
+                                    {/* Email info */}
+                                    <div className="px-4 py-3" style={{ borderBottom: `1px solid ${t.logoSubBorder}` }}>
+                                        <div className="text-xs" style={{ color: t.userRole }}>Signed in as</div>
+                                        <div className="text-sm font-medium mt-0.5 truncate" style={{ color: t.userName }}>
+                                            {currentUser?.data?.email ?? ''}
+                                        </div>
+                                    </div>
+
+                                    {/* Logout */}
+                                    <button
+                                        onClick={() => {
+                                            localStorage.removeItem("user");
+                                            window.location.href = "/do/logout";
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm"
+                                        style={{ color: '#ef4444' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                            <polyline points="16 17 21 12 16 7" />
+                                            <line x1="21" y1="12" x2="9" y2="12" />
+                                        </svg>
+                                        Sign out
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
 
