@@ -611,17 +611,7 @@ export default function VendorLedgerReport() {
                       <DropdownTrigger placeholder="Select supplier" displayValue={supplierLabel} onClick={() => openDD('supplier')} onClear={() => setSupplier('')} />
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Supplier Child</label>
-                      <div className="relative">
-                        <select value={supplierChild} onChange={e => setSupplierChild(e.target.value)} disabled={!supplier}
-                          className="w-full h-10 pl-3 pr-8 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all appearance-none cursor-pointer disabled:bg-[#f5f6f7] disabled:text-[#94a3b8]">
-                          <option value="">{supplier ? 'Select child' : '—'}</option>
-                          {childSuppliers.map(o => <option key={o.code} value={o.code}>{o.label}</option>)}
-                        </select>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><path d="M6 9l6 6 6-6"/></svg>
-                      </div>
-                    </div>
+                    
 
                     <div>
                       <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Document Type</label>
