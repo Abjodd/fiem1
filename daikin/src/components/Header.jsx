@@ -486,17 +486,28 @@ export default function Header() {
   // Global keyboard shortcuts
   useEffect(() => {
     const onKey = (e) => {
-      if ((e.key === '/' || (e.ctrlKey && e.key === 'k')) && document.activeElement !== inputRef.current) {
+
+      // Ctrl + B / Cmd + B
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === 'b' &&
+        document.activeElement !== inputRef.current
+      ) {
         e.preventDefault()
         inputRef.current?.focus()
+        setOpen(true)
       }
+
+      // Escape closes search
       if (e.key === 'Escape') {
         setOpen(false)
         setShowMenu(false)
         inputRef.current?.blur()
       }
     }
+
     window.addEventListener('keydown', onKey)
+
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
@@ -600,7 +611,7 @@ export default function Header() {
               autoComplete="off"
               spellCheck={false}
             />
-            <span className="hdr-search-kbd">/</span>
+            <span className="hdr-search-kbd">ctrl+b</span>
 
             {open && query.trim().length > 0 && (
               <div className="hdr-search-drop">
