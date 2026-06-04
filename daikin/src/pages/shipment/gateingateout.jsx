@@ -17,11 +17,24 @@ const TIMELINE_STEPS = [
   { key: 'gate_entry_out', label: 'Gate Entry (Out)', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> },
 ]
 
-const canGateReport = (s) => { const l = (s||'').toLowerCase(); return l.includes('shipped') || l.includes('transit') }
-const canGateIn = (s) => { const l = (s||'').toLowerCase(); return l.includes('gate reported') || l.includes('gate reporting') || l.includes('reached') }
+// ═══════════════════════════════════════════════════════════════
+// BUTTON VISIBILITY — based on TIMELINE DATES, not status text
+// Timeline is source of truth. If step has date → it's done.
+// ═══════════════════════════════════════════════════════════════
+const tlStep = (timeline, key) => timeline.find(t => t.key === key)?.completed || false
+
+// Gate Reporting: show only when shipped BUT gate reporting NOT yet done
+const canGateReport = (tracking) => {
+  return tlStep(tracking.timeline, 'shipped') && !tlStep(tracking.timeline, 'gate_reporting')
+}
+
+// Gate In: show only when gate reporting done BUT gate entry IN NOT yet done
+const canGateIn = (tracking) => {
+  return tlStep(tracking.timeline, 'gate_reporting') && !tlStep(tracking.timeline, 'gate_entry_in')
+}
 
 // ═══════════════════════════════════════════════════════════════
-// TRACKING POPUP — no hardcoded data
+// TRACKING POPUP
 // ═══════════════════════════════════════════════════════════════
 function TrackingPopup({ onSubmit }) {
   const [combined, setCombined] = useState('')
@@ -29,30 +42,29 @@ function TrackingPopup({ onSubmit }) {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
-  const parts = combined.trim().split('/')
-  if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
-    setError('Please enter in the format: TrackingNumber/Year (e.g. 000000000001/2024)')
-    return
+    const parts = combined.trim().split('/')
+    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+      setError('Please enter in the format: TrackingNumber/Year (e.g. 000000000001/2024)')
+      return
+    }
+    const trackNo = parts[0].trim()
+    const year = parts[1].trim()
+    setLoading(true); setError('')
+    try {
+      const data = await gateEntryApi.getTracking(trackNo, year)
+      if (!data) { setError('Tracking not found.'); setLoading(false); return }
+      let summaryItems = []
+      try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
+      onSubmit({ ...data, summaryItems })
+    } catch (err) {
+      const msg = err.message || 'Failed to fetch'
+      const clean = msg.includes('No record found') || msg.includes('404')
+        ? 'Tracking number not found. Check number and year.'
+        : msg.length > 80 ? 'Invalid tracking number or year.' : msg
+      setError(clean)
+      setLoading(false)
+    }
   }
-  const trackNo = parts[0].trim()
-  const year = parts[1].trim()
-  setLoading(true); setError('')
-  try {
-    const data = await gateEntryApi.getTracking(trackNo, year)
-    if (!data) { setError('Tracking not found.'); setLoading(false); return }
-    let summaryItems = []
-    try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
-    onSubmit({ ...data, summaryItems })
-  } catch (err) {
-    const msg = err.message || 'Failed to fetch'
-    // SAP returns error XML/JSON in message — extract readable part
-    const clean = msg.includes('No record found') || msg.includes('404')
-      ? 'Tracking number not found. Check number and year.'
-      : msg.length > 80 ? 'Invalid tracking number or year.' : msg
-    setError(clean)
-    setLoading(false)
-  }
-}
 
   const handleKeyDown = e => { if (e.key === 'Enter') handleSubmit() }
 
@@ -95,7 +107,7 @@ function TrackingPopup({ onSubmit }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ASN ITEMS POPUP (click ASN number)
+// ASN ITEMS POPUP
 // ═══════════════════════════════════════════════════════════════
 function AsnItemsPopup({ asnNum, fisYear, onClose }) {
   const [items, setItems] = useState([])
@@ -165,38 +177,45 @@ export default function GateInGateOut() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [gateRepLoading, setGateRepLoading] = useState(false)
   const [gateInLoading, setGateInLoading] = useState(false)
-  const [asnPopup, setAsnPopup] = useState(null) // { asnNum, fisYear }
+  const [asnPopup, setAsnPopup] = useState(null)
 
   const handleLoaded = (data) => { setTracking(data); setShowLookup(false); setActiveTab('timeline') }
   const handleReset = () => { setShowLookup(true) }
 
-const refreshTracking = async (trackNo, year) => {
-  try {
-    const data = await gateEntryApi.getTracking(trackNo, year)
-    let summaryItems = []
-    try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
-    setTracking({ ...data, summaryItems })
-  } catch {}
-}
+  const refreshTracking = async (trackNo, year) => {
+    try {
+      const data = await gateEntryApi.getTracking(trackNo, year)
+      console.log('refreshed status:', data.status, '| statusCode:', data.statusCode, '| timeline:', data.timeline.map(s => `${s.key}:${s.completed}`).join(', '))
+      let summaryItems = []
+      try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch {}
+      setTracking({ ...data, summaryItems })
+    } catch (err) { console.error('refresh failed:', err) }
+  }
 
-const handleGateReporting = async () => {
-  if (!tracking) return; setGateRepLoading(true)
-  try {
-    await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
-    setSuccessMsg('Gate reporting processed successfully.'); setSuccessOpen(true)
-    await refreshTracking(tracking.trackingNo, tracking.year)  // pass explicitly
-  } catch (err) { console.error(err) } finally { setGateRepLoading(false) }
-}
+  const handleGateReporting = async () => {
+    if (!tracking) return; setGateRepLoading(true)
+    try {
+      await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
+      setSuccessMsg('Gate reporting processed successfully.'); setSuccessOpen(true)
+      await refreshTracking(tracking.trackingNo, tracking.year)
+    } catch (err) { console.error(err) } finally { setGateRepLoading(false) }
+  }
 
-const handleGateIn = async () => {
-  if (!tracking) return; setGateInLoading(true)
-  try {
-    const result = await gateEntryApi.processGateIn(tracking.trackingNo, tracking.year)
-    setSuccessMsg(`Gate In processed and gate entry number ${result.GateNo || '—'} generated successfully for Reference document Number: ${result.RefDoc || result.Mblnr || '—'}`)
-    setSuccessOpen(true)
-    await refreshTracking(tracking.trackingNo, tracking.year)  // pass explicitly
-  } catch (err) { console.error(err) } finally { setGateInLoading(false) }
-}
+  const handleGateIn = async () => {
+    if (!tracking) return; setGateInLoading(true)
+    try {
+      const result = await gateEntryApi.processGateIn(tracking.trackingNo, tracking.year)
+      setSuccessMsg(
+        `Gate In processed and gate entry number ${result.Gno || '—'} generated successfully for Reference document Number: ${result.Mblnr103 || '—'}`
+      )
+      setSuccessOpen(true)
+      await refreshTracking(tracking.trackingNo, tracking.year)
+    } catch (err) { console.error(err) } finally { setGateInLoading(false) }
+  }
+
+  // Derived from timeline dates — mutually exclusive, no guessing
+  const showGateReport = tracking ? canGateReport(tracking) : false
+  const showGateIn     = tracking ? canGateIn(tracking) : false
 
   // ── Timeline ──
   const renderTimeline = () => {
@@ -234,7 +253,7 @@ const handleGateIn = async () => {
     )
   }
 
-  // ── ASN tab (matches Image 2) ──
+  // ── ASN tab ──
   const renderAsn = () => {
     if (!tracking) return null
     return (
@@ -263,7 +282,7 @@ const handleGateIn = async () => {
     )
   }
 
-  // ── Summary tab (matches Image 4 — material items) ──
+  // ── Summary tab ──
   const renderSummary = () => {
     if (!tracking) return null
     const items = tracking.summaryItems || []
@@ -307,7 +326,6 @@ const handleGateIn = async () => {
       {asnPopup && <AsnItemsPopup asnNum={asnPopup.asnNum} fisYear={asnPopup.fisYear} onClose={() => setAsnPopup(null)} />}
       {successOpen && <SuccessDialog message={successMsg} onClose={() => setSuccessOpen(false)} />}
 
-      {/* Supplier bar */}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70]">
         Company Code: <strong className="text-[#32363a]">DSAL (Daikin Airconditioning India Private Limited)</strong>
       </div>
@@ -316,12 +334,10 @@ const handleGateIn = async () => {
         {t ? (
           <main className="bg-white min-h-[calc(100vh-170px)] pb-20 anim-fade">
 
-            {/* Tracking Number subtitle */}
             <div className="text-center py-3 text-[14px] text-[#32363a] font-medium border-b border-[#e5e5e5]">
               Tracking Number — {t.id}
             </div>
 
-            {/* Header — matches Image 1 layout */}
             <div className="px-4 sm:px-6 lg:px-10 pt-5 pb-5 border-b border-[#e5e5e5]">
               <div className="flex items-start justify-between flex-wrap gap-4 mb-4">
                 <div>
@@ -336,7 +352,6 @@ const handleGateIn = async () => {
                 </div>
               </div>
 
-              {/* Info — left labels, right values (matches SAP layout) */}
               <div className="flex flex-wrap gap-x-16 gap-y-1 text-[13px]">
                 <div className="flex-1 min-w-[280px] space-y-1">
                   <div className="text-[#6a6d70]">Transporter: <span className="font-semibold text-[#32363a]">{t.transporter}</span></div>
@@ -358,7 +373,6 @@ const handleGateIn = async () => {
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="px-4 sm:px-6 lg:px-10 pt-5 pb-0 border-b border-[#e5e5e5] bg-white">
               <div className="flex items-end gap-6 sm:gap-10 overflow-x-auto">
                 {TABS.map(tab => {
@@ -383,16 +397,16 @@ const handleGateIn = async () => {
         )}
       </div>
 
-      {/* Bottom bar — gate reporting / gate in */}
-      {t && (canGateReport(t.status) || canGateIn(t.status)) && (
+      {/* Bottom bar — buttons driven by timeline dates */}
+      {t && (showGateReport || showGateIn) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#e5e5e5] px-4 sm:px-6 py-3 flex items-center gap-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-          {canGateReport(t.status) && (
+          {showGateReport && (
             <button onClick={handleGateReporting} disabled={gateRepLoading} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#e76500] rounded-lg hover:bg-[#b45309] transition-all shadow-sm disabled:opacity-60">
               {gateRepLoading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>}
               {gateRepLoading ? 'Processing…' : 'Gate Reporting'}
             </button>
           )}
-          {canGateIn(t.status) && (
+          {showGateIn && (
             <button onClick={handleGateIn} disabled={gateInLoading} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0b5e2e] transition-all shadow-sm disabled:opacity-60">
               {gateInLoading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>}
               {gateInLoading ? 'Processing…' : 'Gate In'}

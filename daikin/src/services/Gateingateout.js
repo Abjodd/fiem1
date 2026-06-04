@@ -23,30 +23,15 @@ const formatTimestamp = (sapDate, sapTime) => {
 
 const TRANS_MODE = { '01': 'By Road', '02': 'By Air', '03': 'By Rail', '04': 'By Sea' }
 
-const STATUS_MAP = {
-  '01': { label: 'Created',         color: 'gray'   },
-  '02': { label: 'Yet to Ship',     color: 'gray'   },
-  '03': { label: 'Shipped',         color: 'blue'   },
-  '04': { label: 'In Transit',      color: 'blue'   },
-  '05': { label: 'Reached Plant',   color: 'orange' },
-  '06': { label: 'Gate Reported',   color: 'orange' },
-  '07': { label: 'Gate Entry (IN)', color: 'blue'   },
-  '08': { label: 'Gate Reported',   color: 'orange' },
-  '09': { label: 'Goods Received',  color: 'green'  },
-  '10': { label: 'Gate Entry (Out)',color: 'green'  },
-  '11': { label: 'Completed',       color: 'green'  },
-}
-
+// No hardcoded status-code map. Label = SAP StatusText. Color derived from text.
 const resolveStatus = (code, text) => {
-  if (STATUS_MAP[code]) return STATUS_MAP[code]
+  const label = text || 'Unknown'
   const t = (text || '').toLowerCase()
-  if (t.includes('reported'))  return { label: text, color: 'orange' }
-  if (t.includes('reached'))   return { label: text, color: 'orange' }
-  if (t.includes('entry'))     return { label: text, color: 'blue'   }
-  if (t.includes('received'))  return { label: text, color: 'green'  }
-  if (t.includes('shipped'))   return { label: text, color: 'blue'   }
-  if (t.includes('completed')) return { label: text, color: 'green'  }
-  return { label: text || 'Unknown', color: 'gray' }
+  let color = 'gray'
+  if (t.includes('transit') || t.includes('shipped') || t.includes('entry')) color = 'blue'
+  else if (t.includes('reported') || t.includes('reached'))                  color = 'orange'
+  else if (t.includes('received') || t.includes('completed'))                color = 'green'
+  return { label, color }
 }
 
 // ── Timeline builder ──────────────────────────────────────────
@@ -129,18 +114,12 @@ const mapHeader = (d) => {
 // ── OData helpers ─────────────────────────────────────────────
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
-    headers: { Accept: 'application/json' ,Loginid: "vakeel.ahmad@daikinindia.com",
-        Logintype: "E",},
+    headers: { Accept: 'application/json', Loginid: "vakeel.ahmad@daikinindia.com", Logintype: "E" },
     credentials: 'include',
   })
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`OData ${res.status}: ${t.slice(0, 200)}`) }
   return res.json()
 }
-
-// async function fetchCsrfToken() {
-//   const res = await fetch(`${SRV}/`, { method: 'GET', headers: { 'X-CSRF-Token': 'Fetch', Accept: 'application/json' }, credentials: 'include' })
-//   return res.headers.get('X-CSRF-Token') || ''
-// }
 
 async function odataWrite(path, payload, method = 'POST') {
   const res = await fetch(`${SRV}${path}`, {
@@ -164,41 +143,34 @@ async function odataWrite(path, payload, method = 'POST') {
 // ═══════════════════════════════════════════════════════════════
 export const gateEntryApi = {
 
-  // GET GateEntryHeaderSet(TrackNo='...',Year='...')?$expand=HeaderAsnNav,HeaderRpmInNav,HeaderRpmOutNav
   async getTracking(trackNo, year) {
     const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
     const data = await odata(`/GateEntryHeaderSet(${key})?$expand=HeaderAsnNav,HeaderRpmInNav,HeaderRpmOutNav`)
     return mapHeader(data.d)
   },
 
-  // GET ASNDataSet?$filter=TrackNo eq '...' and Year eq '...'
-  // Returns summary-level ASN item data
   async getAsnData(trackNo, year) {
     const f = encodeURIComponent(`TrackNo eq '${trackNo}' and Year eq '${year}'`)
     const data = await odata(`/ASNDataSet?$filter=${f}`)
     return (data.d?.results || []).map(mapAsnItem)
   },
 
-  // GET AsnItemSet?$filter=AsnNum eq '...' and FisYear eq '...'
-  // Returns item details when clicking on an ASN number
   async getAsnItems(asnNum, fisYear) {
     const f = encodeURIComponent(`AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`)
     const data = await odata(`/AsnItemSet?$filter=${f}`)
     return (data.d?.results || []).map(mapAsnItem)
   },
 
-  // Gate Reporting — PATCH GateEntryHeaderSet
   async processGateReporting(trackNo, year) {
     const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
     return odataWrite(`/GateEntryHeaderSet(${key})`, {}, 'PATCH')
   },
 
-  // Gate In — GET GateNumberSet(TrackNo='...',Year='...')
   async processGateIn(trackNo, year) {
-  const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
-  const data = await odata(`/GateNumberSet(${key})`)
-  return data.d || {}
-},
+    const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
+    const data = await odata(`/GateNumberSet(${key})`)
+    return data.d || {}
+  },
 }
 
 export default gateEntryApi
