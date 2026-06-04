@@ -1,12 +1,22 @@
 {
-  "welcomeFile": "index.html",
-  "authenticationMethod": "none",
+  "welcomeFile": "/index.html",
+  "authenticationMethod": "route",
+  "logout": {
+    "logoutEndpoint": "/do/logout"
+  },
   "routes": [
     {
       "source": "^/sap/(.*)$",
       "target": "/sap/$1",
       "destination": "SuppPro",
       "csrfProtection": false
+    },
+    {
+      "source": "^/user-api(.*)",
+      "target": "$1",
+      "service": "sap-approuter-userapi",
+      "authenticationType": "xsuaa"
+      
     },
     {
       "source": "^/assets/(.*)$",
@@ -22,7 +32,7 @@
       "source": "^/.*$",
       "localDir": "resources",
       "target": "index.html",
-      "authenticationType": "none"
+      "authenticationType": "xsuaa"
     }
   ]
 }

@@ -1,4 +1,19 @@
 {
   "xsappname": "FIEM-app",
-  "tenant-mode": "dedicated"
+  "tenant-mode": "dedicated",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.User",
+      "description": "User Access"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "User",
+      "description": "Standard User",
+      "scope-references": [
+        "$XSAPPNAME.User"
+      ]
+    }
+  ]
 }
