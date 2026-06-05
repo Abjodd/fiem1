@@ -121,12 +121,28 @@ async function odata(path) {
   return res.json()
 }
 
+async function fetchCsrfToken() {
+  const res = await fetch(`${SRV}/`, {
+    method: 'GET',
+    headers: {
+      'X-CSRF-Token': 'Fetch',
+      Accept: 'application/json',
+      Loginid: "vakeel.ahmad@daikinindia.com",
+      Logintype: "E",
+    },
+    credentials: 'include',
+  })
+  return res.headers.get('X-CSRF-Token') || ''
+}
+
 async function odataWrite(path, payload, method = 'POST') {
+  const token = await fetchCsrfToken()
   const res = await fetch(`${SRV}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      'X-CSRF-Token': token,
       Loginid: "vakeel.ahmad@daikinindia.com",
       Logintype: "E",
     },
@@ -163,14 +179,25 @@ export const gateEntryApi = {
 
   async processGateReporting(trackNo, year) {
     const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
-    return odataWrite(`/GateEntryHeaderSet(${key})`, {}, 'PATCH')
+    return odataWrite(`/GateEntryHeaderSet(${key})`, { TrackNo: trackNo, Year: year }, 'PATCH')
   },
-
+  //fix here, there's some issue in this. Please check and correct it.
   async processGateIn(trackNo, year) {
-    const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
-    const data = await odata(`/GateNumberSet(${key})`)
-    return data.d || {}
-  },
+  const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
+
+  
+  const data = await odata(`/GateNumberSet(${key})`)
+  const gno = str(data.d?.Gno || '')
+
+
+  await odataWrite(`/GateEntryHeaderSet(${key})`, {
+    TrackNo: trackNo,
+    Year: year,
+    Gno: gno,
+  }, 'PATCH')
+
+  return { Gno: gno, Mblnr103: '' }
+},
 }
 
 export default gateEntryApi
