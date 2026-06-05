@@ -47,6 +47,8 @@ export default function App() {
 
       {/* SAP Auth Check */}
       <Route path="/" element={<Home />} />
+      {/* for arbeel  local testing*/}
+      {/* <Route path="/" element={<Navigate to="/landing" replace />} /> */}
 
       {/* Manual Login */}
       <Route path="/login" element={<LoginPage />} />

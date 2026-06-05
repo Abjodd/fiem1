@@ -323,6 +323,18 @@ export default function ProtectedRoute({ children }) {
   const location = useLocation();
 
   if (!user) return <Navigate to="/login" replace />;
+  // if (!user) {
+  // localStorage.setItem(
+  //   "user",
+  //   JSON.stringify({
+  //     name: "Developer",
+  //     email: "dev@local.com",
+  //     role: "partner"
+  //   })
+  // );
+
+  return children;
+// }
 
   if (!canAccess(user.role, location.pathname)) {
     return <AccessDenied user={user} pathname={location.pathname} />;

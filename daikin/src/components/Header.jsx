@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { findModuleByTilePath, NAV_MODULES } from '../router/index.jsx'
-import { getUser, logout } from '../lib/auth'
+import { getUser } from '../lib/auth'
 
 const COMPANY = 'DSAL'
 const COMPANY_FULL = 'FIEM Industries Limited'
@@ -63,13 +63,6 @@ const CSS = `
     height: auto;
     object-fit: contain;
     display: block;
-  }
-  .hdr-logo-fallback {
-    font-family: var(--sans);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 0.06em;
   }
 
   .hdr-div {
@@ -171,11 +164,6 @@ const CSS = `
     border-color: var(--accent);
     background: #ffffff;
     box-shadow: 0 0 0 4px rgba(11,61,145,0.10);
-  }
-  .hdr-search-input:focus + .hdr-search-kbd {
-    color: var(--accent);
-    border-color: var(--accent-brd);
-    background: rgba(11,61,145,0.06);
   }
   .hdr-search-kbd {
     position: absolute;
@@ -398,10 +386,62 @@ const CSS = `
     justify-content: center;
     cursor: pointer;
     transition: box-shadow 0.18s ease, transform 0.18s ease;
+    flex-shrink: 0;
   }
   .hdr-avatar:hover {
     box-shadow: 0 0 0 4px rgba(11,61,145,0.15);
     transform: translateY(-1px);
+  }
+
+  .hdr-user-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: 220px;
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(11,61,145,0.12);
+    overflow: hidden;
+    z-index: 3000;
+  }
+  .hdr-user-menu-info {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .hdr-user-menu-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+  }
+  .hdr-user-menu-email {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--sans);
+  }
+  .hdr-user-menu-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    background: transparent;
+    border: none;
+    font-size: 13px;
+    color: #ef4444;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--sans);
+    transition: background 0.15s ease;
+  }
+  .hdr-user-menu-btn:hover {
+    background: rgba(239,68,68,0.05);
   }
 
   @media (max-width: 768px) {
@@ -460,20 +500,22 @@ export default function Header() {
   const menuRef = useRef(null)
 
   const user = getUser()
-  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U'
+  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    ?? user?.data?.firstname?.[0]?.toUpperCase()
+    ?? 'U'
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
+    localStorage.removeItem('user')
+    window.location.href = '/do/logout'
   }
 
   const allItems = buildSearchIndex()
 
   const results = query.trim().length > 0
     ? allItems.filter(({ moduleLabel, tile }) =>
-      tile.label.toLowerCase().includes(query.toLowerCase()) ||
-      moduleLabel.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 12)
+        tile.label.toLowerCase().includes(query.toLowerCase()) ||
+        moduleLabel.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 12)
     : []
 
   const grouped = results.reduce((acc, item) => {
@@ -483,40 +525,28 @@ export default function Header() {
     return acc
   }, {})
 
-  // Global keyboard shortcuts
+  // Global keyboard shortcut Ctrl+B
   useEffect(() => {
     const onKey = (e) => {
-
-      // Ctrl + B / Cmd + B
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key.toLowerCase() === 'b' &&
-        document.activeElement !== inputRef.current
-      ) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && document.activeElement !== inputRef.current) {
         e.preventDefault()
         inputRef.current?.focus()
         setOpen(true)
       }
-
-      // Escape closes search
       if (e.key === 'Escape') {
         setOpen(false)
         setShowMenu(false)
         inputRef.current?.blur()
       }
     }
-
     window.addEventListener('keydown', onKey)
-
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   // Close search on outside click
   useEffect(() => {
     const onClickOutside = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        setOpen(false)
-      }
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
     }
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
@@ -525,9 +555,7 @@ export default function Header() {
   // Close avatar menu on outside click
   useEffect(() => {
     const onClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowMenu(false)
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false)
     }
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
@@ -564,11 +592,7 @@ export default function Header() {
       <header className="hdr-root">
 
         {/* Logo */}
-        <div
-          className="hdr-logo"
-          onClick={() => navigate('/landing')}
-          style={{ cursor: 'pointer' }}
-        >
+        <div className="hdr-logo" onClick={() => navigate('/landing')} style={{ cursor: 'pointer' }}>
           <img
             src={import.meta.env.BASE_URL + 'daikin.png'}
             alt="FIEM Logo"
@@ -686,80 +710,28 @@ export default function Header() {
           </button>
 
           {/* Avatar + dropdown */}
-          <div style={{ position: 'relative' }} ref={menuRef}>
-            <button
-              className="hdr-avatar"
-              aria-label="Profile"
-              onClick={() => setShowMenu(v => !v)}
-            >
+          <div ref={menuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <div className="hdr-avatar" onClick={() => setShowMenu(v => !v)}>
               {initials}
-            </button>
+            </div>
 
             {showMenu && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                background: '#fff', border: '1px solid rgba(15,23,42,0.12)',
-                borderRadius: '12px', minWidth: '210px',
-                boxShadow: '0 16px 40px -8px rgba(11,61,145,0.18), 0 4px 12px rgba(11,61,145,0.08)',
-                overflow: 'hidden', zIndex: 3000
-              }}>
-
-                {/* User info */}
-                <div style={{
-                  padding: '14px 16px',
-                  borderBottom: '1px solid rgba(15,23,42,0.08)',
-                  background: '#f4f6fa'
-                }}>
-                  <div style={{
-                    fontFamily: 'Geist, sans-serif', fontSize: '13px',
-                    fontWeight: 600, color: '#0f172a', marginBottom: '2px'
-                  }}>
-                    {user?.name ?? 'User'}
-                  </div>
-                  <div style={{
-                    fontFamily: 'Geist Mono, monospace', fontSize: '10.5px',
-                    color: '#94a3b8', marginBottom: '8px',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                  }}>
-                    {user?.email}
-                  </div>
-                  <span style={{
-                    fontFamily: 'Geist Mono, monospace', fontSize: '9px',
-                    fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase',
-                    background: '#0b3d91', color: '#fff',
-                    padding: '3px 9px', borderRadius: '5px',
-                    display: 'inline-block'
-                  }}>
-                    {user?.role}
-                  </span>
+              <div className="hdr-user-menu">
+                <div className="hdr-user-menu-info">
+                  <div className="hdr-user-menu-label">SIGNED IN AS</div>
+                  <div className="hdr-user-menu-email">{user?.data?.email ?? ''}</div>
                 </div>
-
-                {/* Sign out */}
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    width: '100%', padding: '11px 16px',
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    fontFamily: 'Geist, sans-serif', fontSize: '13px',
-                    color: '#e74c3c', textAlign: 'left',
-                    transition: 'background 0.15s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#fdecea'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <button className="hdr-user-menu-btn" onClick={handleLogout}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
                   </svg>
                   Sign out
                 </button>
-
               </div>
             )}
           </div>
-
         </div>
 
       </header>

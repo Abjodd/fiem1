@@ -4,6 +4,7 @@ export const MOCK_USERS = {
 };
 // Map route paths to allowed roles
 export const PAGE_PERMISSIONS = {
+  '/landing': ['partner', 'employee', 'admin'],
   '/purchasing/schedule-release':    ['partner', 'employee'],
   '/purchasing/purchase-order':      ['partner'],
   '/purchasing/po-schedule-report':  ['partner', 'employee'],
