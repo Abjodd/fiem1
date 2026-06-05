@@ -29,8 +29,9 @@ const getExportFilename = (viewMode) => {
   return `Forecast_Report_${viewMode}_${MONTHS_SHORT[d.getMonth()]}_${String(d.getDate()).padStart(2, "0")}.xlsx`;
 };
 const calcVariance = (schedule, supply) => {
-  return supply - schedule;
-};
+  if (schedule === 0) return 0
+  return ((schedule - supply) / schedule) * 100
+}
 const PAGE_SIZE = 100;
 
 function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
@@ -404,7 +405,7 @@ export default function ForecastReport() {
       ];
       const periodH = displayColumns.flatMap((c) =>
         showSupply
-          ? [`${c.label} Sched`, `${c.label} Supply`, `${c.label} Variance`]
+          ? [`${c.label} Sched`, `${c.label} Supply`, `${c.label} Variance%`]
           : [`${c.label} Sched`],
       );
       const headers = [...fixedH, ...periodH];
@@ -807,7 +808,7 @@ export default function ForecastReport() {
                                 key={c.key + "v"}
                                 className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]"
                               >
-                                Variance
+                                Variance%
                               </th>,
                             ]
                           : [
@@ -902,11 +903,9 @@ export default function ForecastReport() {
                                       key={col.key + "v"}
                                       className="py-2 px-1 text-center border-r border-[#f0f0f0]"
                                     >
-                                      <span
-                                        className={`tabular-nums text-[11px] ${v > 0 ? "font-semibold text-[#107e3e]" : v < 0 ? "font-semibold text-[#cc1c14]" : "text-[#d9d9d9]"}`}
-                                      >
-                                        {v.toFixed(3)}
-                                      </span>
+                                      <span className={`tabular-nums text-[11px] ${v > 0 ? "font-semibold text-[#107e3e]" : v < 0 ? "font-semibold text-[#cc1c14]" : "text-[#d9d9d9]"}`}>
+  {v === 0 ? '0.000' : `${v.toFixed(2)}%`}
+</span>
                                     </td>,
                                   ]
                                 : [
