@@ -19,39 +19,9 @@ const isoToSap8 = (iso) => (iso || '').replace(/-/g, '')
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
     headers: { Accept: 'application/json', Loginid: '401122', Logintype: 'P' },
+    credentials: 'include',
   })
   if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`)
-  return res.json()
-}
-
-async function fetchCsrfToken() {
-  const res = await fetch(`${ODATA_BASE}/`, {
-    method: 'GET',
-    headers: { 'X-CSRF-Token': 'Fetch', Accept: 'application/json', Loginid: '401122', Logintype: 'P' },
-    credentials: 'include',
-  })
-  return res.headers.get('X-CSRF-Token') || ''
-}
-
-async function odataPost(path, payload) {
-  const token = await fetchCsrfToken()
-  const res = await fetch(`${ODATA_BASE}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-CSRF-Token': token,
-      Loginid: '401122',
-      Logintype: 'P',
-    },
-    credentials: 'include',
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) {
-    const t = await res.text().catch(() => '')
-    throw new Error(`POST ${res.status}: ${t.slice(0, 200)}`)
-  }
-  if (res.status === 204) return {}
   return res.json()
 }
 
@@ -85,7 +55,7 @@ function mapItem(d) {
     deliveredQty: str(d.Delivered_Qty),
     deliveredUnit: str(d.Uom),
     unitPrice: str(d.Netpr),
-    status: str(d.Confirm_Status) || 'Confirmed',
+    status: str(d.Confirm_Status) || 'Confirmation Required',
     scheduleLines: [],
   }
 }
@@ -107,11 +77,12 @@ function mapConfirmRow(d) {
     materialNo:      str(d.Material_No),
     materialDesc:    str(d.Material_Desc),
     storageLocation: str(d.StorageLocation) || str(d.StorageBin),
-    requiredQty:     num(d.Po_Qty),           // was: Required_Qty
-    confirmedQty:    num(d.Con_Qty),          // was: Confirmed_Qty
+    requiredQty:     num(d.Quantity),
+    confirmedQty:    num(d.Con_Qty),
     asnQty:          num(d.Asn_Qty),
-    deliveryDate:    sapDate(d.ReqDate || d.Date),  // was: Delivery_Date
-    dispatchDate:    sapDate(d.DispDate),     // was: Dispatch_Date
+    deliveryDate:    sapDate(d.ReqDate || d.Date),
+    deliveryDateRaw: str(d.ReqDate || d.Date),
+    dispatchDate:    sapDate(d.DispDate),
     uom:             str(d.Uom || ''),
     scheduleNo:      str(d.Schedule_No),
   }
@@ -162,59 +133,82 @@ export const scheduleReleaseApi = {
 
   // CONFIRM DATA — fetch rows for confirm view
   async getConfirmData({ scheduleNo, fromDate, toDate, storageLocation = '' }) {
-    let filter = `Schedule_No eq '${scheduleNo}'`
-    const dateParts = []
-    if (fromDate) dateParts.push(`Delivery_Date ge '${isoToSap8(fromDate)}'`)
-    if (toDate)   dateParts.push(`Delivery_Date le '${isoToSap8(toDate)}'`)
-    if (dateParts.length) filter += ` and ((${dateParts.join(' and ')}))`
-    if (storageLocation.trim()) filter += ` and StorageLocation eq '${storageLocation.trim()}'`
+    // Guard against undefined scheduleNo which causes a 400
+    if (!scheduleNo || scheduleNo === 'undefined') {
+      throw new Error('No schedule number provided')
+    }
 
+    const filter = `Schedule_No eq '${scheduleNo}'`
     const json = await odataGet(`/ConfirmDataSet?$filter=${encodeURIComponent(filter)}&$format=json`)
-    return (json.d?.results || []).map(mapConfirmRow)
+    let rows = (json.d?.results || []).map(mapConfirmRow)
+
+    // Client-side filtering for dates and storage location
+    if (fromDate) rows = rows.filter(r => r.deliveryDateRaw >= isoToSap8(fromDate))
+    if (toDate)   rows = rows.filter(r => r.deliveryDateRaw <= isoToSap8(toDate))
+    if (storageLocation.trim()) rows = rows.filter(r => r.storageLocation === storageLocation.trim())
+
+    return rows
   },
 
-  // CONFIRM SUBMIT — POST selected rows
-async submitConfirm(scheduleNo, selectedRows) {
-  const token = await fetchCsrfToken()
-  const res = await fetch(`${ODATA_BASE}/S_HEADERSet('${scheduleNo}')/Confirmnav`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-CSRF-Token': token,
-      Loginid: '401122',
-      Logintype: 'P',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
-      Schedule_No: scheduleNo,
-      Confirmnav: {
-        results: selectedRows.map(row => ({
-          Schedule_No:    scheduleNo,
-          Item_No:        row.itemNo,
-          Schedule_Line:  row.scheduleLine,
-          Material_No:    row.materialNo,
-          Required_Qty:   String(row.requiredQty),
-          Delivery_Date:  row.deliveryDate,
-        }))
-      }
-    }),
-  })
-  if (!res.ok) {
-    const t = await res.text().catch(() => '')
-    let msg = `POST ${res.status}`
-    try { msg = JSON.parse(t)?.error?.message?.value || msg } catch { msg = t.slice(0, 200) || msg }
-    throw new Error(msg)
-  }
-  if (res.status === 204) return {}
-  return res.json()
-},
+  // CONFIRM SUBMIT
+  // Step 1: GET S_HEADERSet(Schedule_No='...') to fetch CSRF token (mirrors UI5 exactly)
+  // Step 2: Single POST to S_HEADERSet with all selected rows nested in Confirmnav
+  async submitConfirm(scheduleNo, selectedRows) {
+    if (!scheduleNo || scheduleNo === 'undefined') {
+      throw new Error('No schedule number provided')
+    }
 
-  // CONFIRM AGREEMENT (header-level) — S_HEADERSet confirm
-  async confirmAgreement(id) {
-    return odataPost(`/S_HEADERSet('${id}')/Confirmnav`, {
-      Schedule_No: id,
+    // Step 1: fetch CSRF token via GET on the specific header (exactly like UI5 does)
+    const csrfRes = await fetch(`${ODATA_BASE}/S_HEADERSet('${scheduleNo}')`, {
+      method: 'GET',
+      headers: {
+        'X-CSRF-Token': 'Fetch',
+        Accept: 'application/json',
+        Loginid: '401122',
+        Logintype: 'P',
+      },
+      credentials: 'include',
     })
+    const token = csrfRes.headers.get('X-CSRF-Token') || ''
+
+    // Step 2: Single POST with all rows nested in Confirmnav
+    // SAP rejects Schedule_Item/Schedule_Line as top-level S_HEADER fields —
+    // they must be nested inside Confirmnav.results
+    const res = await fetch(`${ODATA_BASE}/S_HEADERSet`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-Token': token,
+        Loginid: '401122',
+        Logintype: 'P',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        Schedule_No: scheduleNo,
+        Confirmnav: {
+          results: selectedRows.map(row => ({
+            Schedule_No:     scheduleNo,
+            Schedule_Item:   row.itemNo,
+            Schedule_Line:   row.scheduleLine,
+            Material_No:     row.materialNo,
+            Quantity:        String(row.requiredQty),
+            Date:            row.deliveryDateRaw,
+            Con_Qty:         String(row.confirmedQty),
+            StorageLocation: row.storageLocation || '',
+          })),
+        },
+      }),
+    })
+
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      let msg = `POST ${res.status}`
+      try { msg = JSON.parse(t)?.error?.message?.value || msg } catch { msg = t.slice(0, 200) || msg }
+      throw new Error(msg)
+    }
+
+    return res.status === 204 ? {} : res.json()
   },
 }
 
