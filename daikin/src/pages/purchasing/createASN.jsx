@@ -454,7 +454,7 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
 // ═══════════════════════════════════════════════════════════════
 // MOBILE ITEM CARD
 // ═══════════════════════════════════════════════════════════════
-function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes }) {
+function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirRefs }) {
     const [expanded, setExpanded] = useState(false)
     const batchCount = item.batches?.length || 0
     const batchSum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
@@ -595,8 +595,9 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
                         <label className="block text-[12px] font-semibold text-[#374151] mb-1">PDIR No.</label>
                         <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
                             <option value="">Select</option>
-                            <option value="PDIR-001">PDIR-001</option>
-                            <option value="PDIR-002">PDIR-002</option>
+                            {pdirRefs.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
                     </div>
 
@@ -622,7 +623,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
 // them as "new" component types on re-render. This preserves
 // input focus across keystrokes.
 // ═══════════════════════════════════════════════════════════════
-function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes }) {
+function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirRefs }) {
     const bc = item.batches?.length || 0
     const bsum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
     const balanced = bc > 0 && Math.abs(bsum - parseFloat(item.avlAsnQty || 0)) < 0.0001
@@ -771,8 +772,9 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
                     <Field label="PDIR No.">
                         <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} className={selectCls}>
                             <option value="">Select</option>
-                            <option value="PDIR-001">PDIR-001</option>
-                            <option value="PDIR-002">PDIR-002</option>
+                            {pdirRefs.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
                     </Field>
                 </div>
@@ -1307,6 +1309,7 @@ export default function CreateASN({ agreement: propAgreement }) {
                                             onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
                                             onSplitBatch={(it) => setSplitBatchItem(it)}
                                             packagingTypes={packagingTypes}
+                                            pdirRefs={pdirRefs}
                                         />
                                     ))}
                                 </div>
@@ -1348,6 +1351,7 @@ export default function CreateASN({ agreement: propAgreement }) {
                                             onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
                                             onSplitBatch={(it) => setSplitBatchItem(it)}
                                             packagingTypes={packagingTypes}
+                                            pdirRefs={pdirRefs}
                                         />
                                     ))}
                                 </div>
