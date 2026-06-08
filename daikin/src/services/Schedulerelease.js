@@ -175,9 +175,8 @@ export const scheduleReleaseApi = {
 
   // CONFIRM SUBMIT — POST selected rows
 async submitConfirm(scheduleNo, selectedRows) {
-  // First fetch CSRF token
   const token = await fetchCsrfToken()
-  const res = await fetch(`${ODATA_BASE}/S_HEADERSet('${scheduleNo}')`, {
+  const res = await fetch(`${ODATA_BASE}/S_HEADERSet('${scheduleNo}')/Confirmnav`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

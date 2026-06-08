@@ -775,7 +775,7 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove, requiredHint }) {
 // ═══════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
-export default function CreateASN({ agreement: propAgreement }) {
+export default function CreateASN2({ agreement: propAgreement }) {
   const navigate = useNavigate()
   const location = useLocation()
   const agreement = location.state?.agreement || propAgreement
@@ -1085,7 +1085,7 @@ const calcInvoiceValue = () => {
                                         <div>
                                             <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Invoice Value (Vendor)</label>
                                             <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#6a6d70] text-[13px] italic">
-                                                Auto-calculated: ₹ {calcInvoiceValue()}
+                                                ₹ {calcInvoiceValue()}
                                             </div>
                                         </div>
                                         <div>

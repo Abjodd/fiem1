@@ -34,6 +34,7 @@ import GateInGateOut from './pages/shipment/gateingateout.jsx'
 
 // Other
 import CreateASN from './pages/purchasing/createASN.jsx'
+import CreateASN2 from './pages/purchasing/createAsn2.jsx'
 
 export default function App() {
   return (
@@ -79,6 +80,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CreateASN />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/purchasing/create-asn2"
+        element={
+          <ProtectedRoute>
+            <CreateASN2 />
           </ProtectedRoute>
         }
       />

@@ -419,7 +419,7 @@ export default function ScheduleRelease() {
   }
   const handleCreateAsn = () => {
   const eligibleItems = agreement.items.filter(i => i.status !== 'Confirmation Required')
-  navigate('/purchasing/create-asn', {
+  navigate('/purchasing/create-asn2', {
     state: {
       agreement: {
         ...agreement,
