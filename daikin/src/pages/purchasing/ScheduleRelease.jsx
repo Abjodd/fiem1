@@ -37,7 +37,8 @@ const getStatus = (s) => STATUS_CONFIG[s] || { bg: '#f5f5f5', text: '#616161', d
 const hasConfirmRequired = (items) => items.some(i => i.status === 'Confirmation Required')
 const hasPartialOrConfirmReq = (items) => items.some(i => i.status === 'Partially Confirmed' || i.status === 'Confirmation Required')
 const canConfirm = (items) => items.length > 0 && hasPartialOrConfirmReq(items)
-const asnDisabled = (items) => hasConfirmRequired(items)
+const asnDisabled = (items) => items.length > 0 && items.every(i => i.status === 'Confirmation Required')
+
 
 // ── Status Badge ──
 function StatusBadge({ status }) {
@@ -69,6 +70,7 @@ function ConfirmView({ agreement, onBack }) {
   const [selected, setSelected] = useState(new Set())
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [confirmModal, setConfirmModal] = useState(false)
 
   // Fetch confirm data from API
   const fetchData = async (fDate, tDate, sloc) => {
@@ -120,15 +122,22 @@ function ConfirmView({ agreement, onBack }) {
     setSelected(s)
   }
 
-  const handleSubmit = async () => {
-    setSubmitting(true)
-    try {
-      const selectedRows = filteredRows.filter(r => selected.has(r.scheduleLine))
-      await scheduleReleaseApi.submitConfirm(agreement.id, selectedRows)
-      setSubmitted(true)
-    } catch (e) { setError(e.message) }
-    finally { setSubmitting(false) }
-  }
+  const handleSubmitClick = () => {
+  if (selected.size === 0) return
+  setConfirmModal(true)
+}
+
+// Called when user clicks OK in modal:
+const handleSubmit = async () => {
+  setConfirmModal(false)
+  setSubmitting(true)
+  try {
+    const selectedRows = filteredRows.filter(r => selected.has(r.scheduleLine))
+    await scheduleReleaseApi.submitConfirm(agreement.id, selectedRows)
+    setSubmitted(true)
+  } catch (e) { setError(e.message) }
+  finally { setSubmitting(false) }
+}
 
   if (submitted) return (
     <div className="flex flex-col items-center justify-center h-64 gap-4 anim-fade">
@@ -257,10 +266,43 @@ function ConfirmView({ agreement, onBack }) {
         </div>
       </div>
 
+      {confirmModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-3"
+    style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)' }}
+    onClick={() => setConfirmModal(false)}>
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
+      onClick={e => e.stopPropagation()}>
+      <div className="px-6 pt-6 pb-4 flex items-start gap-4">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-[#ebf5ff]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a6ed1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <h3 className="text-[18px] font-bold text-[#32363a]">Confirm selected lines?</h3>
+          <p className="text-[13.5px] text-[#6a6d70] mt-1 leading-relaxed">
+            You are about to confirm <strong>{selected.size}</strong> schedule line{selected.size !== 1 ? 's' : ''} for agreement <strong>{agreement.id}</strong>.
+          </p>
+        </div>
+      </div>
+      <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end gap-2 bg-[#fafbfc]">
+        <button onClick={() => setConfirmModal(false)}
+          className="h-10 px-5 text-[14px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all">
+          Cancel
+        </button>
+        <button onClick={handleSubmit}
+          className="h-10 px-5 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {/* Footer */}
       <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
         <span className="text-[13px] text-[#6a6d70]">{selected.size} of {filteredRows.length} selected</span>
-        <button onClick={handleSubmit} disabled={selected.size === 0 || submitting}
+        <button onClick={handleSubmitClick} disabled={selected.size === 0 || submitting}
           className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
           {submitting && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"/>}
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -375,7 +417,17 @@ export default function ScheduleRelease() {
   const togglePlant = (plant) => {
     setSelectedPlants(selectedPlants.includes(plant) ? selectedPlants.filter(p => p !== plant) : [...selectedPlants, plant])
   }
-  const handleCreateAsn = () => navigate('/purchasing/create-asn', { state: { agreement } })
+  const handleCreateAsn = () => {
+  const eligibleItems = agreement.items.filter(i => i.status !== 'Confirmation Required')
+  navigate('/purchasing/create-asn', {
+    state: {
+      agreement: {
+        ...agreement,
+        items: eligibleItems,
+      }
+    }
+  })
+}
   const handleConfirm = () => setShowConfirmView(true)
 
   if (showCreateAsn) return <CreateASN />

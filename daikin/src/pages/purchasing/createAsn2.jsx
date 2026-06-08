@@ -1,82 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
+import { createAsnApi } from '../../services/CreateAsnSch.js'
 
-// ═══════════════════════════════════════════════════════════════
-// DUMMY DATA
-// ═══════════════════════════════════════════════════════════════
-const DEFAULT_AGREEMENT = {
-    id: '5501000407',
-    plant: 'SR01',
-    vendor: 'Kunstocom(India) Ltd',
-}
-
-const PACKAGING_TYPE_OPTIONS = ['Box', 'Bag', 'Drum', 'Pallet', 'Container', 'Crate', 'Bundle']
-
-const DEFAULT_ITEMS = [
-    {
-        itemNo: '10',
-        schLine: '2',
-        materialName: 'xcvbnm',
-        materialNumber: '234010000451',
-        storageLocation: 'RM01',
-        shipmentDate: 'Apr 24, 2026',
-        materialExpiry: '',
-        totalQty: '100.00',
-        totalUnit: 'NO',
-        confQty: '100.00',
-        confUnit: 'NO',
-        deliveredQty: '1.00',
-        deliveredUnit: 'NO',
-        asnCreated: '1.00',
-        avlAsnQty: '99.00',
-        fgStock: '',
-        netPrice: '10.00',
-        supplierNetPrice: '10.00',
-        taxMismatch: false,
-        packingMaterialType: '',
-        packingMaterialQty: '1',
-        spq: '100.000',
-        pdirNo: '',
-        packagingType: '',
-        qtyPerPackaging: '',
-        batches: [],
-    },
-    {
-        itemNo: '20',
-        schLine: '1',
-        materialName: 'CFF End plate Assy',
-        materialNumber: '234010000452',
-        storageLocation: 'RM01',
-        shipmentDate: 'Apr 22, 2026',
-        materialExpiry: '',
-        totalQty: '100.00',
-        totalUnit: 'KG',
-        confQty: '100.00',
-        confUnit: 'KG',
-        deliveredQty: '0.00',
-        deliveredUnit: 'KG',
-        asnCreated: '0.00',
-        avlAsnQty: '100.00',
-        fgStock: '',
-        netPrice: '70.23',
-        supplierNetPrice: '70.23',
-        taxMismatch: false,
-        packingMaterialType: '',
-        packingMaterialQty: '1',
-        spq: '1000.000',
-        pdirNo: '',
-        packagingType: '',
-        qtyPerPackaging: '',
-        batches: [],
-    },
-]
 
 // ═══════════════════════════════════════════════════════════════
 // API STRUCTURE
 // ═══════════════════════════════════════════════════════════════
-const API_BASE_URL = '/api/v1'
-const USE_MOCK = true
+
 const ALLOWED_EXTENSIONS = ['pdf', 'xls', 'xlsx']
 const ALLOWED_MIME_TYPES = [
     'application/pdf',
@@ -86,60 +17,6 @@ const ALLOWED_MIME_TYPES = [
 const isAllowedFile = (file) => {
     const ext = file.name.split('.').pop()?.toLowerCase()
     return ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_MIME_TYPES.includes(file.type)
-}
-
-const createAsnApi = {
-    async getEligibleItems({ agreementId, fromDate, toDate, materials, storage } = {}) {
-        if (USE_MOCK) {
-            await new Promise(r => setTimeout(r, 100))
-            return DEFAULT_ITEMS
-        }
-        const params = new URLSearchParams()
-        if (fromDate) params.set('fromDate', fromDate)
-        if (toDate) params.set('toDate', toDate)
-        if (materials) params.set('materials', materials)
-        if (storage) params.set('storage', storage)
-        const res = await fetch(`${API_BASE_URL}/asn/eligible-items/${agreementId}?${params}`)
-        if (!res.ok) throw new Error('Failed to load items')
-        return res.json()
-    },
-
-    async getPackagingTypes() {
-        if (USE_MOCK) {
-            await new Promise(r => setTimeout(r, 50))
-            return PACKAGING_TYPE_OPTIONS
-        }
-        const res = await fetch(`${API_BASE_URL}/asn/packaging-types`)
-        if (!res.ok) throw new Error('Failed to load packaging types')
-        return res.json()
-    },
-
-    async submitAsn(payload) {
-        if (USE_MOCK) {
-            await new Promise(r => setTimeout(r, 400))
-            return { asnId: `ASN-${Date.now()}`, ...payload }
-        }
-        const res = await fetch(`${API_BASE_URL}/asn`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        })
-        if (!res.ok) throw new Error('Failed to create ASN')
-        return res.json()
-    },
-
-    async uploadAttachment(asnDraftId, file, kind = 'general') {
-        if (USE_MOCK) {
-            await new Promise(r => setTimeout(r, 100))
-            return { id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, name: file.name, size: file.size, kind }
-        }
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('kind', kind)
-        const res = await fetch(`${API_BASE_URL}/asn/${asnDraftId}/attachments`, { method: 'POST', body: fd })
-        if (!res.ok) throw new Error('Failed to upload')
-        return res.json()
-    },
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -209,9 +86,14 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
     const isOver = total > target
 
     const addRow = () => {
-        setRows([...rows, { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, batchCode: '', quantity: '' }])
-        setError(null)
-    }
+  const maxBatches = parseInt(item.packingMaterialQty, 10)
+  if (!isNaN(maxBatches) && rows.length >= maxBatches) {
+    setError(`Maximum ${maxBatches} batch rows allowed (matches Packing Material Qty).`)
+    return
+  }
+  setRows([...rows, { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, batchCode: '', quantity: '' }])
+  setError(null)
+}
 
     const removeRow = (id) => {
         setRows(rows.filter(r => r.id !== id))
@@ -267,8 +149,9 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
                             <span>{item.materialName}</span>
                         </div>
                         <div className="text-[12px] text-[#6a6d70] mt-0.5">
-                            Item {item.itemNo} &middot; Avl. ASN Qty: <strong className="text-[#32363a]">{target} {item.totalUnit}</strong>
-                        </div>
+  Item {item.itemNo} &middot; Avl. ASN Qty: <strong className="text-[#32363a]">{target} {item.totalUnit}</strong>
+  {item.packingMaterialQty && <> &middot; Max batches: <strong className="text-[#32363a]">{item.packingMaterialQty}</strong></>}
+</div>
                     </div>
                     <button
                         onClick={onClose}
@@ -454,7 +337,8 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
 // ═══════════════════════════════════════════════════════════════
 // MOBILE ITEM CARD
 // ═══════════════════════════════════════════════════════════════
-function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes }) {
+
+function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirOptions }) {
     const [expanded, setExpanded] = useState(false)
     const batchCount = item.batches?.length || 0
     const batchSum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
@@ -622,7 +506,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
 // them as "new" component types on re-render. This preserves
 // input focus across keystrokes.
 // ═══════════════════════════════════════════════════════════════
-function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes }) {
+
+function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirOptions }) {
     const bc = item.batches?.length || 0
     const bsum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
     const balanced = bc > 0 && Math.abs(bsum - parseFloat(item.avlAsnQty || 0)) < 0.0001
@@ -736,37 +621,19 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
                             <span className={`text-[11px] font-bold ${item.taxMismatch ? 'text-[#107e3e]' : 'text-[#9ca3af]'}`}>{item.taxMismatch ? 'YES' : 'NO'}</span>
                         </div>
                     </Field>
-                    <Field label="Packing Material Type">
-                        <select value={item.packingMaterialType} onChange={e => onUpdate('packingMaterialType', e.target.value)} className={selectCls}>
-                            <option value="">Select</option>
-                            <option value="Trolley">Trolley</option>
-                            <option value="Pallet">Pallet</option>
-                            <option value="Carton">Carton</option>
-                            <option value="Crate">Crate</option>
-                        </select>
-                    </Field>
-                    <Field label="Packing Material Qty">
-                        <input
-                            type="text"
-                            value={item.packingMaterialQty}
-                            onChange={e => onUpdate('packingMaterialQty', e.target.value)}
-                            className={inputCls + ' text-center'}
-                        />
-                    </Field>
+                
+                    
                     <Field label="Type of Packaging">
                         <select value={item.packagingType} onChange={e => onUpdate('packagingType', e.target.value)} className={selectCls}>
                             <option value="">Select</option>
                             {packagingTypes.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
                         </select>
                     </Field>
-                    <Field label="Total Qty / Packaging">
-                        <input
-                            type="text"
-                            value={item.qtyPerPackaging}
-                            onChange={e => onUpdate('qtyPerPackaging', e.target.value)}
-                            placeholder="0"
-                            className={inputCls + ' text-center'}
-                        />
+                    <Field label="Packing Material Qty">
+                        <input type="text" value={item.packingMaterialQty}
+                        onChange={e => onUpdate('packingMaterialQty', e.target.value)}
+                        placeholder="0"
+                        className={inputCls + ' text-center'} />
                     </Field>
                     <Field label="PDIR No.">
                         <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} className={selectCls}>
@@ -778,33 +645,40 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
                 </div>
 
                 {/* ROW 3 — Split Batch + batch status */}
+                {/* ROW 3 */}
                 <div className="flex items-center gap-3 pt-1 border-t border-[#f0f0f0]">
-                    <button
-                        onClick={() => onSplitBatch(item)}
-                        className={`flex items-center gap-2 px-4 h-8 text-[12px] font-semibold rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98] ${
-                            bc > 0
+                {(() => {
+                    const maxBatches = parseInt(item.packingMaterialQty, 10)
+                    const batchDisabled = !item.packingMaterialQty || isNaN(maxBatches) || maxBatches < 1
+                    return (
+                    <>
+                        <button
+                        onClick={() => !batchDisabled && onSplitBatch(item)}
+                        disabled={batchDisabled}
+                        className={`flex items-center gap-2 px-4 h-8 text-[12px] font-semibold rounded-lg border transition-all ${
+                            batchDisabled
+                            ? 'opacity-40 cursor-not-allowed text-[#6a6d70] bg-[#f5f5f5] border-[#d9d9d9]'
+                            : bc > 0
                                 ? balanced
-                                    ? 'text-[#107e3e] bg-[#e8f5ec] border-[#107e3e]'
-                                    : 'text-[#b45309] bg-[#fef7e6] border-[#b45309]'
-                                : 'text-white bg-[#0a6ed1] border-[#0a6ed1] hover:bg-[#085caf]'
+                                ? 'text-[#107e3e] bg-[#e8f5ec] border-[#107e3e] hover:scale-[1.02] active:scale-[0.98]'
+                                : 'text-[#b45309] bg-[#fef7e6] border-[#b45309] hover:scale-[1.02] active:scale-[0.98]'
+                                : 'text-white bg-[#0a6ed1] border-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'
                         }`}
-                    >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="6" cy="18" r="3" />
-                            <circle cx="18" cy="6" r="3" />
-                            <circle cx="18" cy="18" r="3" />
-                            <path d="M6 15V6M6 6h12M18 9v6" />
-                        </svg>
-                        Split Batch{bc > 0 ? ` (${bc})` : ' +'}
-                    </button>
-
-                    {bc > 0 && (
+                        >
+                        {/* same SVG icon */}
+                        Split Batch{bc > 0 ? ` (${bc}/${maxBatches || '?'})` : ' +'}
+                        </button>
+                        {batchDisabled && (
+                        <span className="text-[11px] text-[#9ca3af]">Enter Packing Material Qty to enable split</span>
+                        )}
+                        {!batchDisabled && bc > 0 && (
                         <span className={`text-[12px] font-semibold ${balanced ? 'text-[#107e3e]' : 'text-[#b45309]'}`}>
-                            {balanced
-                                ? `✓ ${bc} batch${bc > 1 ? 'es' : ''} — balanced`
-                                : `⚠ ${bc} batch${bc > 1 ? 'es' : ''} — quantities unbalanced`}
+                            {balanced ? `✓ ${bc} batch${bc > 1 ? 'es' : ''} — balanced` : `⚠ ${bc} batch${bc > 1 ? 'es' : ''} — quantities unbalanced`}
                         </span>
-                    )}
+                        )}
+                    </>
+                    )
+                })()}
                 </div>
             </div>
         </div>
@@ -902,41 +776,55 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove, requiredHint }) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function CreateASN({ agreement: propAgreement }) {
-    const navigate = useNavigate()
-    const location = useLocation()
-    const agreement = location.state?.agreement || propAgreement || DEFAULT_AGREEMENT
-    const isMobile = useIsMobile()
-    const [activeTab, setActiveTab] = useState('info')
-    const [attachmentsSubTab, setAttachmentsSubTab] = useState('general')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const agreement = location.state?.agreement || propAgreement
+  const isMobile = useIsMobile()
+  const [activeTab, setActiveTab] = useState('info')
+  const [attachmentsSubTab, setAttachmentsSubTab] = useState('general')
 
-    const [invoiceNumber, setInvoiceNumber] = useState('')
-    const [invoiceDate, setInvoiceDate] = useState('')
-    const [invoiceAmount, setInvoiceAmount] = useState('')
-    const [totalPacking, setTotalPacking] = useState('')
+  const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [invoiceDate, setInvoiceDate] = useState('')
+  const [invoiceAmount, setInvoiceAmount] = useState('')
+  const [totalPacking, setTotalPacking] = useState('')
 
-    const [fromDate, setFromDate] = useState('')
-    const [toDate, setToDate] = useState('')
-    const [materialSearch, setMaterialSearch] = useState('')
-    const [storageSearch, setStorageSearch] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [storageSearch, setStorageSearch] = useState('')
 
-    const [items, setItems] = useState(DEFAULT_ITEMS)
-    const [selectedItemNos, setSelectedItemNos] = useState([])
-    const [packagingTypes, setPackagingTypes] = useState(PACKAGING_TYPE_OPTIONS)
+  const [items, setItems] = useState([])
+  const [itemsLoading, setItemsLoading] = useState(false)
+  const [itemsError, setItemsError] = useState(null)
+  const [selectedItemNos, setSelectedItemNos] = useState([])
+  const [pdirOptions, setPdirOptions] = useState([])
+  const [packagingTypes] = useState(['Box', 'Bag', 'Drum', 'Pallet', 'Container', 'Crate', 'Bundle'])
 
-    const [generalAttachments, setGeneralAttachments] = useState([])
-    const [pdirAttachments, setPdirAttachments] = useState([])
+  const [generalAttachments, setGeneralAttachments] = useState([])
+  const [pdirAttachments, setPdirAttachments] = useState([])
 
-    const [splitBatchItem, setSplitBatchItem] = useState(null)
-    const [modal, setModal] = useState(null)
-    const [submitting, setSubmitting] = useState(false)
+  const [splitBatchItem, setSplitBatchItem] = useState(null)
+  const [modal, setModal] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [materialSearch, setMaterialSearch] = useState('')
 
-    useEffect(() => {
-        let cancelled = false
-        createAsnApi.getPackagingTypes()
-            .then(types => { if (!cancelled) setPackagingTypes(types) })
-            .catch(err => console.error(err))
-        return () => { cancelled = true }
-    }, [])
+  // Auto-load items and PDIR options on mount
+  useEffect(() => {
+    if (!agreement?.id) return
+    setItemsLoading(true)
+    setItemsError(null)
+    Promise.all([
+      createAsnApi.getEligibleItems({ scheduleNo: agreement.id }),
+      createAsnApi.getPdirRefNos(agreement.id),
+    ])
+      .then(([asnItems, pdirNos]) => {
+        setItems(asnItems)
+        setPdirOptions(pdirNos)
+      })
+      .catch(err => setItemsError(err.message))
+      .finally(() => setItemsLoading(false))
+  }, [agreement?.id])
+
+    
 
     const allSelected = items.length > 0 && selectedItemNos.length === items.length
     const someSelected = selectedItemNos.length > 0 && !allSelected
@@ -958,13 +846,20 @@ export default function CreateASN({ agreement: propAgreement }) {
     }
 
     const handleGo = async () => {
-        try {
-            const data = await createAsnApi.getEligibleItems({
-                agreementId: agreement.id, fromDate, toDate, materials: materialSearch, storage: storageSearch,
-            })
-            setItems(data)
-        } catch (err) { console.error(err) }
-    }
+  if (!agreement?.id) return
+  setItemsLoading(true)
+  setItemsError(null)
+  try {
+    const asnItems = await createAsnApi.getEligibleItems({
+      scheduleNo: agreement.id,
+      fromDate,
+      toDate,
+      storageLocation: storageSearch,
+    })
+    setItems(asnItems)
+  } catch (err) { setItemsError(err.message) }
+  finally { setItemsLoading(false) }
+}
 
     const handleClear = () => {
         setFromDate(''); setToDate(''); setMaterialSearch(''); setStorageSearch('')
@@ -974,7 +869,7 @@ export default function CreateASN({ agreement: propAgreement }) {
         const errors = []
         if (selectedItemNos.length === 0) errors.push('Select at least one item to create ASN.')
         if (!invoiceNumber) errors.push('Invoice Number is required.')
-        if (!invoiceAmount) errors.push('Invoice Amount is required.')
+        
 
         const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
         selectedItems.forEach(it => {
@@ -1022,8 +917,7 @@ export default function CreateASN({ agreement: propAgreement }) {
                 <div className="space-y-1.5">
                     <div className="flex justify-between"><span className="text-[#6a6d70]">Agreement</span><strong>{agreement.id}</strong></div>
                     <div className="flex justify-between"><span className="text-[#6a6d70]">Invoice Number</span><strong>{invoiceNumber}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#6a6d70]">Invoice Amount</span><strong>₹ {invoiceAmount}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#6a6d70]">Items selected</span><strong>{selectedItems.length}</strong></div>
+<div className="flex justify-between"><span className="text-[#6a6d70]">Invoice Amount</span><strong>₹ {calcInvoiceValue()}</strong></div>                    <div className="flex justify-between"><span className="text-[#6a6d70]">Items selected</span><strong>{selectedItems.length}</strong></div>
                     <div className="flex justify-between"><span className="text-[#6a6d70]">PDIR attachments</span><strong>{pdirAttachments.length}</strong></div>
                     <div className="flex justify-between"><span className="text-[#6a6d70]">General attachments</span><strong>{generalAttachments.length}</strong></div>
                 </div>
@@ -1036,51 +930,54 @@ export default function CreateASN({ agreement: propAgreement }) {
     }
 
     const doCreate = async () => {
-        setSubmitting(true)
-        try {
-            const payload = {
-                agreementId: agreement.id,
-                invoice: { number: invoiceNumber, date: invoiceDate, amount: invoiceAmount, totalPacking },
-                items: items.filter(i => selectedItemNos.includes(i.itemNo)),
-                attachments: {
-                    general: generalAttachments.map(a => a.id),
-                    pdir: pdirAttachments.map(a => a.id),
-                },
-            }
-            const result = await createAsnApi.submitAsn(payload)
-            setModal({
-                kind: 'success',
-                title: 'ASN created successfully',
-                message: 'Your ASN has been submitted and is now available in the system.',
-                details: (
-                    <div className="space-y-1.5">
-                        <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.asnId}</strong></div>
-                        <div className="flex justify-between"><span className="text-[#6a6d70]">Agreement</span><strong>{agreement.id}</strong></div>
-                        <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{payload.items.length}</strong></div>
-                    </div>
-                ),
-                primaryLabel: 'Done',
-                onPrimary: () => { setModal(null); navigate(-1) },
-            })
-        } catch (err) {
-            setModal({
-                kind: 'error',
-                title: 'Failed to create ASN',
-                message: err.message || 'Something went wrong while submitting. Please try again.',
-                primaryLabel: 'OK',
-                onPrimary: () => setModal(null),
-            })
-        } finally {
-            setSubmitting(false)
-        }
-    }
+  setModal(null)
+  setSubmitting(true)
+  try {
+    const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
+    const result = await createAsnApi.submitAsn({
+      scheduleNo:           agreement.id,
+      plant:                agreement.plant,
+      invoiceNumber,
+      invoiceDate,
+      invoiceAmount:        calcInvoiceValue(),
+      totalPacking,
+      items:                selectedItems,
+      generalAttachmentIds: generalAttachments.map(a => a.id),
+      pdirAttachmentIds:    pdirAttachments.map(a => a.id),
+    })
+    setModal({
+      kind: 'success',
+      title: 'ASN created successfully',
+      message: result.message,   // "ASN No. 2600000071/2026 created successfully"
+      details: (
+        <div className="space-y-1.5">
+          <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.asnNum}{result.fisYear ? '/' + result.fisYear : ''}</strong></div>
+          <div className="flex justify-between"><span className="text-[#6a6d70]">Agreement</span><strong>{agreement.id}</strong></div>
+          <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{selectedItems.length}</strong></div>
+        </div>
+      ),
+      primaryLabel: 'Done',
+      onPrimary: () => { setModal(null); navigate(-1) },
+    })
+  } catch (err) {
+    setModal({
+      kind: 'error',
+      title: 'Failed to create ASN',
+      message: err.message || 'Something went wrong. Please try again.',
+      primaryLabel: 'OK',
+      onPrimary: () => setModal(null),
+    })
+  } finally {
+    setSubmitting(false)
+  }
+}
 
-    const calcInvoiceValue = () => {
-        return items
-            .filter(i => selectedItemNos.includes(i.itemNo))
-            .reduce((sum, i) => sum + (parseFloat(i.avlAsnQty || 0) * parseFloat(i.supplierNetPrice || 0)), 0)
-            .toFixed(2)
-    }
+const calcInvoiceValue = () => {
+  return items
+    .filter(i => selectedItemNos.includes(i.itemNo))
+    .reduce((sum, i) => sum + (parseFloat(i.avlAsnQty || 0) * parseFloat(i.supplierNetPrice || 0)), 0)
+    .toFixed(2)
+}
 
     const totalAttachments = generalAttachments.length + pdirAttachments.length
 
@@ -1180,9 +1077,11 @@ export default function CreateASN({ agreement: propAgreement }) {
                                             <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
                                         </div>
                                         <div>
-                                            <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Invoice Amount <span className="text-[#cc1c14]">*</span></label>
-                                            <input type="text" value={invoiceAmount} onChange={e => setInvoiceAmount(e.target.value)} placeholder="₹ 0.00" className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
-                                        </div>
+  <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Invoice Amount (auto)</label>
+  <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#32363a] text-[13px] font-semibold">
+    ₹ {calcInvoiceValue()}
+  </div>
+</div>
                                         <div>
                                             <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Invoice Value (Vendor)</label>
                                             <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#6a6d70] text-[13px] italic">
@@ -1300,14 +1199,15 @@ export default function CreateASN({ agreement: propAgreement }) {
                                     {items.length === 0 && <div className="py-12 text-center text-[#6a6d70] text-[14px]">No items available</div>}
                                     {items.map(item => (
                                         <MobileItemCard
-                                            key={item.itemNo}
-                                            item={item}
-                                            isSelected={selectedItemNos.includes(item.itemNo)}
-                                            onToggle={() => toggleOne(item.itemNo)}
-                                            onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
-                                            onSplitBatch={(it) => setSplitBatchItem(it)}
-                                            packagingTypes={packagingTypes}
-                                        />
+                                          key={item.itemNo}
+  item={item}
+  isSelected={selectedItemNos.includes(item.itemNo)}
+  onToggle={() => toggleOne(item.itemNo)}
+  onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
+  onSplitBatch={(it) => setSplitBatchItem(it)}
+  packagingTypes={packagingTypes}
+  pdirOptions={pdirOptions}
+/>
                                     ))}
                                 </div>
                             ) : (
@@ -1341,14 +1241,15 @@ export default function CreateASN({ agreement: propAgreement }) {
 
                                     {items.map(item => (
                                         <DesktopItemCard
-                                            key={item.itemNo}
-                                            item={item}
-                                            isSelected={selectedItemNos.includes(item.itemNo)}
-                                            onToggle={() => toggleOne(item.itemNo)}
-                                            onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
-                                            onSplitBatch={(it) => setSplitBatchItem(it)}
-                                            packagingTypes={packagingTypes}
-                                        />
+  key={item.itemNo}
+  item={item}
+  isSelected={selectedItemNos.includes(item.itemNo)}
+  onToggle={() => toggleOne(item.itemNo)}
+  onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
+  onSplitBatch={(it) => setSplitBatchItem(it)}
+  packagingTypes={packagingTypes}
+  pdirOptions={pdirOptions}
+/>
                                     ))}
                                 </div>
                             )}

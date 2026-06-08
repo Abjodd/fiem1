@@ -102,18 +102,18 @@ function mapScheduleLine(d) {
 
 function mapConfirmRow(d) {
   return {
-    itemNo:           str(d.Item_No),
-    scheduleLine:     str(d.Schedule_Line),
-    materialNo:       str(d.Material_No),
-    materialDesc:     str(d.Material_Desc),
-    storageLocation:  str(d.StorageLocation),
-    requiredQty:      num(d.Required_Qty),
-    confirmedQty:     num(d.Confirmed_Qty),
-    asnQty:           num(d.Asn_Qty),
-    deliveryDate:     sapDate(d.Delivery_Date),
-    dispatchDate:     sapDate(d.Dispatch_Date),
-    uom:              str(d.Uom),
-    scheduleNo:       str(d.Schedule_No),
+    itemNo:          str(d.Schedule_Item),
+    scheduleLine:    str(d.Schedule_Line),
+    materialNo:      str(d.Material_No),
+    materialDesc:    str(d.Material_Desc),
+    storageLocation: str(d.StorageLocation) || str(d.StorageBin),
+    requiredQty:     num(d.Po_Qty),           // was: Required_Qty
+    confirmedQty:    num(d.Con_Qty),          // was: Confirmed_Qty
+    asnQty:          num(d.Asn_Qty),
+    deliveryDate:    sapDate(d.ReqDate || d.Date),  // was: Delivery_Date
+    dispatchDate:    sapDate(d.DispDate),     // was: Dispatch_Date
+    uom:             str(d.Uom || ''),
+    scheduleNo:      str(d.Schedule_No),
   }
 }
 
@@ -174,22 +174,42 @@ export const scheduleReleaseApi = {
   },
 
   // CONFIRM SUBMIT — POST selected rows
-  async submitConfirm(scheduleNo, selectedRows) {
-    // Each selected row gets POSTed — adjust payload fields per backend contract
-    const results = await Promise.all(
-      selectedRows.map(row =>
-        odataPost('/ConfirmDataSet', {
-          Schedule_No:   scheduleNo,
-          Item_No:       row.itemNo,
-          Schedule_Line: row.scheduleLine,
-          Material_No:   row.materialNo,
-          Confirmed_Qty: String(row.confirmedQty),
-          Delivery_Date: row.deliveryDate,
-        })
-      )
-    )
-    return results
-  },
+async submitConfirm(scheduleNo, selectedRows) {
+  // First fetch CSRF token
+  const token = await fetchCsrfToken()
+  const res = await fetch(`${ODATA_BASE}/S_HEADERSet('${scheduleNo}')`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'X-CSRF-Token': token,
+      Loginid: '401122',
+      Logintype: 'P',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      Schedule_No: scheduleNo,
+      Confirmnav: {
+        results: selectedRows.map(row => ({
+          Schedule_No:    scheduleNo,
+          Item_No:        row.itemNo,
+          Schedule_Line:  row.scheduleLine,
+          Material_No:    row.materialNo,
+          Required_Qty:   String(row.requiredQty),
+          Delivery_Date:  row.deliveryDate,
+        }))
+      }
+    }),
+  })
+  if (!res.ok) {
+    const t = await res.text().catch(() => '')
+    let msg = `POST ${res.status}`
+    try { msg = JSON.parse(t)?.error?.message?.value || msg } catch { msg = t.slice(0, 200) || msg }
+    throw new Error(msg)
+  }
+  if (res.status === 204) return {}
+  return res.json()
+},
 
   // CONFIRM AGREEMENT (header-level) — S_HEADERSet confirm
   async confirmAgreement(id) {
