@@ -22,16 +22,20 @@ export function sapDateToIso(s) {
 
 // trim SAP numeric strings: "10.000 " → "10.00"
 function trimNum(s) {
-  if (!s) return '0.00'
-  return parseFloat(s.trim()).toFixed(2)
+  if (s === null || s === undefined || s === '') return '0.00'
+  const n = parseFloat(String(s).trim())
+  return isNaN(n) ? '0.00' : n.toFixed(2)
 }
+
+const str = (v) => String(v ?? '').trim()
 
 // ─── Fetch helpers ──────────────────────────────────────────────
 async function odataGet(path) {
   const url = `${BASE}${path}`
   const res = await fetch(url, {
-    headers: { Accept: 'application/json',
-        Loginid: '401122',
+    headers: {
+      Accept: 'application/json',
+      Loginid: '401122',
       Logintype: 'P',
     },
     credentials: 'include',
@@ -43,146 +47,191 @@ async function odataGet(path) {
 
 // ─── Mappers ────────────────────────────────────────────────────
 
-/** PO_HEADER row → UI agreement shape */
+/**
+ * PO_HEADER row → UI header shape (for sidebar list)
+ * From: PO_HEADERSet?$skip=0&$top=40
+ */
 function mapHeader(raw) {
   return {
-    id: raw.Po_No,
-    plant: raw.Plant,
-    plantName: raw.Plant_Desc,
+    id: str(raw.Po_No),
+    plant: str(raw.Plant),
+    plantName: str(raw.Plant_Desc),
     date: sapDateToDisplay(raw.Po_Date),
-    type: raw.UpdatedBy || 'Manual',
-    vendor: raw.Vendor_Name || '',
-    vendorNo: raw.Vendor_No,
-    currency: raw.Currency,
-    amount: raw.Amount,
-    status: raw.Status,
-    buyerName: raw.Buyer_Name,
-    purchaseOrg: raw.Purchase_Org,
-    purchaseOrgDesc: raw.Purchase_Org_Desc,
-    purchaseGroup: raw.Purchase_Group,
-    purchaseGroupDesc: raw.Purchase_Group_Desc,
-    orderType: raw.Order_Type,
-    orderTypeDesc: raw.Order_Type_Desc,
-    itemCount: raw.Item_Count,
+    type: str(raw.UpdatedBy) || 'Manual',
+    vendor: str(raw.Vendor_Name),
+    vendorNo: str(raw.Vendor_No),
+    currency: str(raw.Currency),
+    amount: str(raw.Amount),
+    status: str(raw.Status),
+    buyerName: str(raw.Buyer_Name),
+    purchaseOrg: str(raw.Purchase_Org),
+    purchaseOrgDesc: str(raw.Purchase_Org_Desc),
+    purchaseGroup: str(raw.Purchase_Group),
+    purchaseGroupDesc: str(raw.Purchase_Group_Desc),
+    orderType: str(raw.Order_Type),
+    orderTypeDesc: str(raw.Order_Type_Desc),
+    itemCount: str(raw.Item_Count),
     upcomingDelDate: sapDateToDisplay(raw.Upcoming_Del_Date),
     validFrom: sapDateToDisplay(raw.ValidFrom),
     validTo: sapDateToDisplay(raw.ValidTo),
-    poType: raw.PoType,
+    poType: str(raw.PoType),
+    poFlag: str(raw.Po_Flag),
+    asnFlag: str(raw.Asn_Flag),
   }
 }
 
-/** PO_ASN_ITEM row → UI item shape */
-function mapAsnItem(raw) {
+/**
+ * PO_ITEM row (from headertoitemNav) → UI item shape
+ * Payload fields: Po_No, Item_No, Material_No, Material_Desc, Quantity, Uom,
+ *   Plant, Total_Amount, Currency, Delivery_Date, Hsn_Code, Igst, Cgst, Sgst,
+ *   Confirm_Status, Delivered_Qty, Asn_Created, Confirm_Qty, Pending_Qty,
+ *   Matkl, Wgbez, PkgMatQty, PkgMatType, SOQ, Warehouse_No, StorageLocation,
+ *   Item_indicator, ScheduleItem, ViewName
+ */
+function mapPoItem(raw) {
+  // Confirm_Status from SAP → normalise to status labels used in UI
+  const rawStatus = str(raw.Confirm_Status)
+  let status = rawStatus
+  if (!rawStatus || rawStatus === '') {
+    status = 'Confirmation Required'
+  }
+  // SAP may return "Confirmed", "Partially Confirmed", "Confirmation Required", "Completed" — pass through
+  // but guard empty / unexpected values
+  if (!['Confirmed', 'Partially Confirmed', 'Confirmation Required', 'Completed'].includes(rawStatus)) {
+    status = rawStatus || 'Confirmation Required'
+  }
+
   return {
-    itemNo: raw.Ebelp?.replace(/^0+/, '') || raw.Ebelp, // strip leading zeros
-    ebelp: raw.Ebelp,
-    etenr: raw.Etenr,
-    materialNumber: raw.Matnr,
-    materialName: raw.Maktx,
-    hsnCode: raw.Hsn_Code,
-    storageLocation: raw.StorageLocation || raw.Lgort || '',
-    warehouseNo: raw.Warehouse_No,
-    storagebin: raw.Storagebin,
-    deliverySchedule: trimNum(raw.Total_Qty),
-    deliveryUnit: raw.Meins,
-    deliveredQty: trimNum(raw.Asn_Created),
-    deliveredUnit: raw.Meins,
-    unitPrice: trimNum(raw.Netpr),
-    vendorPrice: trimNum(raw.NetprVen),
-    currency: raw.Currency,
-    status: raw.Status === 'CNF' ? 'Confirmed' : raw.Status,
-    igst: raw.Igst,
-    cgst: raw.Cgst,
-    sgst: raw.Sgst,
-    igstPer: raw.Igst_per?.trim(),
-    cgstPer: raw.Cgst_per,
-    sgstPer: raw.Sgst_per,
-    tax: raw.Tax,
-    challanNo: raw.ChallanNo,
-    shipDate: sapDateToDisplay(raw.ShipDate),
-    dispdate: sapDateToDisplay(raw.Dispdate),
-    pkgMatType: raw.PkgMatType,
-    pkgMatQty: raw.PkgMatQty,
-    matExpDate: sapDateToDisplay(raw.MatExpDate),
-    perUnit: raw.PerUnit?.trim(),
-    soq: raw.SOQ?.trim(),
-    pdirRefNo: raw.PdirRefNo,
-    deliveryDate: sapDateToDisplay(raw.Eindt), // schedule date
-    poQty: trimNum(raw.Po_Qty),
-    menge: trimNum(raw.Menge),
-    delQty: trimNum(raw.DelQty),
-    draftAsnQty: raw.Draft_AsnQty,
-    pstyp: raw.Pstyp,
-    // scheduleLines not in ASN item — populated separately if needed
-    scheduleLines: [],
+    poNo:            str(raw.Po_No),
+    itemNo:          str(raw.Item_No)?.replace(/^0+/, '') || str(raw.Item_No),
+    ebelp:           str(raw.Item_No),
+    materialNumber:  str(raw.Material_No),
+    materialName:    str(raw.Material_Desc),
+    quantity:        trimNum(raw.Quantity),
+    deliveryUnit:    str(raw.Uom),
+    plant:           str(raw.Plant),
+    plantDesc:       str(raw.Plant_Desc),
+    totalAmount:     str(raw.Total_Amount),
+    currency:        str(raw.Currency),
+    deliveryDate:    sapDateToDisplay(raw.Delivery_Date),
+    hsnCode:         str(raw.Hsn_Code),
+    igst:            str(raw.Igst),
+    cgst:            str(raw.Cgst),
+    sgst:            str(raw.Sgst),
+    // Confirm_Status is the item status
+    status,
+    // Delivered_Qty = how much delivered
+    deliveredQty:    trimNum(raw.Delivered_Qty),
+    // Asn_Created = ASN qty
+    asnCreated:      trimNum(raw.Asn_Created),
+    // Confirm_Qty = confirmed qty
+    confirmQty:      trimNum(raw.Confirm_Qty),
+    // Pending_Qty
+    pendingQty:      trimNum(raw.Pending_Qty),
+    // For items table: "Delivery Schedule" = Quantity (PO ordered qty)
+    deliverySchedule: trimNum(raw.Quantity),
+    // deliveredQty doubles as "delivered" display
+    deliveredUnit:   str(raw.Uom),
+    // unit price not in PO_ITEM — set empty; shown as '—'
+    unitPrice:       '',
+    storageLocation: str(raw.StorageLocation),
+    warehouseNo:     str(raw.Warehouse_No),
+    matkl:           str(raw.Matkl),
+    wgbez:           str(raw.Wgbez),
+    pkgMatQty:       str(raw.PkgMatQty),
+    pkgMatType:      str(raw.PkgMatType),
+    soq:             str(raw.SOQ),
+    itemIndicator:   str(raw.Item_indicator),
+    scheduleItem:    str(raw.ScheduleItem),
+    viewName:        str(raw.ViewName),
+    scheduleLines:   [],
   }
 }
 
-/** PO_ASN_HEADER → UI ASN header shape */
-function mapAsnHeader(raw) {
+/**
+ * PO detail (expanded header + items) → UI agreement shape
+ * From: PO_HEADERSet(Po_No='...',Vendor_No='')?$expand=headertoitemNav
+ */
+function mapPoDetail(raw) {
   return {
-    poNo: raw.Po_No,
-    draftAsn: raw.DraftAsn,
-    asnNum: raw.AsnNum,
-    plant: raw.Werks,
-    invoiceDate: raw.InvoiceDate,
-    shipTime: raw.ShipTime,
-    invoiceNum: raw.InvoiceNum,
-    invoiceAmt: raw.InvoiceAmt?.trim(),
-    purchaseGroupDesc: raw.Purchase_Group_Desc,
-    buyerName: raw.Buyer_Name,
-    currency: raw.Currency,
-    totalAmount: raw.Total_Amount,
-    vendorNo: raw.Vendor_No,
-    fiscalYear: raw.Fis_Year,
-    plantDesc: raw.Plant_Desc,
-    invoiceVal: raw.InvoiceVal,
-    unplannedCost: raw.UnplannedCost,
-    unplannedCostText: raw.UnplannedCost_text,
-    canUpdate: raw.Update,
-    canDelete: raw.Delete,
-    storageLocation: raw.StorageLocation,
-    items: (raw.asnheadertoasnitemnav?.results || []).map(mapAsnItem),
+    id:                   str(raw.Po_No),
+    poNo:                 str(raw.Po_No),
+    vendorNo:             str(raw.Vendor_No),
+    vendor:               str(raw.Vendor_Name),
+    date:                 sapDateToDisplay(raw.Po_Date),
+    plant:                str(raw.Plant),
+    plantDesc:            str(raw.Plant_Desc),
+    currency:             str(raw.Currency),
+    amount:               str(raw.Amount),
+    buyerName:            str(raw.Buyer_Name),
+    purchaseOrg:          str(raw.Purchase_Org),
+    purchaseOrgDesc:      str(raw.Purchase_Org_Desc),
+    purchaseGroup:        str(raw.Purchase_Group),
+    purchaseGroupDesc:    str(raw.Purchase_Group_Desc),
+    orderType:            str(raw.Order_Type),
+    orderTypeDesc:        str(raw.Order_Type_Desc),
+    status:               str(raw.Status),
+    itemCount:            str(raw.Item_Count),
+    upcomingDelDate:      sapDateToDisplay(raw.Upcoming_Del_Date),
+    poType:               str(raw.PoType),
+    poFlag:               str(raw.Po_Flag),
+    asnFlag:              str(raw.Asn_Flag),
+    items: (raw.headertoitemNav?.results || []).map(mapPoItem),
+  }
+}
+
+/**
+ * PoConfirmSet row → confirm row shape
+ * Payload fields: Po_No, Item_No, Schedule_Line, Vendor_No, Material_No,
+ *   Material_Desc, Conf_Date, PO_Quantity, Conf_Quantity, Del_Quantity,
+ *   Asn_Quantity, DispDate, StorageBin, ShipDate
+ */
+function mapConfirmRow(raw) {
+  return {
+    poNo:            str(raw.Po_No),
+    itemNo:          str(raw.Item_No),
+    scheduleLine:    str(raw.Schedule_Line),
+    vendorNo:        str(raw.Vendor_No),
+    materialNo:      str(raw.Material_No),
+    materialDesc:    str(raw.Material_Desc),
+    // PO_Quantity = what was ordered
+    poQty:           str(raw.PO_Quantity || raw.Po_Qty || ''),
+    // Conf_Quantity = vendor-entered confirmed qty
+    confirmedQty:    str(raw.Conf_Quantity || raw.Conf_Qty || '0'),
+    // Del_Quantity = delivery quantity
+    delQty:          str(raw.Del_Quantity || raw.Del_Qty || ''),
+    // Asn_Quantity
+    asnQty:          str(raw.Asn_Quantity || raw.Asn_Qty || ''),
+    confDate:        str(raw.Conf_Date),
+    confDateDisplay: sapDateToDisplay(raw.Conf_Date),
+    dispDate:        str(raw.DispDate),
+    dispDateDisplay: sapDateToDisplay(raw.DispDate),
+    shipDate:        str(raw.ShipDate),
+    shipDateDisplay: sapDateToDisplay(raw.ShipDate),
+    storageBin:      str(raw.StorageBin),
   }
 }
 
 /** Po_Lineitem row → schedule line shape */
 function mapLineItem(raw) {
   return {
-    ebeln: raw.Ebeln,
-    ebelp: raw.Ebelp,
-    etenr: raw.Etenr?.trim(),
-    deliveryDate: sapDateToDisplay(raw.Eindt),
+    ebeln:            str(raw.Ebeln),
+    ebelp:            str(raw.Ebelp),
+    etenr:            str(raw.Etenr)?.trim(),
+    deliveryDate:     sapDateToDisplay(raw.Eindt),
     deliverySchedule: trimNum(raw.Menge),
-    confirmedQty: trimNum(raw.Wemng),
-    unit: '',  // not returned in this entity; caller can inject if known
-    schLineNo: raw.Etenr?.trim(),
-  }
-}
-
-/** PoConfirmSet row → confirmation shape */
-function mapConfirm(raw) {
-  return {
-    poNo: raw.Po_No,
-    itemNo: raw.Po_item,
-    deliveryDate: sapDateToDisplay(raw.Eindt),
-    qty: trimNum(raw.Menge),
-    confirmedQty: trimNum(raw.Bmeng),
-    unit: raw.Meins,
-    status: raw.Status,
-    materialNo: raw.Matnr,
-    materialDesc: raw.Maktx,
-    plant: raw.Werks,
-    deliveryComplete: raw.Elikz,
+    confirmedQty:     trimNum(raw.Wemng),
+    unit:             '',
+    schLineNo:        str(raw.Etenr)?.trim(),
   }
 }
 
 /** Pdir_ref_noSet row */
 function mapPdirRef(raw) {
   return {
-    ebeln: raw.Ebeln,
-    ebelp: raw.Ebelp,
-    refNo: raw.Pdir_Ref_No,
+    ebeln:   str(raw.Ebeln),
+    ebelp:   str(raw.Ebelp),
+    refNo:   str(raw.Pdir_Ref_No),
     refDate: sapDateToDisplay(raw.Pdir_Ref_Date),
   }
 }
@@ -191,40 +240,39 @@ function mapPdirRef(raw) {
 
 export const purchaseOrderApi = {
   /**
-   * List PO headers.
-   * SAP entity: PO_HEADERSet
-   * Supports OData $filter server-side; client-side search done in JSX.
+   * List PO headers for sidebar.
+   * SAP entity: PO_HEADERSet?$skip=0&$top=40
    */
   async listHeaders({ vendorNo = '' } = {}) {
-    const filter = vendorNo ? `?$filter=Vendor_No%20eq%20%27${encodeURIComponent(vendorNo)}%27` : ''
+    const filter = vendorNo
+      ? `?$filter=Vendor_No%20eq%20%27${encodeURIComponent(vendorNo)}%27`
+      : '?$skip=0&$top=40'
     const data = await odataGet(`/PO_HEADERSet${filter}`)
     return (data.results || []).map(mapHeader)
   },
 
   /**
-   * Single PO header.
-   * SAP entity: PO_HEADERSet(Vendor_No='...',Po_No='...')
+   * Single PO header (minimal, no expand) — used for CSRF token fetch.
+   * SAP entity: PO_HEADERSet(Po_No='...',Vendor_No='')
    */
   async getHeader(poNo, vendorNo = '') {
-    const key = `Vendor_No='${vendorNo}',Po_No='${poNo}'`
+    const key = `Po_No='${poNo}',Vendor_No='${vendorNo}'`
     const data = await odataGet(`/PO_HEADERSet(${key})`)
     return mapHeader(data)
   },
 
   /**
-   * ASN header + items (expanded).
-   * SAP entity: PO_ASN_HEADERSet('...')?$expand=asnheadertoasnitemnav
-   * Called when user clicks "Create ASN".
+   * PO detail with expanded items.
+   * SAP entity: PO_HEADERSet(Po_No='...',Vendor_No='')?$expand=headertoitemNav
    */
-  async getAsnHeader(poNo) {
-    const data = await odataGet(
-      `/PO_ASN_HEADERSet('${poNo}')?$expand=asnheadertoasnitemnav`
-    )
-    return mapAsnHeader(data)
+  async getPoDetail(poNo, vendorNo = '') {
+    const key = `Po_No='${poNo}',Vendor_No='${vendorNo}'`
+    const data = await odataGet(`/PO_HEADERSet(${key})?$expand=headertoitemNav`)
+    return mapPoDetail(data)
   },
 
   /**
-   * Line items for a PO + item combo.
+   * Schedule lines for a PO + item.
    * SAP entity: Po_LineitemSet?$filter=Ebeln eq '...' and Ebelp eq '...'
    */
   async getLineItems(poNo, ebelp) {
@@ -236,7 +284,6 @@ export const purchaseOrderApi = {
   /**
    * PDIR reference numbers for a PO.
    * SAP entity: Pdir_ref_noSet?$filter=Ebeln eq '...'
-   * Called alongside getAsnHeader when "Create ASN" clicked.
    */
   async getPdirRefs(poNo) {
     const f = `Ebeln%20eq%20%27${poNo}%27`
@@ -247,11 +294,79 @@ export const purchaseOrderApi = {
   /**
    * PO confirmation lines.
    * SAP entity: PoConfirmSet?$filter= Po_No eq '...'
-   * Called when "Confirm" button clicked (GET to preview, then POST/PATCH per your flow).
    */
-  async getConfirmLines(poNo) {
-    const f = `%20Po_No%20eq%20%27${poNo}%27`
-    const data = await odataGet(`/PoConfirmSet?$filter=${f}`)
-    return (data.results || []).map(mapConfirm)
+  async getConfirmData(poNo) {
+    if (!poNo || poNo === 'undefined') {
+      throw new Error('No PO number provided')
+    }
+    const filter = `%20Po_No%20eq%20%27${poNo}%27`
+    const data = await odataGet(`/PoConfirmSet?$filter=${filter}`)
+    return (data.results || []).map(mapConfirmRow)
+  },
+
+  /**
+   * Submit PO confirmation.
+   *   Step 1 — GET PO_HEADERSet(Po_No='...',Vendor_No='') to fetch CSRF token
+   *   Step 2 — POST PO_HEADERSet with selected rows nested in headertopoconfirmnav
+   */
+  async submitConfirm(poNo, selectedRows) {
+    if (!poNo || poNo === 'undefined') {
+      throw new Error('No PO number provided')
+    }
+
+    // Step 1: fetch CSRF token
+    const csrfRes = await fetch(
+      `${BASE}/PO_HEADERSet(Po_No='${poNo}',Vendor_No='')`,
+      {
+        method: 'GET',
+        headers: {
+          'X-CSRF-Token': 'Fetch',
+          Accept: 'application/json',
+          Loginid: '401122',
+          Logintype: 'P',
+        },
+        credentials: 'include',
+      }
+    )
+    const token = csrfRes.headers.get('X-CSRF-Token') || ''
+
+    // Step 2: POST with selected rows
+    const res = await fetch(`${BASE}/PO_HEADERSet`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-Token': token,
+        Loginid: '401122',
+        Logintype: 'P',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        Po_No:    poNo,
+        Vendor_No: '',
+        headertopoconfirmnav: {
+          results: selectedRows.map(row => ({
+            Po_No:         poNo,
+            Item_No:       row.itemNo,
+            Schedule_Line: row.scheduleLine,
+            Vendor_No:     '',
+            Material_No:   row.materialNo,
+            Conf_Date:     row.confDate,
+            Conf_Quantity: String(row.confirmedQty),
+            Del_Quantity:  String(row.delQty),
+            StorageBin:    row.storageBin || '',
+          })),
+        },
+      }),
+    })
+
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      let msg = `POST ${res.status}`
+      try { msg = JSON.parse(t)?.error?.message?.value || msg } catch { msg = t.slice(0, 200) || msg }
+      throw new Error(msg)
+    }
+
+    return res.status === 204 ? {} : res.json()
   },
 }
