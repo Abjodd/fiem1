@@ -62,93 +62,83 @@ async function fetchCsrfToken() {
 // ─────────────────────────────────────────────────────────────────────────────
 // mapAsnItem — OData ASN_itemSet row → UI item card shape
 //
-// KEY FIXES:
-//  1. itemNo = `${ebelp}-${etenr}` (composite key)
-//     Ebelp alone ("10") is shared by all Etenr rows — editing one used to
-//     update all. Now "10-1", "10-2" … are independent React state entries.
+// KEY LOGIC:
+//  • Menge  = Con_Qty − DelQty  (SAP computes this; it IS the avlAsnQty)
+//  • avlAsnQty ← Menge  (user sees and can edit this)
+//  • deliveredQty ← DelQty  (already delivered — read-only)
+//  • In POST: Menge is re-sent as Con_Qty − DelQty (same formula)
 //
-//  2. avlAsnQty ← DelQty  (NOT Menge)
-//     DelQty = qty SAP authorises for THIS schedule line shipment.
-//     Menge  = open remaining PO qty — completely different concept.
-//     Sending Menge > DelQty caused "exceeding" error.
+//  • itemNo = `${ebelp}-${etenr}` so each schedule line is a unique
+//    React state entry — editing one row never cascades to others.
 //
-//  3. eindt preserved as raw "YYYYMMDD"
-//     Used verbatim as ShipDate in POST — display-formatted dates break this.
+//  • All SAP string values are .trim()-ed here to strip leading/trailing
+//    spaces that SAP sometimes returns (e.g. " 10", "7.00 ", "1 ").
 // ─────────────────────────────────────────────────────────────────────────────
 function mapAsnItem(d) {
-  const ebelp = str(d.Ebelp)    // "10", "20"  (leading space stripped)
-  const etenr = str(d.Etenr)    // "1", "2", "3" …
+  const ebelp = str(d.Ebelp)      // str() already trims — " 10" → "10"
+  const etenr = str(d.Etenr)
+
+  const conQty = str(d.Con_Qty)
+  const delQty = str(d.DelQty)
+  const menge  = str(d.Menge)     // "10.00 " → "10.00" via str()'s trim
 
   return {
-    // ── React identity ───────────────────────────────────────────────────────
-    itemNo:              `${ebelp}-${etenr}`,   // "10-1", "10-2" … unique per sch line
-
-    // ── Fields echoed verbatim to POST payload ────────────────────────────────
+    itemNo:           `${ebelp}-${etenr}`,
     ebelp,
-    schLine:             etenr,
-    ebeln:               str(d.Ebeln || d.Schedule_No),  // Ebeln = PO number
-    scheduleNo:          str(d.Schedule_No),
-    eindt:               str(d.Eindt),           // raw "YYYYMMDD" — used as ShipDate
-    werks:               str(d.Werks),
-    maktx:               str(d.Maktx),           // material description
-    plantDesc:           str(d.PlantDesc),
-    perUnit:             str(d.PerUnit),
-    warningMsg:          str(d.Warningmsg),
-    pstyp:               str(d.Pstyp),
+    schLine:          etenr,
+    ebeln:            str(d.Ebeln || d.Schedule_No),
+    scheduleNo:       str(d.Schedule_No),
+    eindt:            str(d.Eindt),
+    werks:            str(d.Werks),
+    maktx:            str(d.Maktx),
+    plantDesc:        str(d.PlantDesc),
+    perUnit:          str(d.PerUnit),    // "1 " → "1"
+    warningMsg:       str(d.Warningmsg),
+    pstyp:            str(d.Pstyp),
 
-    // Tax / GST
-    igst:                str(d.Igst    || '0'),
-    cgst:                str(d.Cgst    || '0'),
-    sgst:                str(d.Sgst    || '0'),
-    igstPer:             str(d.Igst_per || '0'),
-    cgstPer:             str(d.Cgst_per || '0'),
-    sgstPer:             str(d.Sgst_per || '0'),
-    tax:                 str(d.Tax     || '0'),
-    currency:            str(d.Currency || ''),
+    igst:             str(d.Igst    || '0'),
+    cgst:             str(d.Cgst    || '0'),
+    sgst:             str(d.Sgst    || '0'),
+    igstPer:          str(d.Igst_per || '0'),
+    cgstPer:          str(d.Cgst_per || '0'),
+    sgstPer:          str(d.Sgst_per || '0'),
+    tax:              str(d.Tax     || '0'),   // "0 " → "0"
+    currency:         str(d.Currency || ''),
 
-    // Material
-    materialName:        str(d.Maktx),
-    materialNumber:      str(d.Matnr),
-    storageLocation:     str(d.StorageLocation),
-    warehouseNo:         str(d.Warehouse_No),
-    hsn:                 str(d.Hsn_Code),
+    materialName:     str(d.Maktx),
+    materialNumber:   str(d.Matnr),
+    storageLocation:  str(d.StorageLocation),
+    warehouseNo:      str(d.Warehouse_No),
+    hsn:              str(d.Hsn_Code),
 
-    // Dates
-    shipmentDate:        sapDateDisplay(d.Eindt),  // display label only
-    materialExpiry:      str(d.MatExpDate),         // user-editable; toSap8() on submit
+    shipmentDate:     sapDateDisplay(d.Eindt),
+    materialExpiry:   str(d.MatExpDate),
 
-    // Quantities
-    totalQty:            str(d.Total_Qty),
-    totalUnit:           str(d.Meins),
-    confQty:             str(d.Con_Qty),
-    confUnit:            str(d.Meins),
-    asnCreated:          str(d.Asn_Created),
-    draftAsnQty:         str(d.Draft_AsnQty || '0'),
-    spq:                 str(d.SOQ),
+    totalQty:         str(d.Total_Qty),
+    totalUnit:        str(d.Meins),
+    confQty:          conQty,
+    confUnit:         str(d.Meins),
+    asnCreated:       str(d.Asn_Created),
+    draftAsnQty:      str(d.Draft_AsnQty || '0'),
+    spq:              str(d.SOQ),         // "100.000 " → "100.000"
 
-    // avlAsnQty = DelQty (what SAP allows for this schedule line)
-    avlAsnQty:           str(d.DelQty),
-    delQty:              str(d.DelQty),   // echoed as DelQty in POST
+    avlAsnQty:        menge,              // "10.00 " → "10.00" ✅
+    delQty:           delQty,             // "0.00" stored correctly ✅
+    deliveredQty:     delQty,
+    deliveredUnit:    str(d.Meins),
 
-    // deliveredQty = Menge (open remaining qty) — shown read-only
-    deliveredQty:        str(d.Menge),
-    deliveredUnit:       str(d.Meins),
+    netPrice:         str(d.Netpr),       // "        12.00" → "12.00" ✅
+    supplierNetPrice: str(d.NetprVen),
 
-    // Prices
-    netPrice:            str(d.Netpr),
-    supplierNetPrice:    str(d.NetprVen),
-
-    // Packing
     packingMaterialQty:  str(d.PkgMatQty) || '1',
     packingMaterialType: str(d.PkgMatType),
     packagingType:       str(d.PackingStyle),
     pdirNo:              str(d.PdirRefNo),
 
-    // User-editable (blank on load)
-    fgStock:             '',
-    qtyPerPackaging:     '',
-    taxMismatch:         false,
-    batches:             [],
+    fgStock:          '',
+    qtyPerPackaging:  '',
+    taxMismatch:      false,
+    batches:          [],
   }
 }
 
@@ -177,87 +167,82 @@ export const createAsnApi = {
       .filter(Boolean)
   },
 
-  // Submit ASN — POST to ASN_HEADERSet
-  // Payload structure mirrors EXACTLY the original working application (doc 10)
-  // that successfully created ASN 2600000074.
+  // ── Submit ASN — POST to ASN_HEADERSet ────────────────────────────────────
+  // Menge in each item row = Con_Qty − DelQty (recomputed, matching actual app)
+  // Payload structure mirrors the confirmed working POST (201 Created).
   async submitAsn({
     scheduleNo, plant, invoiceNumber, invoiceDate, invoiceAmount,
     totalPacking, items,
   }) {
     const token = await fetchCsrfToken()
 
-    // ── Item rows — field order and names match original working payload exactly ──
-    // Original sends ASNItemnav as a flat ARRAY (not { results: [...] }).
-    // Each item includes __metadata so SAP can resolve the entity type.
-    const itemRows = items.map(it => ({
-      __metadata: {
-        type: 'SHIV.AAL_SUP_PORTAL_SA_SRV.ASN_ITEM',
-      },
+    // ── Item rows ─────────────────────────────────────────────────────────────
+    const itemRows = items.map(it => {
+      // Use avlAsnQty directly — this is what SAP returned and user confirmed.
+      // Do NOT recompute Con_Qty − DelQty; that's SAP's job and causes mismatch.
+      const menge = String(parseFloat(it.avlAsnQty || '0'))
 
-      // Key fields
-      Schedule_No:     it.scheduleNo || scheduleNo,
-      Ebelp:           it.ebelp,
-      AsnNum:          '',
-      DelQty:          it.delQty,          // original deliverable qty from GET
-      Etenr:           it.schLine,
-      Ebeln:           it.ebeln || scheduleNo,
-      Eindt:           it.eindt,           // raw "YYYYMMDD" — never reformatted
-      Werks:           it.werks || plant,
+      return {
+        __metadata: {
+          type: 'SHIV.AAL_SUP_PORTAL_SA_SRV.ASN_ITEM',  // ← also fix namespace (AAL not SHIV)
+        },
 
-      // Material
-      Matnr:           it.materialNumber,
-      Maktx:           it.maktx || it.materialName,
-      Meins:           it.totalUnit,
+        Schedule_No:     str(it.scheduleNo || scheduleNo),
+        Ebelp:           str(it.ebelp),           // already trimmed in mapAsnItem
+        AsnNum:          '',
+        DelQty:          str(it.delQty    || '0'),
+        Etenr:           str(it.schLine),
+        Ebeln:           str(it.ebeln || scheduleNo),
+        Eindt:           str(it.eindt),
+        Werks:           str(it.werks || plant),
 
-      // Qty — Menge = qty to ship (= DelQty from GET, user may edit avlAsnQty)
-      Menge:           it.avlAsnQty,
+        Matnr:           str(it.materialNumber),
+        Maktx:           str(it.maktx || it.materialName),
+        Meins:           str(it.totalUnit),
 
-      // Prices
-      Netpr:           it.netPrice,
-      NetprVen:        it.supplierNetPrice,
+        Menge:           str(it.avlAsnQty || '0'),                   
 
-      // Dates
-      ShipDate:        it.eindt,           // raw "YYYYMMDD"
-      MatExpDate:      it.materialExpiry ? toSap8(it.materialExpiry) : '',
+        Netpr:           String(parseFloat(it.netPrice          || '0')),  // ✅ no spaces
+        NetprVen:        String(parseFloat(it.supplierNetPrice  || '0')),
 
-      // Packing
-      PkgMatQty:       str(it.packingMaterialQty || ''),
-      PkgMatType:      str(it.packingMaterialType || ''),
-      PackingStyle:    str(it.packagingType || ''),
+        ShipDate:        str(it.eindt),
+        MatExpDate:      it.materialExpiry ? toSap8(it.materialExpiry) : '',
 
-      // Other item fields
-      PdirRefNo:       str(it.pdirNo || ''),
-      StorageLocation: it.storageLocation,
-      Warehouse_No:    str(it.warehouseNo || ''),
-      TaxChange:       it.taxMismatch ? 'X' : '',
-      FixedBin:        it.batches?.[0]?.batchCode || '',
-      PerUnit:         str(it.perUnit || '1'),
-      PlantDesc:       str(it.plantDesc || ''),
-      Warningmsg:      '',
+        PkgMatQty:       String(parseFloat(it.packingMaterialQty  || '0')),
+        PkgMatType:      str(it.packingMaterialType || ''),
+        PackingStyle:    str(it.packagingType       || ''),
 
-      // GST
-      Hsn_Code:        str(it.hsn || ''),
-      Igst:            str(it.igst    || '0'),
-      Cgst:            str(it.cgst    || '0'),
-      Sgst:            str(it.sgst    || '0'),
-      Igst_per:        str(it.igstPer || '0'),
-      Cgst_per:        str(it.cgstPer || '0'),
-      Sgst_per:        str(it.sgstPer || '0'),
-      Tax:             str(it.tax     || '0'),
-      Currency:        str(it.currency || ''),
+        PdirRefNo:       str(it.pdirNo              || ''),
+        StorageLocation: str(it.storageLocation),
+        Warehouse_No:    str(it.warehouseNo         || ''),
+        TaxChange:       it.taxMismatch ? 'X' : '',
+        FixedBin:        it.batches?.[0]?.batchCode || '',
+        PerUnit:         String(parseFloat(it.perUnit || '1') || 1),  // ✅ "1 " → "1"
+        PlantDesc:       str(it.plantDesc           || ''),
+        Warningmsg:      '',
 
-      // Quantity summary fields
-      Total_Qty:       str(it.totalQty   || ''),
-      Con_Qty:         str(it.confQty    || ''),
-      Asn_Created:     str(it.asnCreated || ''),
-      Draft_AsnQty:    str(it.draftAsnQty || '0'),
-      Pstyp:           str(it.pstyp      || ''),
-      SOQ:             str(it.spq        || ''),
+        Hsn_Code:        str(it.hsn      || ''),
+        Igst:            String(parseFloat(it.igst    || '0')),
+        Cgst:            String(parseFloat(it.cgst    || '0')),
+        Sgst:            String(parseFloat(it.sgst    || '0')),
+        Igst_per:        String(parseFloat(it.igstPer || '0')),
+        Cgst_per:        String(parseFloat(it.cgstPer || '0')),
+        Sgst_per:        String(parseFloat(it.sgstPer || '0')),
+        Tax:             String(parseFloat(it.tax     || '0')),  // ✅ "0 " → "0"
+        Currency:        str(it.currency || ''),
 
-      App:             '',
-    }))
+        Total_Qty:       String(parseFloat(it.totalQty    || '0')),
+        Con_Qty:         String(parseFloat(it.confQty     || '0')),
+        Asn_Created:     String(parseFloat(it.asnCreated  || '0')),
+        Draft_AsnQty:    String(parseFloat(it.draftAsnQty || '0')),
+        Pstyp:           str(it.pstyp  || ''),
+        SOQ:             String(parseFloat(it.spq || '0')),  // ✅ "100.000 " → "100"
 
-    // ── Header payload — matches original working app header fields exactly ───
+        App: '',
+      }
+    })
+
+    // ── Header payload ────────────────────────────────────────────────────────
     const payload = {
       Update:               false,
       DraftAsn:             false,
@@ -278,10 +263,7 @@ export const createAsnApi = {
       Werks:                plant,
       Fis_Year:             '',
       TotalPacking:         String(totalPacking || ''),
-      // OData deep insert REQUIRES { results: [] } wrapper.
-      // Browser devtools unwraps this to show a plain array, but the wire
-      // format must use the results envelope or SAP returns
-      // "Not any item request found" (receives no navigation property).
+      // Deep insert — { results: [] } wrapper required by OData spec
       ASNItemnav:           { results: itemRows },
     }
 
@@ -309,7 +291,7 @@ export const createAsnApi = {
     }
 
     const data = await res.json()
-    const asnNum  = str(data.d?.AsnNum  || data.AsnNum  || '')
+    const asnNum  = str(data.d?.AsnNum   || data.AsnNum  || '')
     const fisYear = str(data.d?.Fis_Year || data.Fis_Year || '')
     const message = asnNum
       ? `ASN No. ${asnNum}${fisYear ? '/' + fisYear : ''} created successfully`

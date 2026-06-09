@@ -222,6 +222,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
                       step="any"
                       value={r.quantity}
                       onChange={e => updateRow(r.id, 'quantity', e.target.value)}
+                      onWheel={e => e.target.blur()}
                       placeholder="0"
                       className="w-full h-9 px-2.5 text-[13px] text-right tabular-nums border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
                     />
@@ -429,7 +430,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
               { label: 'Total Qty', value: `${item.totalQty} ${item.totalUnit}` },
               { label: 'Conf. Qty', value: `${item.confQty} ${item.confUnit}` },
               // deliveredQty = Menge = open remaining qty
-              { label: 'Open Qty (Menge)', value: `${item.deliveredQty} ${item.deliveredUnit}` },
+              { label: 'Delivered Qty (Menge)', value: `${item.deliveredQty} ${item.deliveredUnit}` },
               { label: 'ASN Created', value: item.asnCreated },
               { label: 'SPQ', value: item.spq },
             ].map((d, i) => (
@@ -458,6 +459,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
               step="any"
               value={item.fgStock}
               onChange={e => onUpdate('fgStock', e.target.value)}
+              onWheel={e => e.target.blur()}
               placeholder="0"
               className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all ${
                 item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0)
@@ -609,7 +611,7 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
             <ReadonlyVal value={`${item.confQty} ${item.confUnit}`} />
           </Field>
           {/* deliveredQty = Menge = open remaining qty (NOT delivered, renamed for clarity) */}
-          <Field label="Open Qty">
+          <Field label="Delivered Qty">
             <ReadonlyVal value={`${item.deliveredQty} ${item.deliveredUnit}`} />
           </Field>
           <Field label="ASN Created">
@@ -631,6 +633,7 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
               step="any"
               value={item.fgStock}
               onChange={e => onUpdate('fgStock', e.target.value)}
+              onWheel={e => e.target.blur()}
               placeholder="0"
               disabled={isZeroQty}
               className={
@@ -695,7 +698,7 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
               {packagingTypes.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
             </select>
           </Field>
-          <Field label="Packing Material Qty">
+          <Field label="Packing Material Qty" className="max-w-[120px]">
             <input
               type="text"
               value={item.packingMaterialQty}
@@ -1098,14 +1101,15 @@ export default function CreateASN2({ agreement: propAgreement }) {
   const totalAttachments = generalAttachments.length + pdirAttachments.length
 
   // ── Filtered items (material search is client-side only) ──────────────────
-  const filteredItems = useMemo(() => {
-    if (!materialSearch.trim()) return items
+    const filteredItems = useMemo(() => {
+    const available = items.filter(i => parseFloat(i.avlAsnQty || 0) > 0)
+    if (!materialSearch.trim()) return available
     const q = materialSearch.trim().toUpperCase()
-    return items.filter(i =>
-      i.materialNumber.toUpperCase().includes(q) ||
-      i.materialName.toUpperCase().includes(q)
+    return available.filter(i =>
+        i.materialNumber.toUpperCase().includes(q) ||
+        i.materialName.toUpperCase().includes(q)
     )
-  }, [items, materialSearch])
+    }, [items, materialSearch])
 
   return (
     <PageLayout>
