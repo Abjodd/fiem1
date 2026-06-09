@@ -120,7 +120,7 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
   const allSelected = filteredRows.length > 0 && filteredRows.every(r => selected.has(r.scheduleLine))
   const toggleAll   = () => {
     if (allSelected) setSelected(new Set())
-    else setSelected(new Set(filteredRows.map(r => r.scheduleLine)))
+    else setSelected(new Set(filteredRows.map((_, idx) => String(idx))))
   }
   const toggleRow = (key) => {
     const s = new Set(selected)
@@ -137,7 +137,7 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
     setConfirmModal(false)
     setSubmitting(true)
     try {
-      const selectedRows = filteredRows.filter(r => selected.has(r.scheduleLine))
+      const selectedRows = filteredRows.filter((r, idx) => selected.has(String(idx)))
       await scheduleReleaseApi.submitConfirm(agreement.id, selectedRows)
       setSubmitted(true)
     } catch (e) {
@@ -281,7 +281,7 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
               ) : filteredRows.length === 0 ? (
                 <tr><td colSpan={10} className="py-12 text-center text-[13px] text-[#6a6d70]">No data</td></tr>
               ) : filteredRows.map((r, idx) => {
-                const key = r.scheduleLine || String(idx)
+                const key = String(idx)
                 const isSelected = selected.has(key)
                 return (
                   <tr
