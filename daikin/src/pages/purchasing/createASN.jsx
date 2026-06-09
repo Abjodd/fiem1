@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { createAsnService } from '../../services/CreateAsn.js'
+import { postCreateAsn } from '../../services/CreateAsnPost.js'
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -28,11 +29,7 @@ async function uploadAttachment(asnDraftId, file, kind = 'general') {
   }
 }
 
-// Mock submit — replace with real POST endpoint when available
-async function submitAsn(payload) {
-  await new Promise(r => setTimeout(r, 400))
-  return { asnId: `ASN-${Date.now()}`, ...payload }
-}
+
 
 // ═══════════════════════════════════════════════════════════════
 // MOBILE HOOK
@@ -974,26 +971,25 @@ export default function CreateASN({ agreement: propAgreement }) {
 
   const doCreate = async () => {
     setSubmitting(true)
+    setModal(null)
     try {
-      const payload = {
-        poNo,
-        invoice: { number: invoiceNumber, date: invoiceDate, amount: invoiceAmount, totalPacking },
-        items: items.filter(i => selectedItemNos.includes(i.itemNo)),
-        attachments: {
-          general: generalAttachments.map(a => a.id),
-          pdir: pdirAttachments.map(a => a.id),
-        },
-      }
-      const result = await submitAsn(payload)
+      const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
+      const result = await postCreateAsn({
+        scheduleNo:    poNo,
+        invoice:       { number: invoiceNumber, date: invoiceDate, amount: invoiceAmount, totalPacking },
+        selectedItems,
+        plant:         header?.plant || '',
+      })
       setModal({
         kind: 'success',
         title: 'ASN created successfully',
         message: 'Your ASN has been submitted and is now available in the system.',
         details: (
           <div className="space-y-1.5">
-            <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.asnId}</strong></div>
-            <div className="flex justify-between"><span className="text-[#6a6d70]">PO Number</span><strong>{poNo}</strong></div>
-            <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{payload.items.length}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.AsnNum}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">Schedule No.</span><strong>{result.Schedule_No}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">Invoice No.</span><strong>{result.InvoiceNum}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{selectedItems.length}</strong></div>
           </div>
         ),
         primaryLabel: 'Done',
