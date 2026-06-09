@@ -278,8 +278,11 @@ export const createAsnApi = {
       Werks:                plant,
       Fis_Year:             '',
       TotalPacking:         String(totalPacking || ''),
-      // ASNItemnav as flat array — original app does NOT wrap in { results: [] }
-      ASNItemnav:           itemRows,
+      // OData deep insert REQUIRES { results: [] } wrapper.
+      // Browser devtools unwraps this to show a plain array, but the wire
+      // format must use the results envelope or SAP returns
+      // "Not any item request found" (receives no navigation property).
+      ASNItemnav:           { results: itemRows },
     }
 
     const res = await fetch(`${ODATA_BASE}/ASN_HEADERSet`, {
