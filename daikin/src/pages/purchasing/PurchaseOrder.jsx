@@ -1,10 +1,10 @@
 // src/pages/purchasing/PurchaseOrder.jsx
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { purchaseOrderApi, sapDateToIso } from '../../services/PurchaseOrder.js'
 
-// ─── DATE HELPERS (UI-only: drive date inputs) ──────────────────
+// ─── DATE HELPERS ──────────────────────────────────────────────
 const ddmmyyyyToIso = (s) => {
   if (!s) return ''
   const parts = s.split('.')
@@ -25,7 +25,189 @@ const parseDdmmyyyy = (s) => {
 }
 const parseDisplayDate = (s) => (s ? new Date(s) : null)
 
-// ─── COMPONENT ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR CONTENT — defined at MODULE SCOPE so React never sees
+// it as a new component type on re-render. Prevents unmount/
+// remount of the list which was causing scroll-to-top on click.
+// ═══════════════════════════════════════════════════════════════
+function SidebarContent({
+  sidebarCollapsed,
+  searchQuery, setSearchQuery,
+  filteredAgreements, agreements,
+  selectedAgreementId, handleSelectAgreement,
+  listLoading, listError,
+  filterRef, filterOpen, setFilterOpen,
+  selectedPlants, setSelectedPlants,
+  plants, togglePlant,
+  setSidebarCollapsed,
+  selectedBtnRef,
+}) {
+  return (
+    <>
+      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
+        {!sidebarCollapsed && (
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[15px] font-semibold text-[#32363a]">Purchase Order</h3>
+            <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">
+              {filteredAgreements.length} of {agreements.length}
+            </span>
+          </div>
+        )}
+        {sidebarCollapsed ? (
+          <div className="flex justify-center">
+            <button className="w-9 h-9 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded-lg hover:bg-[#f0f7ff] transition-all">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by ID or plant"
+              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
+            />
+            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
+        {listLoading && (
+          <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70]">
+            <div className="w-8 h-8 border-2 border-[#0a6ed1] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            Loading...
+          </div>
+        )}
+        {listError && (
+          <div className="px-4 py-6 text-center text-[13px] text-[#cc1c14]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2">
+              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+            </svg>
+            {listError}
+          </div>
+        )}
+        {!listLoading && !listError && (
+          sidebarCollapsed ? (
+            filteredAgreements.map((a) => {
+              const isSelected = a.id === selectedAgreementId
+              return (
+                <button
+                  key={a.id}
+                  ref={isSelected ? selectedBtnRef : null}
+                  onClick={() => handleSelectAgreement(a.id)}
+                  title={a.id}
+                  className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
+                >
+                  <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>{a.id.slice(-3)}</span>
+                </button>
+              )
+            })
+          ) : (
+            <>
+              {filteredAgreements.map((a) => {
+                const isSelected = a.id === selectedAgreementId
+                return (
+                  <button
+                    key={a.id}
+                    ref={isSelected ? selectedBtnRef : null}
+                    onClick={() => handleSelectAgreement(a.id)}
+                    className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
+                  >
+                    <div className="text-[14px] font-semibold text-[#0a6ed1] mb-1">{a.id}</div>
+                    <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
+                      <span>Plant: {a.plant}</span>
+                      <span>{a.date}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[13px] text-[#6a6d70] mt-1">
+                      <span>{a.plantName}</span>
+                      <span className="px-2 py-0.5 bg-[#f0f0f0] rounded text-[11px] font-medium">{a.type}</span>
+                    </div>
+                  </button>
+                )
+              })}
+              {filteredAgreements.length === 0 && (
+                <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
+                    <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                  </svg>
+                  No agreements found
+                </div>
+              )}
+            </>
+          )
+        )}
+      </div>
+
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
+        <div className="relative">
+          <button
+            onClick={() => setFilterOpen(!filterOpen)}
+            className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:scale-105 ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
+            title="Filter by plant"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 4h18l-7 9v6l-4-2v-4L3 4z" />
+            </svg>
+            {selectedPlants.length > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                {selectedPlants.length}
+              </span>
+            )}
+          </button>
+          {filterOpen && (
+            <div className="absolute bottom-11 left-0 w-60 bg-white border border-[#d9d9d9] rounded-lg shadow-xl z-50 anim-scale">
+              <div className="px-3.5 py-2.5 border-b border-[#e5e5e5] flex items-center justify-between">
+                <span className="text-[13px] font-semibold text-[#32363a]">Filter by Plant</span>
+                {selectedPlants.length > 0 && (
+                  <button onClick={() => setSelectedPlants([])} className="text-[12px] text-[#0a6ed1] hover:underline">Clear</button>
+                )}
+              </div>
+              <div className="max-h-60 overflow-y-auto py-1">
+                {plants.map((p) => (
+                  <label key={p.code} className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#f5f6f7] cursor-pointer text-[13px] transition-colors">
+                    <input type="checkbox" checked={selectedPlants.includes(p.code)} onChange={() => togglePlant(p.code)} className="accent-[#0a6ed1] w-4 h-4" />
+                    <span className="text-[#32363a]">
+                      <span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setSidebarCollapsed(c => !c)}
+          className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}>
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ─── MAIN COMPONENT ─────────────────────────────────────────────
 export default function PurchaseOrder() {
   const navigate = useNavigate()
 
@@ -56,6 +238,9 @@ export default function PurchaseOrder() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
+  // scroll-to-selected ref
+  const selectedBtnRef = useRef(null)
+
   // ── Load list ──
   useEffect(() => {
     let cancelled = false
@@ -68,22 +253,32 @@ export default function PurchaseOrder() {
     return () => { cancelled = true }
   }, [])
 
-  // Select first id
+  // ── Auto-select first ──
   useEffect(() => {
-      if (!selectedAgreementId && agreements.length > 0) {
-        setSelectedAgreementId(agreements[0].id)
-      }
-    }, [agreements, selectedAgreementId])
+    if (!selectedAgreementId && agreements.length > 0) {
+      setSelectedAgreementId(agreements[0].id)
+    }
+  }, [agreements, selectedAgreementId])
 
-      // ── load selected agreement detail ──
-      useEffect(() => {
-        let cancelled = false
-        if (!selectedAgreementId) { setAgreement(null); return }
-        purchaseOrderApi.getAsnHeader(selectedAgreementId)
-          .then(data => { if (!cancelled) setAgreement(data) })
-          .catch(err => { if (!cancelled) setError(err.message) })
-        return () => { cancelled = true }
-      }, [selectedAgreementId])
+  // ── Load detail ──
+  useEffect(() => {
+    let cancelled = false
+    if (!selectedAgreementId) { setAgreement(null); return }
+    setDetailLoading(true)
+    setDetailError(null)
+    purchaseOrderApi.getAsnHeader(selectedAgreementId)
+      .then(data => { if (!cancelled) setAgreement(data) })
+      .catch(err => { if (!cancelled) setDetailError(err.message) })
+      .finally(() => { if (!cancelled) setDetailLoading(false) })
+    return () => { cancelled = true }
+  }, [selectedAgreementId])
+
+  // ── Scroll selected sidebar item into view ──
+  useEffect(() => {
+    if (selectedBtnRef.current) {
+      selectedBtnRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [selectedAgreementId])
 
   // ── Close filter on outside click ──
   useEffect(() => {
@@ -158,22 +353,21 @@ export default function PurchaseOrder() {
   }, [agreement, storageSearch, fromDate, toDate, dateError])
 
   // ── Handlers ──
-  const handleSelectAgreement = (id) => {
+  const handleSelectAgreement = useCallback((id) => {
     setSelectedAgreementId(id)
     setSelectedItem(null)
     setMobileSidebarOpen(false)
-  }
+  }, [])
 
-  const togglePlant = (plant) => {
+  const togglePlant = useCallback((plant) => {
     setSelectedPlants(prev =>
       prev.includes(plant) ? prev.filter(p => p !== plant) : [...prev, plant]
     )
-  }
+  }, [])
 
   const handleClearFilters = () => {
     setFromDate('')
     setToDate('')
-    //setStorageSearch('')
   }
 
   const handleCreateAsn = async () => {
@@ -199,157 +393,19 @@ export default function PurchaseOrder() {
     }
   }
 
-  // ── Sidebar inner content ──
-  const SidebarContent = () => (
-    <>
-      <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
-        {!sidebarCollapsed && (
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[15px] font-semibold text-[#32363a]">Purchase Order</h3>
-            <span className="text-[12px] text-[#6a6d70] bg-[#f5f6f7] px-2.5 py-1 rounded-full">
-              {filteredAgreements.length} of {agreements.length}
-            </span>
-          </div>
-        )}
-        {sidebarCollapsed ? (
-          <div className="flex justify-center">
-            <button className="w-9 h-9 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded-lg hover:bg-[#f0f7ff] transition-all">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by ID or plant"
-              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-            />
-            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
-        {listLoading && (
-          <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70]">
-            <div className="w-8 h-8 border-2 border-[#0a6ed1] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            Loading...
-          </div>
-        )}
-        {listError && (
-          <div className="px-4 py-6 text-center text-[13px] text-[#cc1c14]">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2">
-              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
-            </svg>
-            {listError}
-          </div>
-        )}
-        {!listLoading && !listError && (
-          sidebarCollapsed ? (
-            filteredAgreements.map((a) => {
-              const isSelected = a.id === selectedAgreementId
-              return (
-                <button key={a.id} onClick={() => handleSelectAgreement(a.id)} title={a.id}
-                  className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
-                  <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>{a.id.slice(-3)}</span>
-                </button>
-              )
-            })
-          ) : (
-            <>
-              {filteredAgreements.map((a) => {
-                const isSelected = a.id === selectedAgreementId
-                return (
-                  <button key={a.id} onClick={() => handleSelectAgreement(a.id)}
-                    className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}>
-                    <div className="text-[14px] font-semibold text-[#0a6ed1] mb-1">{a.id}</div>
-                    <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
-                      <span>Plant: {a.plant}</span>
-                      <span>{a.date}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[13px] text-[#6a6d70] mt-1">
-                      <span>{a.plantName}</span>
-                      <span className="px-2 py-0.5 bg-[#f0f0f0] rounded text-[11px] font-medium">{a.type}</span>
-                    </div>
-                  </button>
-                )
-              })}
-              {filteredAgreements.length === 0 && (
-                <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
-                    <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-                  </svg>
-                  No agreements found
-                </div>
-              )}
-            </>
-          )
-        )}
-      </div>
-
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
-        <div className="relative">
-          <button onClick={() => setFilterOpen(!filterOpen)}
-            className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:scale-105 ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
-            title="Filter by plant">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 4h18l-7 9v6l-4-2v-4L3 4z" />
-            </svg>
-            {selectedPlants.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                {selectedPlants.length}
-              </span>
-            )}
-          </button>
-          {filterOpen && (
-            <div className="absolute bottom-11 left-0 w-60 bg-white border border-[#d9d9d9] rounded-lg shadow-xl z-50 anim-scale">
-              <div className="px-3.5 py-2.5 border-b border-[#e5e5e5] flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-[#32363a]">Filter by Plant</span>
-                {selectedPlants.length > 0 && (
-                  <button onClick={() => setSelectedPlants([])} className="text-[12px] text-[#0a6ed1] hover:underline">Clear</button>
-                )}
-              </div>
-              <div className="max-h-60 overflow-y-auto py-1">
-                {plants.map((p) => (
-                  <label key={p.code} className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#f5f6f7] cursor-pointer text-[13px] transition-colors">
-                    <input type="checkbox" checked={selectedPlants.includes(p.code)} onChange={() => togglePlant(p.code)} className="accent-[#0a6ed1] w-4 h-4" />
-                    <span className="text-[#32363a]">
-                      <span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}>
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
-    </>
-  )
+  // ── Shared sidebar props ──
+  const sidebarProps = {
+    sidebarCollapsed,
+    searchQuery, setSearchQuery,
+    filteredAgreements, agreements,
+    selectedAgreementId, handleSelectAgreement,
+    listLoading, listError,
+    filterRef, filterOpen, setFilterOpen,
+    selectedPlants, setSelectedPlants,
+    plants, togglePlant,
+    setSidebarCollapsed,
+    selectedBtnRef,
+  }
 
   // ── Render ──
   return (
@@ -396,26 +452,24 @@ export default function PurchaseOrder() {
                   </svg>
                 </button>
               </div>
-              <SidebarContent />
+              <SidebarContent {...sidebarProps} />
             </aside>
 
             {/* Desktop sidebar */}
             <aside data-sidebar
               className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
-              <SidebarContent />
+              <SidebarContent {...sidebarProps} />
             </aside>
 
             {/* Main pane */}
-            <main className="flex-1 bg-white overflow-hidden flex flex-col anim-slide-r min-w-0">
+            <main className="flex-1 bg-white overflow-auto flex flex-col anim-slide-r min-w-0">
 
-              {/* Detail loading */}
               {detailLoading && (
                 <div className="flex-1 flex items-center justify-center py-20">
                   <div className="w-10 h-10 border-2 border-[#0a6ed1] border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
 
-              {/* Detail error */}
               {!detailLoading && detailError && (
                 <div className="flex-1 flex flex-col items-center justify-center py-20 text-[#cc1c14] gap-2">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -425,7 +479,6 @@ export default function PurchaseOrder() {
                 </div>
               )}
 
-              {/* No selection */}
               {!detailLoading && !detailError && !agreement && (
                 <div className="flex-1 flex flex-col items-center justify-center py-20 text-[#6a6d70] gap-3">
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="opacity-30">
@@ -507,8 +560,6 @@ export default function PurchaseOrder() {
                           className={`w-full h-10 pl-3 pr-2 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all duration-200 ${dateError ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
                         />
                       </div>
-                      {/* Clear button — vertically centered via items-center on the parent row,
-                          with a top label spacer so it sits flush with the inputs */}
                       <div className="w-full sm:w-auto sm:self-auto flex flex-col">
                         <span className="hidden sm:block text-[13px] mb-1.5 select-none opacity-0 pointer-events-none font-semibold">Clear</span>
                         <button onClick={handleClearFilters}
@@ -527,7 +578,7 @@ export default function PurchaseOrder() {
                     )}
                   </div>
 
-                  {/* Items table — single table with sticky thead for perfect column alignment */}
+                  {/* Items table */}
                   <div className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-0 overflow-hidden flex flex-col" style={{ height: '40vh' }}>
                     <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-auto flex-1">
                       <table className="w-full text-[14px]" style={{ minWidth: '640px', borderCollapse: 'collapse' }}>
@@ -629,12 +680,10 @@ export default function PurchaseOrder() {
                   </div>
                 </div>
 
-                {/* Item detail fields */}
                 <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 bg-[#fafbfc] rounded-xl border border-[#e5e5e5]">
                     {[
                       ['HSN Code', drilledItem.hsnCode],
-                      // ['Storage Location', drilledItem.storageLocation || '—'],
                       ['PO Qty', `${drilledItem.poQty} ${drilledItem.deliveryUnit}`],
                       ['ASN Created', `${drilledItem.deliveredQty} ${drilledItem.deliveryUnit}`],
                       ['Unit Price', `${drilledItem.unitPrice} ${drilledItem.currency}`],
@@ -649,7 +698,6 @@ export default function PurchaseOrder() {
                     ))}
                   </div>
 
-                  {/* Schedule lines — populated only if fetched separately */}
                   {drilledItem.scheduleLines?.length > 0 && (
                     <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
                       <table className="w-full text-[14px]" style={{ minWidth: '480px' }}>
