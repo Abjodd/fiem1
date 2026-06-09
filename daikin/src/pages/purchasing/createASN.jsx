@@ -975,10 +975,10 @@ export default function CreateASN({ agreement: propAgreement }) {
     try {
       const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
       const result = await postCreateAsn({
-        scheduleNo:    poNo,
+        poNo,
         invoice:       { number: invoiceNumber, date: invoiceDate, amount: invoiceAmount, totalPacking },
         selectedItems,
-        plant:         header?.plant || '',
+        header:        header || {},
       })
       setModal({
         kind: 'success',
@@ -987,7 +987,7 @@ export default function CreateASN({ agreement: propAgreement }) {
         details: (
           <div className="space-y-1.5">
             <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.AsnNum}</strong></div>
-            <div className="flex justify-between"><span className="text-[#6a6d70]">Schedule No.</span><strong>{result.Schedule_No}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">PO Number</span><strong>{result.Po_No}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">Invoice No.</span><strong>{result.InvoiceNum}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{selectedItems.length}</strong></div>
           </div>

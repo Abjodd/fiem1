@@ -1,26 +1,22 @@
 // src/services/CreateAsnPost.js
 
-const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
+const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 
 const HEADERS = {
   'Content-Type': 'application/json',
   Accept: 'application/json',
-  Loginid: '401122',
+  Loginid: '40112',
   Logintype: 'P',
 }
 
 const str = (v) => String(v ?? '').trim()
-const num = (v) => String(Number(String(v ?? '').trim() || 0))
 
-// "2026-05-19" or "May 19, 2026" → "20260519"
+// "2026-05-19" or display date → "20260519"
 function toSapDate(v) {
   if (!v) return ''
   const s = str(v)
-  // Already SAP format
   if (/^\d{8}$/.test(s)) return s
-  // ISO format: 2026-05-19
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(/-/g, '')
-  // Try parsing display date
   const d = new Date(s)
   if (!isNaN(d)) {
     const y = d.getFullYear()
@@ -32,27 +28,28 @@ function toSapDate(v) {
 }
 
 /**
- * Build the POST payload from form state.
+ * Build POST payload for PO ASN creation.
  *
  * @param {object} opts
- * @param {string}   opts.scheduleNo      - SA/PO number (e.g. "5501000407")
- * @param {object}   opts.invoice         - { number, date, amount, totalPacking }
- * @param {Array}    opts.selectedItems   - items[] filtered to selected only
- * @param {string}   [opts.plant]         - Werks from header
+ * @param {string}  opts.poNo            - PO number e.g. "8501000141"
+ * @param {object}  opts.invoice         - { number, date, amount, invoiceVal, totalPacking }
+ * @param {Array}   opts.selectedItems   - items filtered to selected only
+ * @param {object}  opts.header          - full header from createAsnService (for buyer, currency etc.)
  */
-export function buildAsnPayload({ scheduleNo, invoice, selectedItems, plant = '' }) {
+export function buildAsnPayload({ poNo, invoice, selectedItems, header = {} }) {
   const items = selectedItems.map(it => ({
     __metadata: {
-      type: 'SHIV.AAL_SUP_PORTAL_SA_SRV.ASN_ITEM',
+      type: 'SHIV.AAL_SUP_PORTAL_PO_SRV.PO_ASN_ITEM',
     },
-    Schedule_No:     str(scheduleNo),
-    Ebelp:           str(it.itemNo),
+    Po_No:           str(poNo),
     AsnNum:          '',
+    Ebelp:           str(it.itemNo),
     DelQty:          str(it.avlAsnQty),
     Etenr:           str(it.schLine),
-    Ebeln:           str(scheduleNo),
+    Ebeln:           str(poNo),
     Eindt:           toSapDate(it.shipmentDateIso || it.shipmentDate),
-    Werks:           str(plant),
+    Werks:           str(header.plant || it.werks || ''),
+    Lgort:           str(it.storageLocation),
     Matnr:           str(it.materialNumber),
     Maktx:           str(it.materialName),
     Menge:           str(it.avlAsnQty),
@@ -65,26 +62,30 @@ export function buildAsnPayload({ scheduleNo, invoice, selectedItems, plant = ''
     Igst:            str(it.igst ?? '0'),
     Cgst:            str(it.cgst ?? '0'),
     Sgst:            str(it.sgst ?? '0'),
-    Currency:        '',
+    Currency:        str(header.currency || 'INR'),
     Asn_Created:     str(it.asnCreated),
-    Con_Qty:         str(it.confQty),
+    Po_Qty:          str(it.totalQty),
+    Status:          '',
+    Tax:             '0',
     Igst_per:        str(it.igstPer ?? '0'),
     Cgst_per:        str(it.cgstPer ?? '0'),
     Sgst_per:        str(it.sgstPer ?? '0'),
-    Pstyp:           '',
-    Tax:             '0',
+    Pstyp:           '0',
     Draft_AsnQty:    '0',
+    ChallanNo:       '',
     ShipDate:        toSapDate(it.shipmentDateIso || it.shipmentDate),
     App:             '',
-    PerUnit:         '1',
+    Dispdate:        '',
+    Storagebin:      '',
     PkgMatQty:       str(it.packingMaterialQty || '1'),
+    MatExpDate:      toSapDate(it.materialExpiry),
     PkgMatType:      str(it.packingMaterialType),
     FixedBin:        '',
-    MatExpDate:      toSapDate(it.materialExpiry),
-    Warningmsg:      '',
+    PerUnit:         '1',
     TaxChange:       it.taxMismatch ? 'X' : '',
+    ReturnQty:       '',
+    ShortQty:        str(it.avlAsnQty),
     SOQ:             str(it.spq),
-    PackingStyle:    str(it.packagingType),
     PdirRefNo:       str(it.pdirNo),
     Warehouse_No:    str(it.warehouseNo),
     StorageLocation: str(it.storageLocation),
@@ -94,64 +95,44 @@ export function buildAsnPayload({ scheduleNo, invoice, selectedItems, plant = ''
     Update:               false,
     DraftAsn:             false,
     AsnNum:               '',
-    Buyer_Name:           '',
-    Currency:             '',
+    Buyer_Name:           str(header.buyerName),
+    Currency:             str(header.currency || 'INR'),
     InvoiceAmt:           str(invoice.amount),
     InvoiceDate:          toSapDate(invoice.date),
     InvoiceNum:           str(invoice.number),
     InvoiceVal:           str(invoice.amount),
-    ASNamt:               str(invoice.amount),
-    Purchase_Group_Desc:  '',
-    Schedule_No:          str(scheduleNo),
+    Po_No:                str(poNo),
+    Purchase_Group_Desc:  str(header.purchaseGroupDesc),
     ShipTime:             '',
-    Total_Amount:         '',
-    UnplannedCost:        '0',
+    Total_Amount:         str(header.totalAmount || ''),
+    UnplannedCost:        '',
     UnplannedCost_text:   '',
-    Fis_Year:             '',
-    Plant:                '',
-    Plant_Desc:           '',
-    Vendor_Name:          '',
-    Delete:               false,
-    App:                  '',
-    TotalPacking:         str(invoice.totalPacking),
-    Delivery_Date:        '',
-    MATNR:                '',
-    Item_No:              '',
-    Werks:                str(plant),
-    ASNItemnav:           { results: items },
+    Werks:                str(header.plant || ''),
+    asnheadertoasnitemnav: items,
   }
 }
 
 /**
- * POST to ASN_HEADERSet — creates the ASN.
+ * POST to PO_ASN_HEADERSet — creates the ASN for a PO.
  * Returns the full SAP response d object on success.
- *
- * @param {object} opts  — same shape as buildAsnPayload
  */
-export async function postCreateAsn(opts) {
-  const payload = buildAsnPayload(opts)
+export async function postCreateAsn({ poNo, invoice, selectedItems, header = {} }) {
+  const payload = buildAsnPayload({ poNo, invoice, selectedItems, header })
 
-  // Fetch CSRF token first (SAP OData requires it for POST/PUT/DELETE)
-  const tokenRes = await fetch(`${ODATA_BASE}/ASN_HEADERSet`, {
+  // Fetch CSRF token (SAP OData requires for POST)
+  const tokenRes = await fetch(`${ODATA_BASE}/PO_ASN_HEADERSet`, {
     method: 'GET',
-    headers: {
-      ...HEADERS,
-      'X-CSRF-Token': 'Fetch',
-    },
+    headers: { ...HEADERS, 'X-CSRF-Token': 'Fetch' },
   })
   const csrfToken = tokenRes.headers.get('x-csrf-token') || ''
 
-  const res = await fetch(`${ODATA_BASE}/ASN_HEADERSet`, {
+  const res = await fetch(`${ODATA_BASE}/PO_ASN_HEADERSet`, {
     method: 'POST',
-    headers: {
-      ...HEADERS,
-      'X-CSRF-Token': csrfToken,
-    },
+    headers: { ...HEADERS, 'X-CSRF-Token': csrfToken },
     body: JSON.stringify(payload),
   })
 
   if (!res.ok) {
-    // Try to parse SAP error message
     let errMsg = `HTTP ${res.status} — ${res.statusText}`
     try {
       const errJson = await res.json()
