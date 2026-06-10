@@ -35,6 +35,7 @@ import GateInGateOut from './pages/shipment/gateingateout.jsx'
 // Other
 import CreateASN from './pages/purchasing/createASN.jsx'
 import CreateASN2 from './pages/purchasing/createAsn2.jsx'
+import ScheduleLines from './pages/purchasing/Schedulelines.jsx'
 
 export default function App() {
   return (
@@ -125,6 +126,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ScheduleGenerate />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/purchasing/schedule-lines"
+        element={
+          <ProtectedRoute>
+            <ScheduleLines />
           </ProtectedRoute>
         }
       />
