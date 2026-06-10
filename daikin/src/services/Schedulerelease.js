@@ -164,8 +164,8 @@ export const scheduleReleaseApi = {
       headers: {
         'X-CSRF-Token': 'Fetch',
         Accept: 'application/json',
-        Loginid: '401122',
-        Logintype: 'P',
+        Loginid: 'akashbishnoi1@kpmg.com',
+        Logintype: 'E',
       },
       credentials: 'include',
     })

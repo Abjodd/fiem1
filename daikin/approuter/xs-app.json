@@ -1,12 +1,15 @@
 {
   "welcomeFile": "/index.html",
-  "authenticationMethod": "none",
+  "authenticationMethod": "route",
+    "logout": {
+    "logoutEndpoint": "/do/logout"
+  },
 
   "routes": [
     {
       "source": "^/sap/(.*)$",
       "target": "/sap/$1",
-      "destination": "FIEM_dev",
+      "destination": "SuppPro",
       "csrfProtection": false
     },
     {
