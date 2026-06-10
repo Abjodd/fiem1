@@ -1,119 +1,431 @@
+// src/pages/purchasing/ScheduleLinesPage.jsx
+// Route: /purchasing/schedule-lines
+// FIXES:
+// 1. Past dates are no longer blocked — they render as normal editable cells (value 0).
+//    They are visually dimmed (grey header) to indicate they're historical, but users
+//    can still type values into them after Save if needed.
+// 2. allocateByDay / allocateByWeek still skip past dates during auto-allocation
+//    (you don't want new qty dumped into the past), but the cells themselves are open.
 
 import { useState, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { scheduleGenerateApi } from '../../services/ScheduleGenerate.js'
 
-// ─── calendar helpers ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-const DAY_ABBR   = ['SUN','MON','TUE','WED','THU','FRI','SAT']
+const DAY_ABBR    = ['SUN','MON','TUE','WED','THU','FRI','SAT']
 
-/** Build an array of Date objects starting today for `count` days */
-function buildCalendarDays(count = 30) {
+// Government holidays as MM-DD (year-agnostic)
+const GOVT_HOLIDAYS_MD = new Set(['01-26', '08-15', '10-02'])
+
+// ═══════════════════════════════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════════════════════════════
+function isBlocked(date) {
+  if (date.getDay() === 0) return true   // Sunday
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return GOVT_HOLIDAYS_MD.has(`${mm}-${dd}`)
+}
+
+function isSunday(date)  { return date.getDay() === 0 }
+function isHoliday(date) {
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return GOVT_HOLIDAYS_MD.has(`${mm}-${dd}`)
+}
+
+function nextValidDayInMonth(date) {
+  const d = new Date(date)
+  const month = d.getMonth()
+  while (isBlocked(d) && d.getMonth() === month) {
+    d.setDate(d.getDate() + 1)
+  }
+  return d.getMonth() === month ? d : null
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDAR DAYS — full current month (day 1 → last day)
+// isPast is still flagged for visual distinction, but does NOT block editing.
+// ═══════════════════════════════════════════════════════════════
+function buildCalendarDays() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  return Array.from({ length: count }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    return d
-  })
+  const year    = today.getFullYear()
+  const month   = today.getMonth()
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const days    = []
+
+  for (let d = 1; d <= lastDay; d++) {
+    const date   = new Date(year, month, d)
+    const isPast = date < today
+    days.push({
+      date,
+      dateNum:    d,
+      dayAbbr:    DAY_ABBR[date.getDay()],
+      monthLabel: MONTH_NAMES[month],
+      year,
+      isSunday:   isSunday(date),
+      isHoliday:  isHoliday(date),
+      blocked:    isBlocked(date),
+      isPast,
+    })
+  }
+  return days
 }
 
-/** Group consecutive days by month → [{month:'Jun', year:2026, span:N}, …] */
-function groupByMonth(days) {
-  const groups = []
-  days.forEach((d) => {
-    const key = `${d.getFullYear()}-${d.getMonth()}`
-    if (!groups.length || groups[groups.length - 1].key !== key) {
-      groups.push({ key, month: MONTH_NAMES[d.getMonth()], year: d.getFullYear(), span: 1 })
+// ═══════════════════════════════════════════════════════════════
+// ALLOCATION LOGIC
+// (Past dates are still skipped during auto-allocation — qty goes to future days)
+// ═══════════════════════════════════════════════════════════════
+
+function allocateByDay(totalQty, dayCount, calDays) {
+  // Only allocate to future, non-blocked days
+  const validIndices = []
+  for (let i = 0; i < calDays.length && validIndices.length < dayCount; i++) {
+    if (!calDays[i].blocked && !calDays[i].isPast) validIndices.push(i)
+  }
+  const slots  = validIndices.length
+  if (slots === 0) return Array(calDays.length).fill(0)
+  const base   = Math.floor(totalQty / slots)
+  const rem    = totalQty % slots
+  const result = Array(calDays.length).fill(0)
+  validIndices.forEach((ci, i) => { result[ci] = base + (i < rem ? 1 : 0) })
+  return result
+}
+
+function allocateByWeek(totalQty, calDays) {
+  if (calDays.length === 0) return []
+  const firstNonPast = calDays.find(cd => !cd.isPast)
+  if (!firstNonPast) return Array(calDays.length).fill(0)
+
+  const startDate = firstNonPast.date
+  const year      = startDate.getFullYear()
+  const month     = startDate.getMonth()
+  const monthEnd  = new Date(year, month + 1, 0)
+
+  const anchorDates = []
+  let cursor = new Date(startDate)
+  while (cursor <= monthEnd) {
+    const valid = nextValidDayInMonth(new Date(cursor))
+    if (valid && valid <= monthEnd && valid.getMonth() === month) {
+      anchorDates.push(new Date(valid))
+    }
+    cursor.setDate(cursor.getDate() + 7)
+  }
+
+  if (anchorDates.length === 0) return Array(calDays.length).fill(0)
+  const slots  = anchorDates.length
+  const base   = Math.floor(totalQty / slots)
+  const rem    = totalQty % slots
+  const result = Array(calDays.length).fill(0)
+  anchorDates.forEach((ad, i) => {
+    const ci = calDays.findIndex(cd =>
+      cd.date.getFullYear() === ad.getFullYear() &&
+      cd.date.getMonth()    === ad.getMonth()    &&
+      cd.date.getDate()     === ad.getDate()
+    )
+    if (ci !== -1) result[ci] = base + (i < rem ? 1 : 0)
+  })
+  return result
+}
+
+function buildInitialLines(itemsData, mode, dayCount, calDays) {
+  return itemsData.map(it => {
+    let days
+    if (mode === 'WEEKLY') {
+      days = allocateByWeek(it.totalQuantity, calDays)
+    } else if (mode === 'DAILY') {
+      days = allocateByDay(it.totalQuantity, dayCount || 5, calDays)
     } else {
-      groups[groups.length - 1].span++
+      days = it.days
+        ? [...it.days].slice(0, calDays.length)
+            .concat(Array(Math.max(0, calDays.length - (it.days.length || 0))).fill(0))
+        : Array(calDays.length).fill(0)
+    }
+    return {
+      ...it,
+      days,
+      forecast: it.forecast ? [...it.forecast] : [0, 0, 0],
     }
   })
-  return groups
 }
 
-// Placeholder: treat no days as govt. holiday (replace with real data)
-const GOVT_HOLIDAYS = new Set([
-  // e.g. '2026-08-15', '2026-10-02'
-])
-function isGovtHoliday(d) {
-  const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  return GOVT_HOLIDAYS.has(key)
-}
-function isSunday(d)   { return d.getDay() === 0 }
-function isSaturday(d) { return d.getDay() === 6 }
+// ═══════════════════════════════════════════════════════════════
+// SCHEDULE GRID
+// Past dates render as normal cells (value 0, editable when editable=true).
+// They are visually distinguished by a grey header only.
+// ═══════════════════════════════════════════════════════════════
+function ScheduleGrid({ lines, editable, calDays, onChange }) {
+  const handleCellChange = (li, di, val) => {
+    if (!onChange) return
+    // Only hard-block Sundays and government holidays from editing
+    if (calDays[di]?.blocked) return
+    onChange(prev => prev.map((l, i) => {
+      if (i !== li) return l
+      const days = [...l.days]
+      days[di] = Math.max(0, parseInt(val) || 0)
+      return { ...l, days }
+    }))
+  }
 
-// ─── cell bg ──────────────────────────────────────────────────
-function cellBg(d) {
-  if (isSunday(d))     return '#fff1f0'
-  if (isGovtHoliday(d)) return '#fff7e6'
-  return 'transparent'
-}
-function headerBg(d) {
-  if (isSunday(d))     return '#fff1f0'
-  if (isGovtHoliday(d)) return '#fff7e6'
-  return '#f8fbff'
+  return (
+    <table className="border-collapse text-[12px]" style={{ minWidth: `${400 + calDays.length * 42}px` }}>
+      <thead className="sticky top-0 z-10">
+
+        {/* ── Row 1: Month label ── */}
+        <tr className="bg-white">
+          <th rowSpan={2}
+            className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] sticky left-0 bg-white z-20 text-[11px] uppercase tracking-wider text-[#6a6d70]"
+            style={{ minWidth: 80 }}>Item</th>
+          <th rowSpan={2}
+            className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#6a6d70]"
+            style={{ minWidth: 85 }}>SAP Code</th>
+          <th rowSpan={2}
+            className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#6a6d70]"
+            style={{ minWidth: 155 }}>Description</th>
+          <th rowSpan={2}
+            className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#6a6d70]"
+            style={{ minWidth: 90 }}>HSN Code</th>
+          <th rowSpan={2}
+            className="text-center font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#6a6d70]"
+            style={{ minWidth: 80 }}>Total Qty</th>
+
+          {calDays.length > 0 && (
+            <th
+              colSpan={calDays.length}
+              className="text-center text-[11px] font-bold py-1.5 border-b border-r border-[#e5e5e5] text-[#0a6ed1]"
+              style={{ background: '#f0f7ff' }}
+            >
+              {calDays[0].monthLabel} {calDays[0].year}
+            </th>
+          )}
+
+          <th rowSpan={2}
+            className="text-center font-semibold py-2.5 px-2 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#107e3e]"
+            style={{ minWidth: 68, background: '#e8f5ec' }}>Total</th>
+
+          <th colSpan={3}
+            className="text-center text-[11px] font-bold py-1.5 border-b border-[#e5e5e5] text-[#b45309]"
+            style={{ background: '#fef7e6' }}>Forecast</th>
+        </tr>
+
+        {/* ── Row 2: Date + day-of-week ── */}
+        <tr style={{ background: '#fafbfc' }}>
+          {calDays.map((cd, i) => {
+            // Sunday: red tint. Holiday: orange tint. Normal (including past): blue tint.
+            const bg = cd.isSunday
+              ? '#fff1f0'
+              : cd.isHoliday
+                ? '#fff7e6'
+                : '#f8fbff'
+            return (
+              <th
+                key={i}
+                className="border-b border-r border-[#e5e5e5] text-center px-0 py-1"
+                style={{ minWidth: 42, background: bg }}
+                title={
+                  cd.isPast    ? 'Past date (editable)'
+                  : cd.isHoliday ? 'Government Holiday'
+                  : cd.isSunday  ? 'Sunday — blocked'
+                  : ''
+                }
+              >
+                <div className={`text-[11px] font-bold leading-snug
+                  ${cd.isSunday ? 'text-[#cc1c14]' : 'text-[#32363a]'}`}>
+                  {cd.dateNum}
+                </div>
+                <div className={`text-[9px] font-semibold leading-snug uppercase
+                  ${cd.isSunday  ? 'text-[#cc1c14]'
+                  : cd.isHoliday ? 'text-[#e76500]'
+                  : 'text-[#6a6d70]'}`}>
+                  {cd.isHoliday && !cd.isPast ? 'HOL' : cd.dayAbbr}
+                </div>
+              </th>
+            )
+          })}
+          {['N1','N2','N3'].map(n => (
+            <th
+              key={n}
+              className="text-center font-semibold py-2 px-1 border-b border-r border-[#e5e5e5] text-[10px] text-[#b45309]"
+              style={{ minWidth: 42, background: '#fef7e6' }}
+            >
+              {n}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {lines.map((line, li) => {
+          const allocated = (line.days || []).reduce((s, v) => s + v, 0)
+          const over      = allocated > line.totalQuantity
+          const full      = allocated === line.totalQuantity && allocated > 0
+          const pct       = line.totalQuantity > 0
+            ? Math.min(100, Math.round((allocated / line.totalQuantity) * 100))
+            : 0
+
+          return (
+            <tr
+              key={line.itemNo}
+              className={`border-b border-[#f0f0f0] transition-colors ${over ? 'bg-[#fff5f5]' : 'hover:bg-[#fafbfc]'}`}
+            >
+              {/* Item + allocation text only */}
+              <td className={`py-2 px-3 border-r border-[#f0f0f0] sticky left-0 z-10
+                ${over ? 'bg-[#fff5f5]' : full ? 'bg-[#f0fff4]' : 'bg-white'}`}>
+                <div className="text-[12px] font-bold text-[#32363a]">{line.itemNo}</div>
+                <div className={`text-[10px] mt-0.5 tabular-nums font-semibold
+                  ${over ? 'text-[#cc1c14]' : full ? 'text-[#107e3e]' : 'text-[#6a6d70]'}`}>
+                  {allocated.toLocaleString()} / {line.totalQuantity.toLocaleString()}
+                  {over && <span className="ml-1">(+{(allocated - line.totalQuantity).toLocaleString()})</span>}
+                </div>
+              </td>
+
+              <td className="py-2 px-3 border-r border-[#f0f0f0] font-semibold text-[#0a6ed1]">{line.sapCode}</td>
+              <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#32363a]">{line.description}</td>
+              <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#32363a]">{line.hsnCode}</td>
+              <td className="py-2 px-3 border-r border-[#f0f0f0] text-center font-bold text-[#32363a]">
+                {line.totalQuantity.toLocaleString()}
+              </td>
+
+              {/* Day cells */}
+              {calDays.map((cd, di) => {
+                const val = (line.days || [])[di] ?? 0
+
+                // Hard-blocked: Sunday or government holiday — no input, no value
+                if (cd.blocked) {
+                  return (
+                    <td
+                      key={di}
+                      className="border-r border-[#f0f0f0] p-0 text-center"
+                      style={{ background: cd.isSunday ? '#fff1f0' : '#fff7e6' }}
+                    >
+                      <span className="block text-[10px] text-[#e0d0d0] py-2">—</span>
+                    </td>
+                  )
+                }
+
+                // Past date OR normal future date — both render identically
+                return (
+                  <td
+                    key={di}
+                    className="border-r border-[#f0f0f0] p-0 text-center"
+                  >
+                    {editable ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={val}
+                        onChange={e => handleCellChange(li, di, e.target.value)}
+                        className="cell-input"
+                      />
+                    ) : (
+                      <span className={`text-[11px] tabular-nums block py-1.5
+                        ${val > 0 ? 'font-bold text-[#32363a]' : 'text-[#d9d9d9]'}`}>
+                        {val || 0}
+                      </span>
+                    )}
+                  </td>
+                )
+              })}
+
+              {/* Row total */}
+              <td className={`py-2 px-3 border-r border-[#f0f0f0] text-center font-bold tabular-nums text-[12px]
+                ${over ? 'text-[#cc1c14] bg-[#fce8e6]' : full ? 'text-[#107e3e] bg-[#e8f5ec]' : 'text-[#32363a] bg-[#f0fff4]'}`}>
+                {allocated.toLocaleString()}
+              </td>
+
+              {/* Forecast */}
+              {(line.forecast || [0, 0, 0]).map((f, fi) => (
+                <td
+                  key={fi}
+                  className="py-2 px-2 border-r border-[#f0f0f0] text-center text-[11px] text-[#b45309]"
+                  style={{ background: '#fffdf5' }}
+                >
+                  {f || ''}
+                </td>
+              ))}
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
 }
 
-// ─── ScheduleLines page ───────────────────────────────────────
-export default function ScheduleLines() {
+// ═══════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ═══════════════════════════════════════════════════════════════
+export default function ScheduleLinesPage() {
   const navigate  = useNavigate()
   const { state } = useLocation()
 
   const {
-    lines: initialLines = [],
-    editable = false,
-    title    = 'Schedule Lines',
-    mode     = '',           // 'DAILY' | 'WEEKLY' | ''
-    agreementId  = '',
-    supplierName = '',
+    selectedItemNos  = [],
+    itemsData        = [],
+    editable         = false,
+    title            = 'Schedule Lines',
+    mode             = '',
+    dayCount         = 5,
+    pendingIndicator,
+    agreementId      = '',
+    supplierCode     = '',
+    supplierName     = '',
+    plantName        = '',
+    companyCode      = '',
+    agreementDate    = '',
   } = state || {}
 
-  const [editLines, setEditLines] = useState(() =>
-    initialLines.map(l => ({
-      ...l,
-      days: l.days ? [...l.days] : Array(30).fill(0),
-      forecast: l.forecast ? [...l.forecast] : [0, 0, 0],
-    }))
+  const calDays = useMemo(() => buildCalendarDays(), [])
+
+  const [lines, setLines] = useState(() =>
+    buildInitialLines(itemsData, mode, dayCount, calDays)
   )
   const [saving, setSaving] = useState(false)
 
-  const calDays    = useMemo(() => buildCalendarDays(30), [])
-  const monthGroups = useMemo(() => groupByMonth(calDays), [calDays])
+  const displayLines = lines
 
-  // ── cell edit ──
-  const handleCellChange = (li, di, val) => {
-    setEditLines(prev => prev.map((l, i) => {
-      if (i !== li) return l
-      const days = [...l.days]
-      days[di] = Math.max(0, parseInt(val) || 0)
-      return { ...l, days, total: days.reduce((s, v) => s + v, 0) }
-    }))
-  }
+  const overLines = displayLines.filter(l =>
+    (l.days || []).reduce((s, v) => s + v, 0) > l.totalQuantity
+  )
+  const canSave = !saving && overLines.length === 0
 
-  // ── validation ──
-  const overLines = editLines.filter(l => l.days.reduce((s,v)=>s+v,0) > l.totalQuantity)
-  const canSave   = !saving && overLines.length === 0
-
-  // ── save ──
+  // ── Save ──
   const handleSave = async () => {
     if (!canSave) return
     setSaving(true)
     try {
-      await scheduleGenerateApi.saveScheduleLines(agreementId, editLines)
-      navigate(-1, { state: { savedLines: editLines } })
+      await scheduleGenerateApi.saveScheduleLines(agreementId, displayLines)
+      navigate('/purchasing/schedule-generate', {
+        state: {
+          returnData: {
+            savedLines: displayLines,
+            pendingIndicator,
+          },
+        },
+      })
     } catch (err) {
       console.error(err)
-    } finally {
       setSaving(false)
     }
   }
 
-  const displayLines = editable ? editLines : initialLines.map(l => ({
-    ...l,
-    days: l.days || Array(30).fill(0),
-  }))
+  // ── Close (X) ──
+  const handleClose = () => {
+    navigate('/purchasing/schedule-generate', {
+      state: { preserveSupplier: true },
+    })
+  }
+
+  // Build a clean display title: "Schedule Lines" with mode as a badge, no em dash
+  const baseTitle  = title.replace(/\s*[—–-]\s*(Week|Day).*$/i, '').trim() || 'Schedule Lines'
+  const dayLabel   = mode === 'DAILY'  ? `Day · ${dayCount}` : ''
+  const weekLabel  = mode === 'WEEKLY' ? 'Week' : ''
+  const modeLabel  = dayLabel || weekLabel
+  const modeBg     = mode === 'WEEKLY' ? 'bg-[#ebf5ff] text-[#0a6ed1]' : mode === 'DAILY' ? 'bg-[#fff3e8] text-[#e76500]' : ''
 
   return (
     <PageLayout>
@@ -123,197 +435,112 @@ export default function ScheduleLines() {
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
         .cell-input {
-          width:100%; height:28px; text-align:center; font-size:11px; font-weight:600;
-          border:0; background:transparent;
+          width: 100%; height: 28px; text-align: center;
+          font-size: 11px; font-weight: 600;
+          border: 0; background: transparent;
           transition: background .15s, box-shadow .15s;
         }
         .cell-input:focus {
-          background:#ebf5ff; outline:none;
+          background: #ebf5ff; outline: none;
           box-shadow: inset 0 0 0 1.5px #0a6ed1;
-          border-radius:4px;
+          border-radius: 4px;
         }
       `}</style>
 
-      <div className="flex flex-col bg-[#f5f6f7]" style={{ minHeight: 'calc(100vh - 64px)' }}>
+      <div className="flex flex-col bg-[#f5f6f7]" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
 
         {/* ── Top bar ── */}
         <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-8 lg:px-12 py-4 flex-shrink-0 sl-fade">
 
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-[12px] text-[#6a6d70] mb-3">
-            <button onClick={() => navigate(-1)} className="hover:text-[#0a6ed1] transition-colors font-medium">
-              Schedule Agreement
-            </button>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
-            <span className="text-[#32363a] font-semibold">{title}</span>
-          </nav>
-
-          {/* Title row */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <h1 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight">{title}</h1>
-              {mode && (
-                <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider ${mode === 'DAILY' ? 'bg-[#fff3e8] text-[#e76500]' : 'bg-[#ebf5ff] text-[#0a6ed1]'}`}>
-                  {mode}
-                </span>
-              )}
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-[22px] sm:text-[24px] font-bold text-[#32363a] tracking-tight">{baseTitle}</h1>
+                {modeLabel && (
+                  <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider ${modeBg}`}>
+                    {modeLabel}
+                  </span>
+                )}
+                {editable && (
+                  <span className="px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider bg-[#fff3e8] text-[#e76500]">
+                    Editing
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-[12px] text-[#6a6d70]">
+                {displayLines.length} item{displayLines.length !== 1 ? 's' : ''}
+                {agreementId  && <> · <span className="font-semibold text-[#32363a]">{agreementId}</span></>}
+                {supplierName && <> · {supplierName}</>}
+              </div>
             </div>
 
-            {/* Legend */}
-            <div className="flex items-center gap-4 text-[11px] text-[#6a6d70]">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm inline-block" style={{ background:'#fff1f0', border:'1px solid #ffd6d6' }} />
-                Sunday
+            <div className="flex items-start gap-4">
+              {/* Legend */}
+              <div className="flex items-center gap-3 text-[11px] text-[#6a6d70] flex-wrap mt-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm inline-block"
+                    style={{ background: '#fff1f0', border: '1px solid #ffd6d6' }} />
+                  Sunday
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm inline-block"
+                    style={{ background: '#fff7e6', border: '1px solid #ffe7ba' }} />
+                  Govt. Holiday
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm inline-block"
+                    style={{ background: '#e8f5ec', border: '1px solid #b7e2c4' }} />
+                  Fully allocated
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm inline-block" style={{ background:'#fff7e6', border:'1px solid #ffe7ba' }} />
-                Govt. Holiday
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm inline-block" style={{ background:'#e8f5ec', border:'1px solid #b7e2c4' }} />
-                Fully allocated
-              </div>
+
+              <button
+                onClick={handleClose}
+                disabled={saving}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#f5f6f7] text-[#6a6d70] hover:text-[#32363a] transition-all flex-shrink-0 disabled:opacity-50"
+                title="Back to Schedule Agreement"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* Sub-line */}
-          <div className="mt-1.5 text-[12px] text-[#6a6d70]">
-            {displayLines.length} item{displayLines.length !== 1 ? 's' : ''}
-            {agreementId  && <> · <span className="font-semibold text-[#32363a]">{agreementId}</span></>}
-            {supplierName && <> · {supplierName}</>}
+          <div className="mt-3 pt-3 border-t border-[#f0f0f0] grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
+            {[
+              { l: 'Vendor Code',  v: supplierCode },
+              { l: 'Vendor Name',  v: supplierName },
+              { l: 'Plant',        v: plantName },
+              { l: 'Company Code', v: companyCode },
+            ].map(({ l, v }) => (
+              <div key={l}>
+                <span className="text-[#6a6d70] text-[10px] uppercase tracking-wider font-semibold">{l}</span>
+                <div className="text-[#32363a] font-semibold mt-0.5 text-[12px]">{v || '—'}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Grid ── */}
-        <div className="flex-1 overflow-hidden px-4 sm:px-8 lg:px-12 py-4 sl-fade" style={{ animationDelay: '.05s' }}>
-          <div className="h-full overflow-auto rounded-xl border border-[#e5e5e5] bg-white shadow-sm">
-            <table className="border-collapse text-[12px]" style={{ minWidth: '1800px' }}>
-              <thead className="sticky top-0 z-10">
-
-                {/* Row 1 — month groups */}
-                <tr className="bg-white">
-                  {/* fixed cols */}
-                  <th className="border-b border-r border-[#e5e5e5] sticky left-0 bg-white z-20" style={{ minWidth:60 }} />
-                  <th className="border-b border-r border-[#e5e5e5]" style={{ minWidth:80 }} />
-                  <th className="border-b border-r border-[#e5e5e5]" style={{ minWidth:150 }} />
-                  <th className="border-b border-r border-[#e5e5e5]" style={{ minWidth:90 }} />
-                  <th className="border-b border-r border-[#e5e5e5]" style={{ minWidth:80 }} />
-                  {/* month headers */}
-                  {monthGroups.map(g => (
-                    <th key={g.key} colSpan={g.span}
-                      className="text-center text-[11px] font-bold py-1.5 border-b border-r border-[#e5e5e5] text-[#0a6ed1]"
-                      style={{ background:'#f0f7ff' }}>
-                      {g.month} {g.year}
-                    </th>
-                  ))}
-                  {/* total + forecast */}
-                  <th className="border-b border-r border-[#e5e5e5] bg-[#f0fff4]" style={{ minWidth:64 }} />
-                  <th colSpan={3} className="text-center text-[11px] font-bold py-1.5 border-b border-[#e5e5e5] text-[#b45309]" style={{ background:'#fef7e6' }}>
-                    Forecast
-                  </th>
-                </tr>
-
-                {/* Row 2 — column labels */}
-                <tr className="bg-[#fafbfc] text-[#6a6d70]">
-                  <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] sticky left-0 bg-[#fafbfc] z-20 text-[11px] uppercase tracking-wider">Item</th>
-                  <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider">SAP Code</th>
-                  <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider">Description</th>
-                  <th className="text-left font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider">HSN Code</th>
-                  <th className="text-center font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider">Total Qty</th>
-                  {/* date + day-of-week */}
-                  {calDays.map((d, i) => (
-                    <th key={i}
-                      className="border-b border-r border-[#e5e5e5] text-center"
-                      style={{ minWidth:38, background: headerBg(d) }}>
-                      <div className={`text-[11px] font-bold leading-tight ${isSunday(d) ? 'text-[#cc1c14]' : 'text-[#32363a]'}`}>
-                        {d.getDate()}
-                      </div>
-                      <div className={`text-[9px] font-semibold leading-tight ${isSunday(d) ? 'text-[#cc1c14]' : 'text-[#6a6d70]'}`}>
-                        {DAY_ABBR[d.getDay()]}
-                      </div>
-                    </th>
-                  ))}
-                  <th className="text-center font-semibold py-2.5 px-2 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#107e3e]" style={{ minWidth:64, background:'#e8f5ec' }}>Total</th>
-                  {['N1','N2','N3'].map(n => (
-                    <th key={n} className="text-center font-semibold py-2.5 px-2 border-b border-r border-[#e5e5e5] text-[11px]" style={{ minWidth:38, background:'#fef7e6', color:'#b45309' }}>{n}</th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {displayLines.map((line, li) => {
-                  const allocated = line.days.reduce((s,v)=>s+v,0)
-                  const over      = allocated > line.totalQuantity
-                  const full      = allocated === line.totalQuantity && allocated > 0
-                  const pct       = Math.min(100, line.totalQuantity > 0 ? Math.round((allocated/line.totalQuantity)*100) : 0)
-                  return (
-                    <tr key={line.itemNo} className={`border-b border-[#f0f0f0] transition-colors ${over ? 'bg-[#fff5f5]' : 'hover:bg-[#fafbfc]'}`}>
-
-                      {/* Item + progress */}
-                      <td className={`py-2 px-3 border-r border-[#f0f0f0] sticky left-0 z-10 ${over ? 'bg-[#fff5f5]' : full ? 'bg-[#f0fff4]' : 'bg-white'}`}>
-                        <div className="text-[12px] font-bold text-[#32363a]">{line.itemNo}</div>
-                        <div className="mt-1 w-full h-1.5 bg-[#e5e5e5] rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all duration-300 ${over ? 'bg-[#cc1c14]' : full ? 'bg-[#107e3e]' : 'bg-[#0a6ed1]'}`}
-                            style={{ width:`${pct}%` }} />
-                        </div>
-                        <div className={`text-[9px] mt-0.5 tabular-nums font-semibold ${over ? 'text-[#cc1c14]' : full ? 'text-[#107e3e]' : 'text-[#6a6d70]'}`}>
-                          {allocated.toLocaleString()} / {line.totalQuantity.toLocaleString()}
-                          {over && <span> (+{(allocated-line.totalQuantity).toLocaleString()})</span>}
-                        </div>
-                      </td>
-
-                      <td className="py-2 px-3 border-r border-[#f0f0f0] font-semibold text-[#0a6ed1]">{line.sapCode}</td>
-                      <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#32363a]">{line.description}</td>
-                      <td className="py-2 px-3 border-r border-[#f0f0f0] text-[#32363a]">{line.hsnCode}</td>
-                      <td className="py-2 px-3 border-r border-[#f0f0f0] text-center font-bold text-[#32363a]">{line.totalQuantity}</td>
-
-                      {calDays.map((d, di) => {
-                        const val = line.days[di] ?? 0
-                        const bg  = isSunday(d) ? '#fff1f0' : isGovtHoliday(d) ? '#fff7e6' : 'transparent'
-                        return (
-                          <td key={di} className="border-r border-[#f0f0f0] p-0 text-center" style={{ background: bg }}>
-                            {editable ? (
-                              <input
-                                type="number" min="0"
-                                value={val}
-                                onChange={e => handleCellChange(li, di, e.target.value)}
-                                className="cell-input"
-                              />
-                            ) : (
-                              <span className={`text-[11px] tabular-nums block py-1.5 ${val > 0 ? 'font-bold text-[#32363a]' : 'text-[#d9d9d9]'}`}>
-                                {val || 0}
-                              </span>
-                            )}
-                          </td>
-                        )
-                      })}
-
-                      {/* row total */}
-                      <td className={`py-2 px-3 border-r border-[#f0f0f0] text-center font-bold tabular-nums text-[12px] ${over ? 'text-[#cc1c14] bg-[#fce8e6]' : full ? 'text-[#107e3e] bg-[#e8f5ec]' : 'text-[#32363a] bg-[#f0fff4]'}`}>
-                        {allocated}
-                      </td>
-
-                      {/* forecast */}
-                      {(line.forecast || [0,0,0]).map((f, fi) => (
-                        <td key={fi} className="py-2 px-2 border-r border-[#f0f0f0] text-center text-[11px] text-[#b45309]" style={{ background:'#fffdf5' }}>
-                          {f || ''}
-                        </td>
-                      ))}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        {/* ── Grid area ── */}
+        <div
+          className="flex-1 overflow-hidden px-4 sm:px-8 lg:px-12 py-4 sl-fade flex flex-col min-h-0"
+          style={{ animationDelay: '.05s' }}
+        >
+          <div className="flex-1 overflow-auto rounded-xl border border-[#e5e5e5] bg-white shadow-sm min-h-0">
+            <ScheduleGrid
+              lines={displayLines}
+              editable={editable}
+              calDays={calDays}
+              onChange={editable ? setLines : undefined}
+            />
           </div>
         </div>
 
-        {/* ── Sticky bottom bar ── */}
+        {/* ── Sticky bottom bar — Save only ── */}
         <div className="flex-shrink-0 bg-white border-t border-[#e5e5e5] shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-          {/* over-quota warning */}
-          {editable && overLines.length > 0 && (
-            <div className="flex items-center gap-2 px-6 py-2 bg-[#fce8e6] border-b border-[#f5c6c2]">
+          {overLines.length > 0 && (
+            <div className="flex items-center gap-2 px-6 py-2.5 bg-[#fce8e6] border-b border-[#f5c6c2]">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
               </svg>
@@ -322,50 +549,18 @@ export default function ScheduleLines() {
               </span>
             </div>
           )}
-
-          <div className="flex items-center justify-between px-4 sm:px-8 lg:px-12 py-3 gap-4">
-            {/* Per-item mini progress */}
-            <div className="flex items-center gap-4 overflow-x-auto flex-1 min-w-0">
-              {displayLines.map(line => {
-                const alloc = line.days.reduce((s,v)=>s+v,0)
-                const over  = alloc > line.totalQuantity
-                const full  = alloc === line.totalQuantity && alloc > 0
-                const pct   = Math.min(100, line.totalQuantity > 0 ? Math.round((alloc/line.totalQuantity)*100) : 0)
-                return (
-                  <div key={line.itemNo} className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[11px] font-bold text-[#32363a]">{line.itemNo}</span>
-                    <div className="w-20 h-2 bg-[#e5e5e5] rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all ${over ? 'bg-[#cc1c14]' : full ? 'bg-[#107e3e]' : 'bg-[#0a6ed1]'}`}
-                        style={{ width:`${pct}%` }} />
-                    </div>
-                    <span className={`text-[11px] font-semibold tabular-nums ${over ? 'text-[#cc1c14]' : full ? 'text-[#107e3e]' : 'text-[#6a6d70]'}`}>
-                      {pct}%
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => navigate(-1)}
-                disabled={saving}
-                className="px-5 h-10 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] border border-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all disabled:opacity-50">
-                Cancel
-              </button>
-              {editable && (
-                <button
-                  onClick={handleSave}
-                  disabled={!canSave}
-                  className="flex items-center gap-2 px-6 h-10 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                  {saving && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                  {saving ? 'Saving…' : 'Save'}
-                </button>
-              )}
-            </div>
+          <div className="flex items-center justify-end px-4 sm:px-8 lg:px-12 py-3">
+            <button
+              onClick={handleSave}
+              disabled={!canSave}
+              className="flex items-center gap-2 px-7 h-10 text-[14px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+              {saving ? 'Saving…' : 'Save'}
+            </button>
           </div>
         </div>
+
       </div>
     </PageLayout>
   )
