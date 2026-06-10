@@ -23,10 +23,10 @@ export const PAGE_PERMISSIONS = {
 export const canAccess = (role, path) => (PAGE_PERMISSIONS[path] ?? ['employee', 'partner']).includes(role);
 
 export const saveUser = (user) => localStorage.setItem('daikin_user', JSON.stringify(user));
-export const getUser  = ()     => { const s = localStorage.getItem('daikin_user'); return s ? JSON.parse(s) : null; };
-// export const getUser = () => {
-//   const user = localStorage.getItem("user");
+// export const getUser  = ()     => { const s = localStorage.getItem('daikin_user'); return s ? JSON.parse(s) : null; };
+export const getUser = () => {
+  const user = localStorage.getItem("user");
 
-//   return user ? JSON.parse(user) : null;
-// };
+  return user ? JSON.parse(user) : null;
+};
 export const logout   = ()     => localStorage.removeItem('daikin_user');
