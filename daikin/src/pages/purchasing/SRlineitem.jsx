@@ -389,7 +389,11 @@ export default function SRlineitem() {
 
         {/* ── Top bar ── */}
         <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-8 lg:px-12 py-5 flex-shrink-0 anim-fade">
-          <button
+          
+
+          {/* Material info */}
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
           >
@@ -398,9 +402,6 @@ export default function SRlineitem() {
             </svg>
             Back to Items
           </button>
-
-          {/* Material info */}
-          <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Material Number</div>
               <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>

@@ -419,6 +419,15 @@ export default function POlineitem() {
 
           {/* Material info */}
           <div className="flex items-start justify-between flex-wrap gap-4">
+             <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+            Back to Items
+          </button>
             <div>
               <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Material Number</div>
               <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>
