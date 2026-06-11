@@ -390,7 +390,6 @@ export default function ScheduleRelease() {
   const [agreements,          setAgreements]          = useState([])
   const [agreement,           setAgreement]           = useState(null)
   const [selectedAgreementId, setSelectedAgreementId] = useState(null)
-  const [selectedItem,        setSelectedItem]        = useState(null)
   const [showConfirmView,     setShowConfirmView]     = useState(false)
   const [searchQuery,         setSearchQuery]         = useState('')
   const [selectedPlants,      setSelectedPlants]      = useState([])
@@ -402,8 +401,6 @@ export default function ScheduleRelease() {
   const [mobileSidebarOpen,   setMobileSidebarOpen]   = useState(false)
   const [loading,             setLoading]             = useState(false)
   const [error,               setError]               = useState(null)
-  const [scheduleLines,       setScheduleLines]       = useState([])
-  const [linesLoading,        setLinesLoading]        = useState(false)
 
   // ── Load agreement list ──
   useEffect(() => {
@@ -431,20 +428,6 @@ export default function ScheduleRelease() {
     return () => { cancelled = true }
   }, [selectedAgreementId])
 
-  // ── Load schedule lines for drilled item ──
-  useEffect(() => {
-    let cancelled = false
-    if (!selectedItem || !agreement) { setScheduleLines([]); return }
-    const item = agreement.items.find(i => i.itemNo === selectedItem.itemNo)
-    if (!item) { setScheduleLines([]); return }
-    setLinesLoading(true)
-    scheduleReleaseApi.getScheduleLines(agreement.id, item.itemNo, item.materialNumber, item.deliveryUnit)
-      .then(lines => { if (!cancelled) setScheduleLines(lines) })
-      .catch(err  => { if (!cancelled) console.error(err) })
-      .finally(() => { if (!cancelled) setLinesLoading(false) })
-    return () => { cancelled = true }
-  }, [selectedItem, agreement])
-
   // ── Close filter popover on outside click ──
   useEffect(() => {
     const handler = (e) => {
@@ -464,10 +447,6 @@ export default function ScheduleRelease() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileSidebarOpen])
-
-  const drilledItem = selectedItem && agreement
-    ? agreement.items.find(i => i.itemNo === selectedItem.itemNo)
-    : null
 
   const plants = useMemo(() => {
     const map = new Map()
@@ -494,7 +473,6 @@ export default function ScheduleRelease() {
 
   const handleSelectAgreement = (id) => {
     setSelectedAgreementId(id)
-    setSelectedItem(null)
     setShowConfirmView(false)
     setMobileSidebarOpen(false)
   }
@@ -526,10 +504,16 @@ export default function ScheduleRelease() {
   // Called after confirm success — closes confirm view and re-fetches agreement
   const handleConfirmSuccess = () => {
     setShowConfirmView(false)
-    // Re-trigger agreement fetch by briefly clearing then restoring the ID
     const id = selectedAgreementId
     setSelectedAgreementId(null)
     setTimeout(() => setSelectedAgreementId(id), 0)
+  }
+
+  // ── Navigate to line item detail page ──
+  const handleItemClick = (item) => {
+    navigate('/purchasing/sr-lineitem', {
+      state: { agreement, item },
+    })
   }
 
   // ── Sidebar content ──
@@ -726,93 +710,8 @@ export default function ScheduleRelease() {
           />
         )}
 
-        {/* ── DRILLED ITEM VIEW ── */}
-        {!showConfirmView && selectedItem && (
-          <main className="bg-white anim-fade" style={{ minHeight: 'calc(100vh - 220px)' }}>
-            {drilledItem && (
-              <>
-                <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
-                  <button
-                    onClick={() => setSelectedItem(null)}
-                    className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                    Back to Items
-                  </button>
-                  <div className="text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Material Number</div>
-                    <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>
-                    <div className="text-[14px] text-[#6a6d70] mt-1.5">{drilledItem.materialName}</div>
-                    <div className="mt-3 flex justify-center"><StatusBadge status={drilledItem.status} /></div>
-                  </div>
-                </div>
-                <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7">
-                  {linesLoading ? (
-                    <div className="flex items-center justify-center py-12 text-[#6a6d70] text-[13px] gap-2">
-                      <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>
-                      Loading…
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
-                      <table className="w-full text-[14px]" style={{ minWidth: '480px', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            {['Sch. Line', 'Delivery Date', 'Delivery Schedule', 'Confirmed Qty'].map(h => (
-                              <th key={h} className="text-left font-semibold py-3.5 px-4 text-[12px] uppercase tracking-wider">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="row-stagger">
-                          {scheduleLines.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="py-12 text-center text-[13px] text-[#6a6d70]">No schedule lines</td>
-                            </tr>
-                          ) : scheduleLines.map((line, idx) => (
-                            <tr
-                              key={`${line.schLineNo}-${idx}`}
-                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors"
-                            >
-                              <td className="py-4 px-4">
-                                <span className="inline-flex items-center justify-center w-8 h-8 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[13px] font-bold">
-                                  {line.schLineNo}
-                                </span>
-                              </td>
-                              <td className="py-4 px-4 text-[#32363a] font-medium">
-                                <div className="flex items-center gap-2">
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6a6d70] flex-shrink-0">
-                                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                                  </svg>
-                                  {line.deliveryDate}
-                                </div>
-                              </td>
-                              <td className="py-4 px-4">
-                                <span className="font-bold text-[15px] text-[#32363a]">{line.deliverySchedule}</span>{' '}
-                                <span className="text-[#6a6d70] text-[13px]">{line.unit}</span>
-                              </td>
-                              <td className="py-4 px-4">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5e9] text-[#2e7d32] rounded-md text-[13px] font-semibold">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                    <path d="M5 13l4 4L19 7"/>
-                                  </svg>
-                                  {line.confirmedQty} {line.unit}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </main>
-        )}
-
         {/* ── MAIN LIST VIEW ── */}
-        {!showConfirmView && !selectedItem && (
+        {!showConfirmView && (
           <div className="flex" style={{ minHeight: 'calc(100vh - 220px)' }}>
 
             {/* Mobile overlay */}
@@ -956,7 +855,7 @@ export default function ScheduleRelease() {
                           ) : filteredItems.map(item => (
                             <tr
                               key={item.itemNo}
-                              onClick={() => setSelectedItem({ agreementId: agreement.id, itemNo: item.itemNo })}
+                              onClick={() => handleItemClick(item)}
                               className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-colors group"
                             >
                               <td className="py-3.5 px-4 font-semibold text-[#32363a]">{item.itemNo}</td>
@@ -994,10 +893,7 @@ export default function ScheduleRelease() {
                   {/* Footer actions */}
                   <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
 
-                    {/* Create ASN button
-                        - Disabled only when ALL items are 'Confirmation Required'
-                        - If at least one item is Confirmed/Partially Confirmed, button is active
-                          and will pass only those eligible items to the ASN page */}
+                    {/* Create ASN button */}
                     <div className="relative group">
                       <button
                         onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}

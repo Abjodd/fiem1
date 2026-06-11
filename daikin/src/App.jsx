@@ -7,7 +7,8 @@ import LandingPage from './components/landingpage.jsx'
 import Home from './pages/Home.jsx'
 
 import './app.css'
-
+import SRlineitem from './pages/purchasing/SRlineitem.jsx'
+import POlineitem from './pages/purchasing/POlineitem.jsx'
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
@@ -111,6 +112,14 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <route
+        path="/purchasing/po-lineitem"
+        element={
+          <ProtectedRoute>
+            <POlineitem />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/purchasing/po-schedule-report"
@@ -129,6 +138,14 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <route
+        path="/purchasing/sr-lineitem"
+        element={
+          <ProtectedRoute>
+            <SRlineitem />
+          </ProtectedRoute>
+        }
+      />  
       <Route
         path="/purchasing/schedule-lines"
         element={
