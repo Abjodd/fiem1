@@ -1,4 +1,3 @@
-// src/pages/purchasing/PurchaseOrder.jsx
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
@@ -24,7 +23,7 @@ const parseDdmmyyyy = (s) => {
   return iso ? new Date(iso) : null
 }
 
-// ─── STATUS CONFIG — same as ScheduleRelease ──────────────────
+// ─── STATUS CONFIG ─────────────────────────────────────────────
 const STATUS_CONFIG = {
   'Confirmation Required': { bg: '#fff3e0', text: '#e65100', dot: '#ff9800', label: 'Confirmation Required' },
   'Partially Confirmed':   { bg: '#e3f2fd', text: '#1565c0', dot: '#1976d2', label: 'Partially Confirmed'   },
@@ -34,17 +33,14 @@ const STATUS_CONFIG = {
 const getStatus = (s) =>
   STATUS_CONFIG[s] || { bg: '#f5f5f5', text: '#616161', dot: '#9e9e9e', label: s || 'Unknown' }
 
-// ─── BUTTON LOGIC — same as ScheduleRelease ───────────────────
-// ASN disabled only when ALL items are 'Confirmation Required'
+// ─── BUTTON LOGIC ──────────────────────────────────────────────
 const asnDisabled = (items) =>
   items.length > 0 && items.every(i => i.status === 'Confirmation Required')
-
-// Confirm enabled when at least one item is 'Partially Confirmed' or 'Confirmation Required'
 const canConfirm = (items) =>
   items.length > 0 &&
   items.some(i => i.status === 'Partially Confirmed' || i.status === 'Confirmation Required')
 
-// ─── STATUS BADGE ─────────────────────────────────────────────
+// ─── STATUS BADGE ──────────────────────────────────────────────
 function StatusBadge({ status }) {
   const cfg = getStatus(status)
   return (
@@ -59,7 +55,7 @@ function StatusBadge({ status }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CONFIRM VIEW — mirrors ScheduleRelease ConfirmView exactly
+// CONFIRM VIEW
 // ═══════════════════════════════════════════════════════════════
 function ConfirmView({ agreement, onBack, onSuccess }) {
   const [rows,           setRows]           = useState([])
@@ -72,23 +68,15 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
   const [materialFilter, setMaterialFilter] = useState('')
 
   const fetchData = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const data = await purchaseOrderApi.getConfirmData(agreement.id)
-      setRows(data)
-      setSelected(new Set())
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+      setRows(data); setSelected(new Set())
+    } catch (e) { setError(e.message) }
+    finally { setLoading(false) }
   }
 
-  // Auto-fetch on mount
-  useEffect(() => {
-    fetchData()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredRows = useMemo(() => {
     if (!materialFilter.trim()) return rows
@@ -101,54 +89,37 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
     )
   }, [rows, materialFilter])
 
-  const allSelected =
-    filteredRows.length > 0 &&
-    filteredRows.every((_, idx) => selected.has(String(idx)))
-
-  const toggleAll = () => {
+  const allSelected = filteredRows.length > 0 && filteredRows.every((_, idx) => selected.has(String(idx)))
+  const toggleAll   = () => {
     if (allSelected) setSelected(new Set())
     else setSelected(new Set(filteredRows.map((_, idx) => String(idx))))
   }
-
   const toggleRow = (key) => {
     const s = new Set(selected)
     s.has(key) ? s.delete(key) : s.add(key)
     setSelected(s)
   }
 
-  const handleSubmitClick = () => {
-    if (selected.size === 0) return
-    setConfirmModal(true)
-  }
-
+  const handleSubmitClick = () => { if (selected.size === 0) return; setConfirmModal(true) }
   const handleSubmit = async () => {
-    setConfirmModal(false)
-    setSubmitting(true)
+    setConfirmModal(false); setSubmitting(true)
     try {
       const selectedRows = filteredRows.filter((_, idx) => selected.has(String(idx)))
       await purchaseOrderApi.submitConfirm(agreement.id, selectedRows)
       setSubmitted(true)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setSubmitting(false)
-    }
+    } catch (e) { setError(e.message) }
+    finally { setSubmitting(false) }
   }
 
-  // ── Success screen ──
   if (submitted) return (
     <div className="flex flex-col items-center justify-center h-64 gap-4 anim-fade">
       <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2.5">
-          <path d="M9 11l3 3L22 4"/>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
         </svg>
       </div>
       <div className="text-[16px] font-semibold text-[#2e7d32]">Confirmed successfully</div>
-      <button
-        onClick={onSuccess}
-        className="px-5 h-10 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] rounded-lg hover:bg-[#d9ecff] transition-all"
-      >
+      <button onClick={onSuccess} className="px-5 h-10 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] rounded-lg hover:bg-[#d9ecff] transition-all">
         ← Back to Purchase Order
       </button>
     </div>
@@ -156,43 +127,27 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
 
   return (
     <main className="bg-white anim-fade" style={{ minHeight: 'calc(100vh - 220px)' }}>
-      {/* Header */}
       <div className="px-4 sm:px-6 lg:px-10 py-5 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-4 hover:-translate-x-0.5 transition-transform"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
+        <button onClick={onBack} className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-4 hover:-translate-x-0.5 transition-transform">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
           Back to Items
         </button>
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Purchase Order</div>
             <h2 className="text-[22px] font-bold text-[#0a6ed1]">{agreement.id}</h2>
-            <div className="text-[13px] text-[#6a6d70] mt-1">
-              {agreement.vendor} · {agreement.plantDesc} ({agreement.plant})
-            </div>
+            <div className="text-[13px] text-[#6a6d70] mt-1">{agreement.vendor} · {agreement.plantDesc} ({agreement.plant})</div>
           </div>
-          <div className="text-[13px] text-[#6a6d70] bg-white border border-[#e5e5e5] px-3 py-2 rounded-lg shadow-sm">
-            {agreement.date}
-          </div>
+          <div className="text-[13px] text-[#6a6d70] bg-white border border-[#e5e5e5] px-3 py-2 rounded-lg shadow-sm">{agreement.date}</div>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="px-4 sm:px-6 lg:px-10 py-4 border-b border-[#e5e5e5] bg-[#fafbfc]">
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6a6d70] mb-1.5">
-              Enter Materials (space-separated)
-            </label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6a6d70] mb-1.5">Enter Materials (space-separated)</label>
             <div className="relative">
-              <input
-                type="text"
-                value={materialFilter}
-                onChange={e => setMaterialFilter(e.target.value)}
+              <input type="text" value={materialFilter} onChange={e => setMaterialFilter(e.target.value)}
                 placeholder="Materials (Separated by Space)"
                 className="h-9 pl-3 pr-9 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-[260px]"
               />
@@ -201,46 +156,30 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
               </svg>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="h-9 px-5 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
-          >
+          <button onClick={fetchData} disabled={loading}
+            className="h-9 px-5 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-sm disabled:opacity-50 flex items-center gap-2">
             {loading && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>}
             Go
           </button>
           {materialFilter && (
-            <button
-              onClick={() => setMaterialFilter('')}
-              className="h-9 px-4 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all"
-            >
-              Clear
-            </button>
+            <button onClick={() => setMaterialFilter('')} className="h-9 px-4 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all">Clear</button>
           )}
         </div>
         {error && (
           <div className="mt-3 flex items-center gap-2 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-            </svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
             {error}
           </div>
         )}
       </div>
 
-      {/* Table */}
       <div className="px-4 sm:px-6 lg:px-10 py-5 flex-1">
         <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-x-auto">
           <table className="w-full text-[13px]" style={{ minWidth: '760px', borderCollapse: 'collapse' }}>
             <thead>
               <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
                 <th className="py-3 px-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"
-                  />
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"/>
                 </th>
                 {['Item', 'Sch. Line', 'Material', 'PO Qty', 'Conf. Qty', 'Del. Qty', 'ASN Qty', 'Conf. Date', 'Ship Date', 'Dispatch Date'].map(h => (
                   <th key={h} className="text-left font-semibold py-3 px-3 text-[11px] uppercase tracking-wider">{h}</th>
@@ -249,34 +188,21 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={11} className="py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-[13px] text-[#6a6d70]">
-                      <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>
-                      Loading…
-                    </div>
-                  </td>
-                </tr>
+                <tr><td colSpan={11} className="py-12 text-center">
+                  <div className="flex items-center justify-center gap-2 text-[13px] text-[#6a6d70]">
+                    <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>Loading…
+                  </div>
+                </td></tr>
               ) : filteredRows.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="py-12 text-center text-[13px] text-[#6a6d70]">No confirmation lines found</td>
-                </tr>
+                <tr><td colSpan={11} className="py-12 text-center text-[13px] text-[#6a6d70]">No confirmation lines found</td></tr>
               ) : filteredRows.map((r, idx) => {
                 const key = String(idx)
                 const isSelected = selected.has(key)
                 return (
-                  <tr
-                    key={key}
-                    onClick={() => toggleRow(key)}
-                    className={`border-b border-[#f0f0f0] last:border-b-0 cursor-pointer transition-colors ${isSelected ? 'bg-[#ebf5ff]' : 'hover:bg-[#fafbfc]'}`}
-                  >
+                  <tr key={key} onClick={() => toggleRow(key)}
+                    className={`border-b border-[#f0f0f0] last:border-b-0 cursor-pointer transition-colors ${isSelected ? 'bg-[#ebf5ff]' : 'hover:bg-[#fafbfc]'}`}>
                     <td className="py-3 px-3" onClick={e => { e.stopPropagation(); toggleRow(key) }}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleRow(key)}
-                        className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"
-                      />
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleRow(key)} className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"/>
                     </td>
                     <td className="py-3 px-3 font-semibold text-[#32363a]">{r.itemNo || '—'}</td>
                     <td className="py-3 px-3 text-[#32363a]">{r.scheduleLine?.trim() || '—'}</td>
@@ -299,23 +225,15 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
         </div>
       </div>
 
-      {/* Confirm Modal */}
       {confirmModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-3"
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-3"
           style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setConfirmModal(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
+          onClick={() => setConfirmModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-4 flex items-start gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-[#ebf5ff]">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a6ed1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="16" x2="12" y2="12"/>
-                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                 </svg>
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
@@ -326,35 +244,20 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end gap-2 bg-[#fafbfc]">
-              <button
-                onClick={() => setConfirmModal(false)}
-                className="h-10 px-5 text-[14px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="h-10 px-5 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md"
-              >
-                OK
-              </button>
+              <button onClick={() => setConfirmModal(false)} className="h-10 px-5 text-[14px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all">Cancel</button>
+              <button onClick={handleSubmit} className="h-10 px-5 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md">OK</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Footer */}
       <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
         <span className="text-[13px] text-[#6a6d70]">{selected.size} of {filteredRows.length} selected</span>
-        <button
-          onClick={handleSubmitClick}
-          disabled={selected.size === 0 || submitting}
-          className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
-        >
+        <button onClick={handleSubmitClick} disabled={selected.size === 0 || submitting}
+          className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
           {submitting && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"/>}
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 11l3 3L22 4"/>
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
           </svg>
           Submit
         </button>
@@ -399,19 +302,14 @@ function SidebarContent({
           </div>
         ) : (
           <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search by ID or plant"
               className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
             />
             <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                  </svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
               )}
               <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all">
@@ -439,13 +337,9 @@ function SidebarContent({
             filteredAgreements.map(a => {
               const isSelected = a.id === selectedAgreementId
               return (
-                <button
-                  key={a.id}
-                  ref={isSelected ? selectedBtnRef : null}
-                  onClick={() => handleSelectAgreement(a.id)}
-                  title={a.id}
-                  className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
-                >
+                <button key={a.id} ref={isSelected ? selectedBtnRef : null}
+                  onClick={() => handleSelectAgreement(a.id)} title={a.id}
+                  className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
                   <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>{a.id.slice(-3)}</span>
                 </button>
               )
@@ -455,12 +349,9 @@ function SidebarContent({
               {filteredAgreements.map(a => {
                 const isSelected = a.id === selectedAgreementId
                 return (
-                  <button
-                    key={a.id}
-                    ref={isSelected ? selectedBtnRef : null}
+                  <button key={a.id} ref={isSelected ? selectedBtnRef : null}
                     onClick={() => handleSelectAgreement(a.id)}
-                    className={`w-full text-left px-4 py-3.5 border-b border-[#e5e5e5] transition-all border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
-                  >
+                    className={`w-full text-left px-4 py-3.5 border-b border-[#e5e5e5] transition-all border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[14px] font-bold text-[#0a6ed1]">{a.id}</span>
                       <span className="text-[11px] text-[#6a6d70] bg-[#f0f0f0] px-2 py-0.5 rounded font-medium">{a.type}</span>
@@ -487,14 +378,10 @@ function SidebarContent({
 
       <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-between flex-shrink-0" ref={filterRef}>
         <div className="relative">
-          <button
-            onClick={() => setFilterOpen(o => !o)}
+          <button onClick={() => setFilterOpen(o => !o)}
             className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
-            title="Filter by plant"
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 4h18l-7 9v6l-4-2v-4L3 4z"/>
-            </svg>
+            title="Filter by plant">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18l-7 9v6l-4-2v-4L3 4z"/></svg>
             {selectedPlants.length > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                 {selectedPlants.length}
@@ -513,20 +400,16 @@ function SidebarContent({
                 {plants.map(p => (
                   <label key={p.code} className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#f5f6f7] cursor-pointer text-[13px] transition-colors">
                     <input type="checkbox" checked={selectedPlants.includes(p.code)} onChange={() => togglePlant(p.code)} className="accent-[#0a6ed1] w-4 h-4"/>
-                    <span className="text-[#32363a]">
-                      <span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span>
-                    </span>
+                    <span className="text-[#32363a]"><span className="font-medium">{p.code}</span> — <span className="text-[#6a6d70]">{p.name}</span></span>
                   </label>
                 ))}
               </div>
             </div>
           )}
         </div>
-        <button
-          onClick={() => setSidebarCollapsed(c => !c)}
+        <button onClick={() => setSidebarCollapsed(c => !c)}
           className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
             style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}>
             <path d="M15 18l-6-6 6-6"/>
@@ -543,43 +426,27 @@ function SidebarContent({
 export default function PurchaseOrder() {
   const navigate = useNavigate()
 
-  // list
-  const [agreements,   setAgreements]   = useState([])
-  const [listLoading,  setListLoading]  = useState(false)
-  const [listError,    setListError]    = useState(null)
-
-  // selected PO detail
+  const [agreements,          setAgreements]          = useState([])
+  const [listLoading,         setListLoading]         = useState(false)
+  const [listError,           setListError]           = useState(null)
   const [selectedAgreementId, setSelectedAgreementId] = useState(null)
   const [agreement,           setAgreement]           = useState(null)
   const [detailLoading,       setDetailLoading]       = useState(false)
   const [detailError,         setDetailError]         = useState(null)
-
-  // drilled item + schedule lines
-  const [selectedItem,   setSelectedItem]   = useState(null)
-  const [scheduleLines,  setScheduleLines]  = useState([])
-  const [linesLoading,   setLinesLoading]   = useState(false)
-
-  // confirm view
-  const [showConfirmView, setShowConfirmView] = useState(false)
-
-  // filters
-  const [searchQuery,    setSearchQuery]    = useState('')
-  const [selectedPlants, setSelectedPlants] = useState([])
-  const [filterOpen,     setFilterOpen]     = useState(false)
-  const [fromDate,       setFromDate]       = useState('')
-  const [toDate,         setToDate]         = useState('')
-  const filterRef = useRef(null)
-
-  // sidebar
+  const [showConfirmView,     setShowConfirmView]     = useState(false)
+  const [searchQuery,         setSearchQuery]         = useState('')
+  const [selectedPlants,      setSelectedPlants]      = useState([])
+  const [filterOpen,          setFilterOpen]          = useState(false)
+  const [fromDate,            setFromDate]            = useState('')
+  const [toDate,              setToDate]              = useState('')
+  const filterRef      = useRef(null)
+  const selectedBtnRef = useRef(null)
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const selectedBtnRef = useRef(null)
 
-  // ── Load list ──
   useEffect(() => {
     let cancelled = false
-    setListLoading(true)
-    setListError(null)
+    setListLoading(true); setListError(null)
     purchaseOrderApi.listHeaders()
       .then(data => { if (!cancelled) setAgreements(data) })
       .catch(err  => { if (!cancelled) setListError(err.message) })
@@ -587,19 +454,14 @@ export default function PurchaseOrder() {
     return () => { cancelled = true }
   }, [])
 
-  // ── Auto-select first ──
   useEffect(() => {
-    if (!selectedAgreementId && agreements.length > 0) {
-      setSelectedAgreementId(agreements[0].id)
-    }
+    if (!selectedAgreementId && agreements.length > 0) setSelectedAgreementId(agreements[0].id)
   }, [agreements, selectedAgreementId])
 
-  // ── Load PO detail (header + items via expand) ──
   useEffect(() => {
     let cancelled = false
     if (!selectedAgreementId) { setAgreement(null); return }
-    setDetailLoading(true)
-    setDetailError(null)
+    setDetailLoading(true); setDetailError(null)
     purchaseOrderApi.getPoDetail(selectedAgreementId)
       .then(data => { if (!cancelled) setAgreement(data) })
       .catch(err  => { if (!cancelled) setDetailError(err.message) })
@@ -607,37 +469,16 @@ export default function PurchaseOrder() {
     return () => { cancelled = true }
   }, [selectedAgreementId])
 
-  // ── Load schedule lines for drilled item ──
   useEffect(() => {
-    let cancelled = false
-    if (!selectedItem || !agreement) { setScheduleLines([]); return }
-    const item = agreement.items.find(i => i.itemNo === selectedItem.itemNo)
-    if (!item) { setScheduleLines([]); return }
-    setLinesLoading(true)
-    purchaseOrderApi.getLineItems(agreement.poNo, item.ebelp)
-      .then(lines => { if (!cancelled) setScheduleLines(lines) })
-      .catch(err  => { if (!cancelled) console.error(err) })
-      .finally(()  => { if (!cancelled) setLinesLoading(false) })
-    return () => { cancelled = true }
-  }, [selectedItem, agreement])
-
-  // ── Scroll selected into view ──
-  useEffect(() => {
-    if (selectedBtnRef.current) {
-      selectedBtnRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
+    if (selectedBtnRef.current) selectedBtnRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedAgreementId])
 
-  // ── Close filter on outside click ──
   useEffect(() => {
-    const handler = (e) => {
-      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false)
-    }
+    const handler = (e) => { if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false) }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // ── Close mobile sidebar on outside click ──
   useEffect(() => {
     if (!mobileSidebarOpen) return
     const handler = (e) => {
@@ -647,11 +488,6 @@ export default function PurchaseOrder() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileSidebarOpen])
-
-  // ── Derived ──
-  const drilledItem = selectedItem && agreement
-    ? agreement.items.find(i => i.itemNo === selectedItem.itemNo)
-    : null
 
   const plants = useMemo(() => {
     const map = new Map()
@@ -674,44 +510,33 @@ export default function PurchaseOrder() {
 
   const dateError = useMemo(() => {
     if (!fromDate || !toDate) return null
-    const f = parseDdmmyyyy(fromDate)
-    const t = parseDdmmyyyy(toDate)
+    const f = parseDdmmyyyy(fromDate), t = parseDdmmyyyy(toDate)
     if (!f || !t) return null
     return f > t ? 'From Date must be earlier than To Date' : null
   }, [fromDate, toDate])
 
   const filteredItems = useMemo(() => {
     if (!agreement) return []
-    if (!fromDate && !toDate) return agreement.items
-    return agreement.items // date filtering is display-level; pass through all
-  }, [agreement, fromDate, toDate, dateError])
+    return agreement.items
+  }, [agreement])
 
-  // ── Handlers ──
   const handleSelectAgreement = useCallback((id) => {
     setSelectedAgreementId(id)
-    setSelectedItem(null)
     setShowConfirmView(false)
     setMobileSidebarOpen(false)
   }, [])
 
   const togglePlant = useCallback((plant) => {
-    setSelectedPlants(prev =>
-      prev.includes(plant) ? prev.filter(p => p !== plant) : [...prev, plant]
-    )
+    setSelectedPlants(prev => prev.includes(plant) ? prev.filter(p => p !== plant) : [...prev, plant])
   }, [])
 
   const handleCreateAsn = async () => {
     if (!agreement) return
-    // Only eligible (non Confirmation Required) items go to ASN
     const eligibleItems = agreement.items.filter(i => i.status !== 'Confirmation Required')
     try {
       const pdirRefs = await purchaseOrderApi.getPdirRefs(agreement.poNo)
-      navigate('/purchasing/create-asn', {
-        state: { agreement: { ...agreement, items: eligibleItems }, pdirRefs },
-      })
-    } catch (err) {
-      console.error('Create ASN error:', err)
-    }
+      navigate('/purchasing/create-asn', { state: { agreement: { ...agreement, items: eligibleItems }, pdirRefs } })
+    } catch (err) { console.error('Create ASN error:', err) }
   }
 
   const handleConfirm = () => setShowConfirmView(true)
@@ -723,27 +548,25 @@ export default function PurchaseOrder() {
     setTimeout(() => setSelectedAgreementId(id), 0)
   }
 
-  // ── Shared sidebar props ──
+  const handleItemClick = (item) => {
+    navigate('/purchasing/po-lineitem', { state: { agreement, item } })
+  }
+
   const sidebarProps = {
-    sidebarCollapsed,
-    searchQuery, setSearchQuery,
-    filteredAgreements, agreements,
-    selectedAgreementId, handleSelectAgreement,
-    listLoading, listError,
-    filterRef, filterOpen, setFilterOpen,
-    selectedPlants, setSelectedPlants,
-    plants, togglePlant,
-    setSidebarCollapsed,
-    selectedBtnRef,
+    sidebarCollapsed, searchQuery, setSearchQuery,
+    filteredAgreements, agreements, selectedAgreementId, handleSelectAgreement,
+    listLoading, listError, filterRef, filterOpen, setFilterOpen,
+    selectedPlants, setSelectedPlants, plants, togglePlant,
+    setSidebarCollapsed, selectedBtnRef,
   }
 
   return (
     <PageLayout>
       <style>{`
-        @keyframes fadeIn       { from { opacity: 0; transform: translateY(8px);   } to { opacity: 1; transform: translateY(0);  } }
-        @keyframes slideInLeft  { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0);  } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(12px);  } to { opacity: 1; transform: translateX(0);  } }
-        @keyframes scaleIn      { from { opacity: 0; transform: scale(0.96);       } to { opacity: 1; transform: scale(1);       } }
+        @keyframes fadeIn        { from { opacity: 0; transform: translateY(8px);   } to { opacity: 1; transform: translateY(0);  } }
+        @keyframes slideInLeft   { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0);  } }
+        @keyframes slideInRight  { from { opacity: 0; transform: translateX(12px);  } to { opacity: 1; transform: translateX(0);  } }
+        @keyframes scaleIn       { from { opacity: 0; transform: scale(0.96);       } to { opacity: 1; transform: scale(1);       } }
         @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         .anim-fade      { animation: fadeIn        0.35s ease-out both; }
         .anim-slide-l   { animation: slideInLeft   0.3s  ease-out both; }
@@ -763,116 +586,19 @@ export default function PurchaseOrder() {
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
 
-        {/* ── CONFIRM VIEW ── */}
         {showConfirmView && agreement && (
-          <ConfirmView
-            agreement={agreement}
-            onBack={() => setShowConfirmView(false)}
-            onSuccess={handleConfirmSuccess}
-          />
+          <ConfirmView agreement={agreement} onBack={() => setShowConfirmView(false)} onSuccess={handleConfirmSuccess}/>
         )}
 
-        {/* ── DRILLED ITEM VIEW ── */}
-        {!showConfirmView && selectedItem && (
-          <main className="bg-white anim-fade" style={{ minHeight: 'calc(100vh - 220px)' }}>
-            {drilledItem && (
-              <>
-                <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
-                  <button
-                    onClick={() => setSelectedItem(null)}
-                    className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                    Back to Items
-                  </button>
-                  <div className="text-center">
-                    <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Material Number</div>
-                    <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>
-                    <div className="text-[14px] text-[#6a6d70] mt-1.5">{drilledItem.materialName}</div>
-                    <div className="mt-3 flex justify-center">
-                      <StatusBadge status={drilledItem.status} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7">
-                  {linesLoading ? (
-                    <div className="flex items-center justify-center py-12 text-[#6a6d70] text-[13px] gap-2">
-                      <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>
-                      Loading…
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
-                      <table className="w-full text-[14px]" style={{ minWidth: '480px', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            {['Sch. Line', 'Delivery Date', 'Delivery Schedule', 'Confirmed Qty'].map(h => (
-                              <th key={h} className="text-left font-semibold py-3.5 px-4 text-[12px] uppercase tracking-wider">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="row-stagger">
-                          {scheduleLines.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="py-12 text-center text-[13px] text-[#6a6d70]">No schedule lines</td>
-                            </tr>
-                          ) : scheduleLines.map((line, idx) => (
-                            <tr
-                              key={`${line.schLineNo}-${idx}`}
-                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors"
-                            >
-                              <td className="py-4 px-4">
-                                <span className="inline-flex items-center justify-center w-8 h-8 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[13px] font-bold">
-                                  {line.schLineNo}
-                                </span>
-                              </td>
-                              <td className="py-4 px-4 text-[#32363a] font-medium">
-                                <div className="flex items-center gap-2">
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6a6d70] flex-shrink-0">
-                                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                                  </svg>
-                                  {line.deliveryDate}
-                                </div>
-                              </td>
-                              <td className="py-4 px-4">
-                                <span className="font-bold text-[15px] text-[#32363a]">{line.deliverySchedule}</span>{' '}
-                                <span className="text-[#6a6d70] text-[13px]">{line.unit}</span>
-                              </td>
-                              <td className="py-4 px-4">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5e9] text-[#2e7d32] rounded-md text-[13px] font-semibold">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                    <path d="M5 13l4 4L19 7"/>
-                                  </svg>
-                                  {line.confirmedQty} {line.unit}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </main>
-        )}
-
-        {/* ── MAIN LIST VIEW ── */}
-        {!showConfirmView && !selectedItem && (
+        {!showConfirmView && (
           <div className="flex" style={{ minHeight: 'calc(100vh - 220px)' }}>
 
-            {/* Mobile backdrop */}
             {mobileSidebarOpen && (
               <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)}/>
             )}
 
-            {/* Mobile sidebar drawer */}
             <aside data-sidebar
-              className={`fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50 md:hidden anim-drawer ${mobileSidebarOpen ? 'flex' : 'hidden'}`}
-            >
+              className={`fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50 md:hidden anim-drawer ${mobileSidebarOpen ? 'flex' : 'hidden'}`}>
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e5] bg-[#fafbfc]">
                 <span className="text-[14px] font-semibold text-[#32363a]">Purchase Orders</span>
                 <button onClick={() => setMobileSidebarOpen(false)}
@@ -885,16 +611,12 @@ export default function PurchaseOrder() {
               <SidebarContent {...sidebarProps}/>
             </aside>
 
-            {/* Desktop sidebar */}
             <aside data-sidebar
-              className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
-            >
+              className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
               <SidebarContent {...sidebarProps}/>
             </aside>
 
-            {/* Main pane */}
             <main className="flex-1 bg-white overflow-hidden flex flex-col anim-slide-r min-w-0">
-
               {detailLoading && (
                 <div className="flex-1 flex items-center justify-center py-20">
                   <div className="w-10 h-10 border-2 border-[#0a6ed1] border-t-transparent rounded-full animate-spin"/>
@@ -965,8 +687,7 @@ export default function PurchaseOrder() {
                     <div className="inline-flex flex-col items-center pb-2.5 border-b-2 border-[#0a6ed1]">
                       <div className="w-10 h-10 rounded-full bg-[#0a6ed1] flex items-center justify-center mb-1.5 shadow-md">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-                          <path d="M9 11l3 3L22 4"/>
-                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                         </svg>
                       </div>
                       <span className="text-[13px] text-[#0a6ed1] font-semibold">Items</span>
@@ -978,26 +699,18 @@ export default function PurchaseOrder() {
                     <div className="flex flex-wrap gap-3 items-end">
                       <div>
                         <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Delivery From Date</label>
-                        <input
-                          type="date"
-                          value={ddmmyyyyToIso(fromDate)}
-                          onChange={e => setFromDate(isoToDdmmyyyy(e.target.value))}
+                        <input type="date" value={ddmmyyyyToIso(fromDate)} onChange={e => setFromDate(isoToDdmmyyyy(e.target.value))}
                           className={`w-full h-9 pl-3 pr-2 text-[13px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${dateError ? 'border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
                         />
                       </div>
                       <div>
                         <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">To Date</label>
-                        <input
-                          type="date"
-                          value={ddmmyyyyToIso(toDate)}
-                          onChange={e => setToDate(isoToDdmmyyyy(e.target.value))}
+                        <input type="date" value={ddmmyyyyToIso(toDate)} onChange={e => setToDate(isoToDdmmyyyy(e.target.value))}
                           className={`w-full h-9 pl-3 pr-2 text-[13px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${dateError ? 'border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
                         />
                       </div>
-                      <button
-                        onClick={() => { setFromDate(''); setToDate('') }}
-                        className="h-9 px-4 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all self-end"
-                      >
+                      <button onClick={() => { setFromDate(''); setToDate('') }}
+                        className="h-9 px-4 text-[13px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all self-end">
                         Clear
                       </button>
                     </div>
@@ -1011,48 +724,69 @@ export default function PurchaseOrder() {
                     )}
                   </div>
 
-                  {/* Items table */}
+                  {/* ── Items table ── */}
                   <div className="px-4 sm:px-6 lg:px-10 pt-4 pb-0 overflow-hidden flex flex-col" style={{ height: '40vh' }}>
                     <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-auto flex-1">
-                      <table className="w-full text-[13px]" style={{ minWidth: '640px', borderCollapse: 'collapse' }}>
+                      <table className="w-full text-[13px]" style={{ minWidth: '760px', borderCollapse: 'collapse' }}>
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            {['Item No.', 'Material', 'HSN Code', 'Delivery', 'Delivered', 'Unit Price', 'Status', ''].map((h, i) => (
-                              <th key={i} className={`font-semibold py-3.5 px-4 text-[11px] uppercase tracking-wider ${i === 7 ? 'w-10' : 'text-left'}`}>
-                                {h}
-                              </th>
+                            {/*
+                              Columns per spec:
+                              Item No. | Material | HSN Code | PO Qty | Confirmed QTY | Delivered QTY | Unit Price | Status | (chevron)
+                            */}
+                            {['Item No.', 'Material', 'HSN Code', 'PO Qty', 'Confirmed Qty', 'Delivered Qty', 'Unit Price', 'Status', ''].map((h, i) => (
+                              <th key={i} className={`font-semibold py-3.5 px-4 text-[11px] uppercase tracking-wider ${i === 8 ? 'w-10' : 'text-left'}`}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="row-stagger">
                           {filteredItems.length === 0 ? (
-                            <tr>
-                              <td colSpan={8} className="py-12 text-center text-[13px] text-[#6a6d70]">No items found</td>
-                            </tr>
+                            <tr><td colSpan={9} className="py-12 text-center text-[13px] text-[#6a6d70]">No items found</td></tr>
                           ) : filteredItems.map((item, idx) => (
-                            <tr
-                              key={`${item.itemNo}-${idx}`}
-                              onClick={() => setSelectedItem({ poNo: selectedAgreementId, itemNo: item.itemNo })}
-                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-colors group"
-                            >
+                            <tr key={`${item.itemNo}-${idx}`} onClick={() => handleItemClick(item)}
+                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-colors group">
+
+                              {/* Item No. */}
                               <td className="py-3.5 px-4 font-semibold text-[#32363a]">{item.itemNo}</td>
+
+                              {/* Material — description + code */}
                               <td className="py-3.5 px-4">
                                 <div className="text-[#32363a] font-medium text-[13px]">{item.materialName}</div>
                                 <div className="text-[#0a6ed1] text-[12px] font-medium">{item.materialNumber}</div>
                               </td>
+
+                              {/* HSN Code */}
                               <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode || '—'}</td>
+
+                              {/* PO Qty — Quantity ordered (raw.Quantity) */}
                               <td className="py-3.5 px-4">
-                                <span className="font-semibold text-[#32363a]">{item.deliverySchedule}</span>{' '}
+                                <span className="font-semibold text-[#32363a]">{item.poQty}</span>{' '}
                                 <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
-                              <td className="py-3.5 px-4 text-[#32363a]">
-                                {item.deliveredQty}{' '}
+
+                              {/* Confirmed Qty — raw.Confirm_Qty */}
+                              <td className="py-3.5 px-4">
+                                <span className="font-semibold text-[#32363a]">{item.confirmQty}</span>{' '}
                                 <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
-                              <td className="py-3.5 px-4 font-semibold text-[#32363a]">{item.unitPrice || '—'}</td>
+
+                              {/* Delivered Qty — raw.Delivered_Qty */}
                               <td className="py-3.5 px-4">
-                                <StatusBadge status={item.status} />
+                                <span className="text-[#32363a]">{item.deliveredQty}</span>{' '}
+                                <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
+
+                              {/* Unit Price — raw.Total_Amount */}
+                              <td className="py-3.5 px-4 font-semibold text-[#32363a]">
+                                {item.unitPrice && item.unitPrice !== '0.00'
+                                  ? `${item.unitPrice} ${agreement.currency || ''}`
+                                  : '—'}
+                              </td>
+
+                              {/* Status */}
+                              <td className="py-3.5 px-4"><StatusBadge status={item.status}/></td>
+
+                              {/* Chevron */}
                               <td className="py-3.5 px-3">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                                   className="text-[#0a6ed1] group-hover:translate-x-1 transition-transform">
@@ -1066,15 +800,11 @@ export default function PurchaseOrder() {
                     </div>
                   </div>
 
-                  {/* Footer actions — mirrors ScheduleRelease exactly */}
+                  {/* Footer actions */}
                   <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-
-                    {/* Create ASN */}
                     <div className="relative group">
-                      <button
-                        onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}
-                        className={`flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg transition-all select-none ${asnDisabled(agreement.items) ? 'btn-disabled-asn' : 'hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98]'}`}
-                      >
+                      <button onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}
+                        className={`flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg transition-all select-none ${asnDisabled(agreement.items) ? 'btn-disabled-asn' : 'hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98]'}`}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                           <path d="M12 5v14M5 12h14"/>
                         </svg>
@@ -1087,16 +817,11 @@ export default function PurchaseOrder() {
                         </div>
                       )}
                     </div>
-
-                    {/* Confirm */}
-                    <button
-                      onClick={canConfirm(agreement.items) ? handleConfirm : undefined}
+                    <button onClick={canConfirm(agreement.items) ? handleConfirm : undefined}
                       disabled={!canConfirm(agreement.items)}
-                      className={`flex items-center gap-2 px-4 sm:px-6 h-11 text-[14px] font-semibold text-white bg-[#0a6ed1] border border-[#0a6ed1] rounded-lg transition-all shadow-md ${canConfirm(agreement.items) ? 'hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]' : 'opacity-40 cursor-not-allowed'}`}
-                    >
+                      className={`flex items-center gap-2 px-4 sm:px-6 h-11 text-[14px] font-semibold text-white bg-[#0a6ed1] border border-[#0a6ed1] rounded-lg transition-all shadow-md ${canConfirm(agreement.items) ? 'hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]' : 'opacity-40 cursor-not-allowed'}`}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M9 11l3 3L22 4"/>
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                       </svg>
                       Confirm
                     </button>
