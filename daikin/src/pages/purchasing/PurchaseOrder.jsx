@@ -2,7 +2,8 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { purchaseOrderApi } from '../../services/purchaseOrder.js'
-
+import { useUser } from '../../context/UserContext.jsx'
+import { authConfig } from '../../services/purchaseOrder.js'
 // ─── DATE HELPERS ──────────────────────────────────────────────
 const ddmmyyyyToIso = (s) => {
   if (!s) return ''
@@ -425,6 +426,9 @@ function SidebarContent({
 // ═══════════════════════════════════════════════════════════════
 export default function PurchaseOrder() {
   const navigate = useNavigate()
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
 
   const [agreements,          setAgreements]          = useState([])
   const [listLoading,         setListLoading]         = useState(false)
@@ -444,15 +448,24 @@ export default function PurchaseOrder() {
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    setListLoading(true); setListError(null)
-    purchaseOrderApi.listHeaders()
-      .then(data => { if (!cancelled) setAgreements(data) })
-      .catch(err  => { if (!cancelled) setListError(err.message) })
-      .finally(()  => { if (!cancelled) setListLoading(false) })
-    return () => { cancelled = true }
-  }, [])
+    useEffect(() => {
+  if (userLoading) return 
+  console.log('Firing listHeaders with:', {   // ← add this
+    loginId, 
+    loginType,
+    authConfigState: { ...authConfig }
+  })         // ← wait until user is ready
+  if (!loginId || !loginType) return  // ← don't fire with empty values
+
+  let cancelled = false
+  setListLoading(true)
+  setListError(null)
+  purchaseOrderApi.listHeaders()
+    .then(data => { if (!cancelled) setAgreements(data) })
+    .catch(err  => { if (!cancelled) setListError(err.message) })
+    .finally(()  => { if (!cancelled) setListLoading(false) })
+  return () => { cancelled = true }
+}, [userLoading, loginId, loginType]) 
 
   useEffect(() => {
     if (!selectedAgreementId && agreements.length > 0) setSelectedAgreementId(agreements[0].id)

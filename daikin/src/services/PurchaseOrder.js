@@ -1,6 +1,6 @@
 // src/services/purchaseOrder.js
 const BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
-
+export const authConfig = { loginId: '', loginType: '' }
 // ─── SAP date helpers ───────────────────────────────────────────
 // SAP YYYYMMDD → "May 11, 2026"
 export function sapDateToDisplay(s) {
@@ -33,8 +33,8 @@ async function odataGet(path) {
   const res = await fetch(url, {
     headers: {
       Accept: 'application/json',
-      Loginid: '401122',
-      Logintype: 'P',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
     },
     credentials: 'include',
   })
@@ -289,8 +289,8 @@ export const purchaseOrderApi = {
         headers: {
           'X-CSRF-Token': 'Fetch',
           Accept: 'application/json',
-          Loginid: '401122',
-          Logintype: 'P',
+          Loginid: authConfig.loginId,
+          Logintype: authConfig.loginType,
         },
         credentials: 'include',
       }
@@ -303,8 +303,8 @@ export const purchaseOrderApi = {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         'X-CSRF-Token': token,
-        Loginid: '401122',
-        Logintype: 'P',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
       },
       credentials: 'include',
       body: JSON.stringify({

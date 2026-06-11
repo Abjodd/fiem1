@@ -15,6 +15,7 @@ const getGroupsByEmail = async (email) => {
   });
 
   const user = response.data?.Resources?.[0];
+  console.log("Raw SCIM user:", JSON.stringify(user, null, 2));
   if (!user) {
     console.warn("No SCIM user found for email:", email);
     return { groups: [], userType: "unknown", userUuid: "", loginName: "" };
@@ -39,7 +40,7 @@ export const getUserAttributes = async () => {
     if (!email) throw new Error("No email found in XSUAA response");
 
     const { groups, userType, userUuid, loginName } = await getGroupsByEmail(email);
-    console.log("Step 2 - SCIM groups fetched:", groups);
+    console.log("Step 2 - SCIM groups fetched:", groups, userType, userUuid, loginName);
 
     return {
       data: {
