@@ -26,6 +26,10 @@ export const saveUser = (user) => localStorage.setItem('daikin_user', JSON.strin
 // export const getUser  = ()     => { const s = localStorage.getItem('daikin_user'); return s ? JSON.parse(s) : null; };
 export const getUser = () => {
   const user = localStorage.getItem("user");
+<<<<<<< HEAD
+
+=======
+>>>>>>> c2d0f449ac37f392fb79e3eaaeefdc6329a9fc83
   return user ? JSON.parse(user) : null;
 };
 export const logout   = ()     => localStorage.removeItem('daikin_user');

@@ -25,7 +25,7 @@ const parseDdmmyyyy = (s) => {
   return iso ? new Date(iso) : null
 }
 
-// ─── STATUS CONFIG — same as ScheduleRelease ──────────────────
+// ─── STATUS CONFIG ─────────────────────────────────────────────
 const STATUS_CONFIG = {
   'Confirmation Required': { bg: '#fff3e0', text: '#e65100', dot: '#ff9800', label: 'Confirmation Required' },
   'Partially Confirmed':   { bg: '#e3f2fd', text: '#1565c0', dot: '#1976d2', label: 'Partially Confirmed'   },
@@ -35,12 +35,10 @@ const STATUS_CONFIG = {
 const getStatus = (s) =>
   STATUS_CONFIG[s] || { bg: '#f5f5f5', text: '#616161', dot: '#9e9e9e', label: s || 'Unknown' }
 
-// ─── BUTTON LOGIC — same as ScheduleRelease ───────────────────
-// ASN disabled only when ALL items are 'Confirmation Required'
+// ─── BUTTON LOGIC ─────────────────────────────────────────────
 const asnDisabled = (items) =>
   items.length > 0 && items.every(i => i.status === 'Confirmation Required')
 
-// Confirm enabled when at least one item is 'Partially Confirmed' or 'Confirmation Required'
 const canConfirm = (items) =>
   items.length > 0 &&
   items.some(i => i.status === 'Partially Confirmed' || i.status === 'Confirmation Required')
@@ -60,7 +58,7 @@ function StatusBadge({ status }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CONFIRM VIEW — mirrors ScheduleRelease ConfirmView exactly
+// CONFIRM VIEW
 // ═══════════════════════════════════════════════════════════════
 function ConfirmView({ agreement, onBack, onSuccess }) {
   const [rows,           setRows]           = useState([])
@@ -86,7 +84,6 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
     }
   }
 
-  // Auto-fetch on mount
   useEffect(() => {
     fetchData()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -136,7 +133,6 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
     }
   }
 
-  // ── Success screen ──
   if (submitted) return (
     <div className="flex flex-col items-center justify-center h-64 gap-4 anim-fade">
       <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center">
@@ -236,12 +232,7 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
             <thead>
               <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
                 <th className="py-3 px-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"
-                  />
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"/>
                 </th>
                 {['Item', 'Sch. Line', 'Material', 'PO Qty', 'Conf. Qty', 'Del. Qty', 'ASN Qty', 'Conf. Date', 'Ship Date', 'Dispatch Date'].map(h => (
                   <th key={h} className="text-left font-semibold py-3 px-3 text-[11px] uppercase tracking-wider">{h}</th>
@@ -272,12 +263,7 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
                     className={`border-b border-[#f0f0f0] last:border-b-0 cursor-pointer transition-colors ${isSelected ? 'bg-[#ebf5ff]' : 'hover:bg-[#fafbfc]'}`}
                   >
                     <td className="py-3 px-3" onClick={e => { e.stopPropagation(); toggleRow(key) }}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleRow(key)}
-                        className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"
-                      />
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleRow(key)} className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"/>
                     </td>
                     <td className="py-3 px-3 font-semibold text-[#32363a]">{r.itemNo || '—'}</td>
                     <td className="py-3 px-3 text-[#32363a]">{r.scheduleLine?.trim() || '—'}</td>
@@ -307,10 +293,7 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
           style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)' }}
           onClick={() => setConfirmModal(false)}
         >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-4 flex items-start gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-[#ebf5ff]">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a6ed1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -327,16 +310,10 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end gap-2 bg-[#fafbfc]">
-              <button
-                onClick={() => setConfirmModal(false)}
-                className="h-10 px-5 text-[14px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all"
-              >
+              <button onClick={() => setConfirmModal(false)} className="h-10 px-5 text-[14px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all">
                 Cancel
               </button>
-              <button
-                onClick={handleSubmit}
-                className="h-10 px-5 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md"
-              >
+              <button onClick={handleSubmit} className="h-10 px-5 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md">
                 OK
               </button>
             </div>
@@ -556,11 +533,6 @@ export default function PurchaseOrder() {
   const [detailLoading,       setDetailLoading]       = useState(false)
   const [detailError,         setDetailError]         = useState(null)
 
-  // drilled item + schedule lines
-  const [selectedItem,   setSelectedItem]   = useState(null)
-  const [scheduleLines,  setScheduleLines]  = useState([])
-  const [linesLoading,   setLinesLoading]   = useState(false)
-
   // confirm view
   const [showConfirmView, setShowConfirmView] = useState(false)
 
@@ -596,7 +568,7 @@ export default function PurchaseOrder() {
     }
   }, [agreements, selectedAgreementId])
 
-  // ── Load PO detail (header + items via expand) ──
+  // ── Load PO detail ──
   useEffect(() => {
     let cancelled = false
     if (!selectedAgreementId) { setAgreement(null); return }
@@ -608,20 +580,6 @@ export default function PurchaseOrder() {
       .finally(()  => { if (!cancelled) setDetailLoading(false) })
     return () => { cancelled = true }
   }, [selectedAgreementId])
-
-  // ── Load schedule lines for drilled item ──
-  useEffect(() => {
-    let cancelled = false
-    if (!selectedItem || !agreement) { setScheduleLines([]); return }
-    const item = agreement.items.find(i => i.itemNo === selectedItem.itemNo)
-    if (!item) { setScheduleLines([]); return }
-    setLinesLoading(true)
-    purchaseOrderApi.getLineItems(agreement.poNo, item.ebelp)
-      .then(lines => { if (!cancelled) setScheduleLines(lines) })
-      .catch(err  => { if (!cancelled) console.error(err) })
-      .finally(()  => { if (!cancelled) setLinesLoading(false) })
-    return () => { cancelled = true }
-  }, [selectedItem, agreement])
 
   // ── Scroll selected into view ──
   useEffect(() => {
@@ -651,10 +609,6 @@ export default function PurchaseOrder() {
   }, [mobileSidebarOpen])
 
   // ── Derived ──
-  const drilledItem = selectedItem && agreement
-    ? agreement.items.find(i => i.itemNo === selectedItem.itemNo)
-    : null
-
   const plants = useMemo(() => {
     const map = new Map()
     agreements.forEach(a => { if (a.plant) map.set(a.plant, a.plantName) })
@@ -685,13 +639,12 @@ export default function PurchaseOrder() {
   const filteredItems = useMemo(() => {
     if (!agreement) return []
     if (!fromDate && !toDate) return agreement.items
-    return agreement.items // date filtering is display-level; pass through all
+    return agreement.items
   }, [agreement, fromDate, toDate, dateError])
 
   // ── Handlers ──
   const handleSelectAgreement = useCallback((id) => {
     setSelectedAgreementId(id)
-    setSelectedItem(null)
     setShowConfirmView(false)
     setMobileSidebarOpen(false)
   }, [])
@@ -704,7 +657,6 @@ export default function PurchaseOrder() {
 
   const handleCreateAsn = async () => {
     if (!agreement) return
-    // Only eligible (non Confirmation Required) items go to ASN
     const eligibleItems = agreement.items.filter(i => i.status !== 'Confirmation Required')
     try {
       const pdirRefs = await purchaseOrderApi.getPdirRefs(agreement.poNo)
@@ -723,6 +675,13 @@ export default function PurchaseOrder() {
     const id = selectedAgreementId
     setSelectedAgreementId(null)
     setTimeout(() => setSelectedAgreementId(id), 0)
+  }
+
+  // ── Navigate to line item detail page ──
+  const handleItemClick = (item) => {
+    navigate('/purchasing/po-lineitem', {
+      state: { agreement, item },
+    })
   }
 
   // ── Shared sidebar props ──
@@ -774,96 +733,8 @@ export default function PurchaseOrder() {
           />
         )}
 
-        {/* ── DRILLED ITEM VIEW ── */}
-        {!showConfirmView && selectedItem && (
-          <main className="bg-white anim-fade" style={{ minHeight: 'calc(100vh - 220px)' }}>
-            {drilledItem && (
-              <>
-                <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
-                  <button
-                    onClick={() => setSelectedItem(null)}
-                    className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                    Back to Items
-                  </button>
-                  <div className="text-center">
-                    <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Material Number</div>
-                    <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>
-                    <div className="text-[14px] text-[#6a6d70] mt-1.5">{drilledItem.materialName}</div>
-                    <div className="mt-3 flex justify-center">
-                      <StatusBadge status={drilledItem.status} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-7">
-                  {linesLoading ? (
-                    <div className="flex items-center justify-center py-12 text-[#6a6d70] text-[13px] gap-2">
-                      <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>
-                      Loading…
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
-                      <table className="w-full text-[14px]" style={{ minWidth: '480px', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            {['Sch. Line', 'Delivery Date', 'Delivery Schedule', 'Confirmed Qty'].map(h => (
-                              <th key={h} className="text-left font-semibold py-3.5 px-4 text-[12px] uppercase tracking-wider">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="row-stagger">
-                          {scheduleLines.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="py-12 text-center text-[13px] text-[#6a6d70]">No schedule lines</td>
-                            </tr>
-                          ) : scheduleLines.map((line, idx) => (
-                            <tr
-                              key={`${line.schLineNo}-${idx}`}
-                              className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors"
-                            >
-                              <td className="py-4 px-4">
-                                <span className="inline-flex items-center justify-center w-8 h-8 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[13px] font-bold">
-                                  {line.schLineNo}
-                                </span>
-                              </td>
-                              <td className="py-4 px-4 text-[#32363a] font-medium">
-                                <div className="flex items-center gap-2">
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6a6d70] flex-shrink-0">
-                                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                                  </svg>
-                                  {line.deliveryDate}
-                                </div>
-                              </td>
-                              <td className="py-4 px-4">
-                                <span className="font-bold text-[15px] text-[#32363a]">{line.deliverySchedule}</span>{' '}
-                                <span className="text-[#6a6d70] text-[13px]">{line.unit}</span>
-                              </td>
-                              <td className="py-4 px-4">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e8f5e9] text-[#2e7d32] rounded-md text-[13px] font-semibold">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                    <path d="M5 13l4 4L19 7"/>
-                                  </svg>
-                                  {line.confirmedQty} {line.unit}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </main>
-        )}
-
         {/* ── MAIN LIST VIEW ── */}
-        {!showConfirmView && !selectedItem && (
+        {!showConfirmView && (
           <div className="flex" style={{ minHeight: 'calc(100vh - 220px)' }}>
 
             {/* Mobile backdrop */}
@@ -1034,7 +905,7 @@ export default function PurchaseOrder() {
                           ) : filteredItems.map((item, idx) => (
                             <tr
                               key={`${item.itemNo}-${idx}`}
-                              onClick={() => setSelectedItem({ poNo: selectedAgreementId, itemNo: item.itemNo })}
+                              onClick={() => handleItemClick(item)}
                               className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] cursor-pointer transition-colors group"
                             >
                               <td className="py-3.5 px-4 font-semibold text-[#32363a]">{item.itemNo}</td>
@@ -1052,9 +923,7 @@ export default function PurchaseOrder() {
                                 <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
                               <td className="py-3.5 px-4 font-semibold text-[#32363a]">{item.unitPrice || '—'}</td>
-                              <td className="py-3.5 px-4">
-                                <StatusBadge status={item.status} />
-                              </td>
+                              <td className="py-3.5 px-4"><StatusBadge status={item.status} /></td>
                               <td className="py-3.5 px-3">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                                   className="text-[#0a6ed1] group-hover:translate-x-1 transition-transform">
@@ -1068,7 +937,7 @@ export default function PurchaseOrder() {
                     </div>
                   </div>
 
-                  {/* Footer actions — mirrors ScheduleRelease exactly */}
+                  {/* Footer actions */}
                   <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
 
                     {/* Create ASN */}
