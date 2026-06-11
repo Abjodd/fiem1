@@ -1,11 +1,9 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserAttributes } from "../services/userService";
-import { useUser } from "../context/UserContext";
 
 function Home() {
   const navigate = useNavigate();
-  const { setUser } = useUser();  // ✅ get setUser from context
 
   useEffect(() => {
     checkUser();
@@ -16,14 +14,26 @@ function Home() {
       const response = await getUserAttributes();
       const userData = response.data;
 
+      // ✅ Log everything here
       console.log("SAP USER FULL RESPONSE:", userData);
       console.log("Groups:", userData.Groups);
       console.log("User Type:", userData.type?.[0]);
       console.log("Login Name:", userData.login_name?.[0]);
       console.log("Email:", userData.email);
 
-      setUser(userData);  // ✅ store in context instead of localStorage
+      // Derive role from groups
+      const role = userData.type?.[0] === "employee" ? "employee" : "partner";
 
+      // Save to localStorage
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          role: role,
+          data: userData,
+        })
+      );
+
+      // Redirect to landing
       navigate("/landing");
 
     } catch (err) {
@@ -33,15 +43,17 @@ function Home() {
   };
 
   return (
-    <div style={{
-      height: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      fontFamily: "sans-serif",
-      fontSize: "20px",
-      background: "#f5f7fb",
-    }}>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: "sans-serif",
+        fontSize: "20px",
+        background: "#f5f7fb",
+      }}
+    >
       Authenticating with SAP...
     </div>
   );

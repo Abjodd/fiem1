@@ -1,4 +1,5 @@
 // src/services/purchaseOrder.js
+// OData service for NW_SUPP_PORTAL_PO_APP_SRV
 
 const BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 
@@ -29,13 +30,13 @@ function trimNum(s) {
 const str = (v) => String(v ?? '').trim()
 
 // ─── Fetch helpers ──────────────────────────────────────────────
-async function odataGet(path, user) {
+async function odataGet(path) {
   const url = `${BASE}${path}`
   const res = await fetch(url, {
     headers: {
       Accept: 'application/json',
-      Loginid:   user?.login_name?.[0] || '',
-      Logintype: user?.type?.[0] || '',
+      Loginid: '401122',
+      Logintype: 'P',
     },
     credentials: 'include',
   })

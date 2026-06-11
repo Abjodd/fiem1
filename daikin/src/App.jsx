@@ -112,7 +112,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <route
+      <Route
         path="/purchasing/po-lineitem"
         element={
           <ProtectedRoute>
@@ -138,7 +138,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <route
+      <Route
         path="/purchasing/sr-lineitem"
         element={
           <ProtectedRoute>
