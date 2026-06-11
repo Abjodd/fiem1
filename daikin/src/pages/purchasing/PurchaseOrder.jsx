@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
+import { useUser } from "../../context/UserContext";
 import { purchaseOrderApi } from '../../services/purchaseOrder.js'
 
 // ─── DATE HELPERS ──────────────────────────────────────────────
@@ -542,6 +543,7 @@ function SidebarContent({
 // ═══════════════════════════════════════════════════════════════
 export default function PurchaseOrder() {
   const navigate = useNavigate()
+  const { user } = useUser()
 
   // list
   const [agreements,   setAgreements]   = useState([])
@@ -580,12 +582,12 @@ export default function PurchaseOrder() {
     let cancelled = false
     setListLoading(true)
     setListError(null)
-    purchaseOrderApi.listHeaders()
+    purchaseOrderApi.listHeaders({ user })
       .then(data => { if (!cancelled) setAgreements(data) })
       .catch(err  => { if (!cancelled) setListError(err.message) })
       .finally(()  => { if (!cancelled) setListLoading(false) })
     return () => { cancelled = true }
-  }, [])
+  }, [user])
 
   // ── Auto-select first ──
   useEffect(() => {
