@@ -1,9 +1,10 @@
 {
   "welcomeFile": "/index.html",
   "authenticationMethod": "route",
-  "logout": {
+    "logout": {
     "logoutEndpoint": "/do/logout"
   },
+
   "routes": [
     {
       "source": "^/sap/(.*)$",
