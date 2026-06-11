@@ -407,15 +407,6 @@ export default function POlineitem() {
 
         {/* ── Top bar ── */}
         <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-8 lg:px-12 py-5 flex-shrink-0 anim-fade">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-            Back to Items
-          </button>
 
           {/* Material info */}
           <div className="flex items-start justify-between flex-wrap gap-4">
