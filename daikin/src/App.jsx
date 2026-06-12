@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
 import LandingPage from './components/landingpage.jsx'
 import Home from './pages/Home.jsx'
-
+import POreturn from './pages/purchasing/POreturn.jsx'
 import './app.css'
 import SRlineitem from './pages/purchasing/SRlineitem.jsx'
 import POlineitem from './pages/purchasing/POlineitem.jsx'
@@ -151,6 +151,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ScheduleLines />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/purchasing/poreturn"
+        element={
+          <ProtectedRoute>
+            <POreturn />
           </ProtectedRoute>
         }
       />

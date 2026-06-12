@@ -159,7 +159,14 @@ export const NAV_MODULES = [
         cover:
           'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1200',
       },
-
+      {
+        id: 'poreturn',
+        label: 'PO Return',
+        path: '/purchasing/poreturn',
+        icon: 'return',
+        cover:
+          'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
+      },
       {
         id: 'purchase-order',
         label: 'Purchase Order',
