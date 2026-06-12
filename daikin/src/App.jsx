@@ -20,13 +20,13 @@ import ForecastReport from './pages/reports/ForecastReport.jsx'
 import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
 
 // Goods Receipt
-import GateInMIGO from './pages/goodsreceipt/GateInMIGO.jsx'
+import GateInMIGO from './pages/reports/GateInMIGO.jsx'
 
 // Logistics
-import DeliverySchedule from './pages/logistics/DeliverySchedule.jsx'
+import DeliverySchedule from './pages/reports/DeliverySchedule.jsx'
 
 // ASN
-import Asnreport from './pages/asn/Asnreport.jsx'
+import Asnreport from './pages/reports/asnReport.jsx'
 
 // Shipment
 import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
@@ -184,7 +184,7 @@ export default function App() {
 
       {/* Goods Receipt */}
       <Route
-        path="/goodsreceipt/gatein-to-migo"
+        path="/reports/gatein-to-migo"
         element={
           <ProtectedRoute>
             <GateInMIGO />
@@ -194,7 +194,7 @@ export default function App() {
 
       {/* Logistics */}
       <Route
-        path="/logistics/delivery-schedule"
+        path="/reports/delivery-schedule"
         element={
           <ProtectedRoute>
             <DeliverySchedule />
@@ -204,7 +204,7 @@ export default function App() {
 
       {/* ASN */}
       <Route
-        path="/asn/asn-report"
+        path="/reports/asn-report"
         element={
           <ProtectedRoute>
             <Asnreport />
