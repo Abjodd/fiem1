@@ -4,36 +4,33 @@ import {
   ForecastReportApi,
   toSapDate,
   groupPeriodsMonthly,
+
 } from "../../services/ForecastReport.js";
+
 
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
+
 const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan","Feb","Mar","Apr","May","Jun",
+  "Jul","Aug","Sep","Oct","Nov","Dec",
 ];
+
 const getExportFilename = (viewMode) => {
   const d = new Date();
   return `Forecast_Report_${viewMode}_${MONTHS_SHORT[d.getMonth()]}_${String(d.getDate()).padStart(2, "0")}.xlsx`;
 };
+
 const calcVariance = (schedule, supply) => {
-  if (schedule === 0) return 0
-  return ((schedule - supply) / schedule) * 100
-}
+  if (schedule === 0) return 0;
+  return ((schedule - supply) / schedule) * 100;
+};
+
 const PAGE_SIZE = 100;
 
+// ─── Value Help Modal ──────────────────────────────────────────
 function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => {
@@ -45,13 +42,13 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
         (o.label && o.label.toLowerCase().includes(q)),
     );
   }, [options, search]);
+
   useEffect(() => {
-    const h = (e) => {
-      if (e.key === "Escape") onCancel();
-    };
+    const h = (e) => { if (e.key === "Escape") onCancel(); };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
   }, [onCancel]);
+
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
@@ -75,12 +72,8 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
               className="w-full h-9 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
             />
             <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+              width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2"
               className="absolute right-3 top-2.5 text-[#6a6d70]"
             >
               <circle cx="11" cy="11" r="7" />
@@ -130,6 +123,7 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
   );
 }
 
+// ─── Value Help Input ──────────────────────────────────────────
 function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
   return (
     <div className="flex h-9 border border-[#d9d9d9] rounded-lg overflow-hidden bg-white focus-within:border-[#0a6ed1] focus-within:ring-2 focus-within:ring-[#0a6ed1]/20 transition-all">
@@ -146,14 +140,7 @@ function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
           onClick={onClear}
           className="flex-shrink-0 w-6 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14]"
         >
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
@@ -163,14 +150,7 @@ function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
         onClick={onOpen}
         className="flex-shrink-0 w-8 flex items-center justify-center border-l border-[#e5e5e5] text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all"
       >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
@@ -179,6 +159,7 @@ function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
   );
 }
 
+// ─── Toggle ────────────────────────────────────────────────────
 function Toggle({ value, onChange }) {
   return (
     <button
@@ -192,40 +173,46 @@ function Toggle({ value, onChange }) {
   );
 }
 
+// ─── Main Component ────────────────────────────────────────────
 export default function ForecastReport() {
-  const [date, setDate] = useState(todayIso());
-  const [partNo, setPartNo] = useState("");
-  const [saNo, setSaNo] = useState("");
+
+  const [date, setDate]           = useState(todayIso());
+  const [partNo, setPartNo]       = useState("");
+  const [saNo, setSaNo]           = useState("");
+  const [supplier, setSupplier]   = useState("");
   const [filtersOpen, setFiltersOpen] = useState(true);
-  const [vhModal, setVhModal] = useState(null);
+  const [vhModal, setVhModal]     = useState(null);   // 'part' | 'sa' | 'supplier'
   const [vhOptions, setVhOptions] = useState([]);
   const [vhLoading, setVhLoading] = useState(false);
-  const [showSupply, setShowSupply] = useState(true);
-  const [viewMode, setViewMode] = useState("Daily");
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [showSupply, setShowSupply]   = useState(true);
+  const [viewMode, setViewMode]   = useState("Daily");
+  const [rows, setRows]           = useState([]);
+  const [loading, setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore]     = useState(true);
   const [hasSearched, setHasSearched] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]         = useState(null);
   const [exporting, setExporting] = useState(false);
   const [exportPct, setExportPct] = useState(0);
-  const tableBodyRef = useRef(null);
-  const skipRef = useRef(0);
+
+  const tableBodyRef  = useRef(null);
+  const skipRef       = useRef(0);
   const lastParamsRef = useRef(null);
 
+  // ── Build params ─────────────────────────────────────────────
   const buildParams = useCallback(
     () => ({
-      inputDate: toSapDate(date),
-      matnr: partNo,
-      ebeln: saNo,
-      supplier: "",
-      bukrs: "DSAL",
+      inputDate:   toSapDate(date),
+      matnr:       partNo,
+      ebeln:       saNo,
+      supplier:    supplier,
+      bukrs:       "DSAL",
       mdIndicator: viewMode === "Daily" ? "D" : "M",
     }),
-    [date, partNo, saNo, viewMode],
+    [date, partNo, saNo, supplier, viewMode],
   );
 
+  // ── Initial fetch ────────────────────────────────────────────
   const doFetch = useCallback(async (params) => {
     setLoading(true);
     setError(null);
@@ -248,6 +235,7 @@ export default function ForecastReport() {
     }
   }, []);
 
+  // ── Load more (infinite scroll) ──────────────────────────────
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || !lastParamsRef.current) return;
     setLoadingMore(true);
@@ -257,10 +245,7 @@ export default function ForecastReport() {
         skip: skipRef.current,
         top: PAGE_SIZE,
       });
-      if (data.length === 0) {
-        setHasMore(false);
-        return;
-      }
+      if (data.length === 0) { setHasMore(false); return; }
       setRows((prev) => [...prev, ...data]);
       skipRef.current += data.length;
       setHasMore(data.length >= PAGE_SIZE);
@@ -271,7 +256,9 @@ export default function ForecastReport() {
     }
   }, [loadingMore, hasMore]);
 
+  // ── Default load on mount ────────────────────────────────────
   useEffect(() => {
+
     ForecastReportApi.fetchDefaultReport({ skip: 0, top: PAGE_SIZE })
       .then((data) => {
         setRows(data);
@@ -280,16 +267,14 @@ export default function ForecastReport() {
         skipRef.current = data.length;
         lastParamsRef.current = {
           inputDate: toSapDate(todayIso()),
-          matnr: "",
-          ebeln: "",
-          supplier: "",
-          bukrs: "DSAL",
-          mdIndicator: "D",
+          matnr: '', ebeln: '', supplier: '',
+          bukrs: 'DSAL', mdIndicator: 'D',
         };
       })
       .catch((err) => setError(err.message));
   }, []);
 
+  // ── Scroll-based pagination ──────────────────────────────────
   useEffect(() => {
     const el = tableBodyRef.current;
     if (!el) return;
@@ -300,22 +285,26 @@ export default function ForecastReport() {
     return () => el.removeEventListener("scroll", h);
   }, [loadMore]);
 
+  // ── Handlers ─────────────────────────────────────────────────
   const handleViewChange = (mode) => {
     setViewMode(mode);
     doFetch({
-      inputDate: toSapDate(date),
-      matnr: partNo,
-      ebeln: saNo,
-      supplier: "",
-      bukrs: "DSAL",
+      inputDate:   toSapDate(date),
+      matnr:       partNo,
+      ebeln:       saNo,
+      supplier:    supplier,
+      bukrs:       "DSAL",
       mdIndicator: mode === "Daily" ? "D" : "M",
     });
   };
+
   const handleGo = () => doFetch(buildParams());
+
   const handleClear = () => {
     setDate(todayIso());
     setPartNo("");
     setSaNo("");
+    setSupplier("");
     setRows([]);
     setHasSearched(false);
     setError(null);
@@ -328,37 +317,38 @@ export default function ForecastReport() {
     setVhOptions([]);
     try {
       const inputDate = toSapDate(date);
-      const opts =
-        field === "part"
-          ? await ForecastReportApi.fetchMaterials({ inputDate })
-          : await ForecastReportApi.fetchSaNumbers({ inputDate });
+      let opts = [];
+      if (field === "part") {
+        opts = await ForecastReportApi.fetchMaterials({ inputDate });
+      } else if (field === "sa") {
+        opts = await ForecastReportApi.fetchSaNumbers({ inputDate });
+      } else if (field === "supplier") {
+        opts = await ForecastReportApi.fetchSuppliers({ inputDate });
+      }
       setVhOptions(opts);
     } catch {
       setVhOptions([]);
     }
     setVhLoading(false);
   };
+
   const handleVhSelect = (opt) => {
-    if (vhModal === "part") setPartNo(opt.code);
-    else setSaNo(opt.code);
+    if (vhModal === "part")     setPartNo(opt.code);
+    else if (vhModal === "sa")  setSaNo(opt.code);
+    else                        setSupplier(opt.code);
     setVhModal(null);
   };
 
+  // ── Display columns ──────────────────────────────────────────
   const displayColumns = useMemo(() => {
     if (rows.length === 0) return [];
     if (viewMode === "Monthly") {
       const monthly = groupPeriodsMonthly(rows[0].periods);
       if (monthly.length === 0 && rows[0].periods.length > 0)
-        return rows[0].periods.map((p) => ({
-          key: p.startdate,
-          label: p.startdate,
-        }));
+        return rows[0].periods.map((p) => ({ key: p.startdate, label: p.startdate }));
       return monthly.map((m) => ({ key: m.key, label: m.label }));
     }
-    return rows[0].periods.map((p) => ({
-      key: p.startdate,
-      label: p.startdate,
-    }));
+    return rows[0].periods.map((p) => ({ key: p.startdate, label: p.startdate }));
   }, [rows, viewMode]);
 
   const getRowPeriodMap = useCallback(
@@ -367,42 +357,28 @@ export default function ForecastReport() {
       if (viewMode === "Monthly") {
         const monthly = groupPeriodsMonthly(row.periods);
         if (monthly.length > 0)
-          monthly.forEach((m) =>
-            map.set(m.key, { schedule: m.schedule, supply: m.supply }),
-          );
+          monthly.forEach((m) => map.set(m.key, { schedule: m.schedule, supply: m.supply }));
         else
-          row.periods.forEach((p) =>
-            map.set(p.startdate, { schedule: p.schedule, supply: p.supply }),
-          );
+          row.periods.forEach((p) => map.set(p.startdate, { schedule: p.schedule, supply: p.supply }));
       } else {
-        row.periods.forEach((p) =>
-          map.set(p.startdate, { schedule: p.schedule, supply: p.supply }),
-        );
+        row.periods.forEach((p) => map.set(p.startdate, { schedule: p.schedule, supply: p.supply }));
       }
       return map;
     },
     [viewMode],
   );
 
-  const colsPerPeriod = showSupply ? 3 : 1;
+  const colsPerPeriod  = showSupply ? 3 : 1;
   const FIXED_COL_COUNT = 6;
 
+  // ── Export ───────────────────────────────────────────────────
   const handleExport = async () => {
     if (rows.length === 0) return;
     setExporting(true);
     setExportPct(0);
     try {
-      const XLSX =
-        await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
-      const fixedH = [
-        "S No.",
-        "SA No.",
-        "Item",
-        "Part No.",
-        "Part Name",
-        "Plant",
-        "Cumulative Backlog Qty",
-      ];
+      const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
+      const fixedH = ["S No.", "SA No.", "Item", "Part No.", "Part Name", "Plant", "Cumulative Backlog Qty"];
       const periodH = displayColumns.flatMap((c) =>
         showSupply
           ? [`${c.label} Sched`, `${c.label} Supply`, `${c.label} Variance%`]
@@ -419,16 +395,7 @@ export default function ForecastReport() {
           const v = calcVariance(p.schedule, p.supply);
           return showSupply ? [p.schedule, p.supply, v] : [p.schedule];
         });
-        dataRows[i] = [
-          r.srNo || i + 1,
-          r.ebeln,
-          r.ebelp,
-          r.matnr,
-          r.maktx,
-          r.werks,
-          cumNet,
-          ...pCells,
-        ];
+        dataRows[i] = [r.srNo || i + 1, r.ebeln, r.ebelp, r.matnr, r.maktx, r.werks, cumNet, ...pCells];
         if (i % 500 === 0) {
           setExportPct(Math.round((i / rows.length) * 80));
           await new Promise((r) => setTimeout(r, 0));
@@ -437,7 +404,6 @@ export default function ForecastReport() {
       setExportPct(85);
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
-      // Bold headers
       const range = XLSX.utils.decode_range(ws["!ref"]);
       for (let C = range.s.c; C <= range.e.c; C++) {
         const a = XLSX.utils.encode_cell({ r: 0, c: C });
@@ -460,17 +426,22 @@ export default function ForecastReport() {
 
   const supplierName = rows[0]?.supplierName || "—";
 
+  // ── Render ───────────────────────────────────────────────────
   return (
     <PageLayout>
       <style>{`
-        @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes modalIn{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
-        .anim-fade{animation:fadeIn .3s ease-out both}
-        .row-stagger>*{animation:fadeIn .3s ease-out both}
-        .row-stagger>*:nth-child(1){animation-delay:.02s}.row-stagger>*:nth-child(2){animation-delay:.04s}
-        .row-stagger>*:nth-child(3){animation-delay:.06s}.row-stagger>*:nth-child(4){animation-delay:.08s}
-        .row-stagger>*:nth-child(5){animation-delay:.10s}
+        @keyframes fadeIn  { from { opacity:0; transform:translateY(6px)  } to { opacity:1; transform:translateY(0) } }
+        @keyframes modalIn { from { opacity:0; transform:scale(0.94)      } to { opacity:1; transform:scale(1)     } }
+        .anim-fade  { animation: fadeIn .3s ease-out both }
+        .row-stagger > * { animation: fadeIn .3s ease-out both }
+        .row-stagger > *:nth-child(1) { animation-delay:.02s }
+        .row-stagger > *:nth-child(2) { animation-delay:.04s }
+        .row-stagger > *:nth-child(3) { animation-delay:.06s }
+        .row-stagger > *:nth-child(4) { animation-delay:.08s }
+        .row-stagger > *:nth-child(5) { animation-delay:.10s }
       `}</style>
+
+      {/* ── Value Help Modals ── */}
       {vhModal === "part" && (
         <ValueHelpModal
           title="Part No."
@@ -489,6 +460,17 @@ export default function ForecastReport() {
           loading={vhLoading}
         />
       )}
+      {vhModal === "supplier" && (
+        <ValueHelpModal
+          title="Supplier"
+          options={vhOptions}
+          onSelect={handleVhSelect}
+          onCancel={() => setVhModal(null)}
+          loading={vhLoading}
+        />
+      )}
+
+      {/* ── Export progress overlay ── */}
       {exporting && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center"
@@ -498,27 +480,25 @@ export default function ForecastReport() {
             className="bg-white rounded-xl shadow-2xl w-[380px] max-w-[90vw] p-5"
             style={{ animation: "modalIn .2s ease-out both" }}
           >
-            <div className="text-[15px] font-semibold text-[#32363a] mb-3">
-              Exporting…
-            </div>
+            <div className="text-[15px] font-semibold text-[#32363a] mb-3">Exporting…</div>
             <div className="h-2.5 bg-[#f0f0f0] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#0a6ed1] rounded-full transition-all duration-150"
                 style={{ width: `${exportPct}%` }}
               />
             </div>
-            <div className="text-[12px] text-[#6a6d70] mt-2 text-right tabular-nums">
-              {exportPct}%
-            </div>
+            <div className="text-[12px] text-[#6a6d70] mt-2 text-right tabular-nums">{exportPct}%</div>
           </div>
         </div>
       )}
+
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
-        <div
-          className="flex flex-col bg-white"
-          style={{ height: "calc(100vh - 104px)" }}
-        >
+        <div className="flex flex-col bg-white" style={{ height: "calc(100vh - 104px)" }}>
+
+          {/* ── Header + Filters ── */}
           <div className="flex-shrink-0 border-b border-[#e5e5e5]">
+
+            {/* Title row */}
             <div className="px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between bg-white">
               <div>
                 <h2 className="text-[18px] sm:text-[20px] font-bold text-[#32363a] tracking-tight">
@@ -526,9 +506,7 @@ export default function ForecastReport() {
                 </h2>
                 <div className="text-[12px] text-[#6a6d70] mt-0.5">
                   Supplier:{" "}
-                  <span className="font-semibold text-[#32363a]">
-                    {supplierName}
-                  </span>
+                  <span className="font-semibold text-[#32363a]">{supplierName}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -548,18 +526,9 @@ export default function ForecastReport() {
                   title={filtersOpen ? "Collapse" : "Expand"}
                 >
                   <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    style={{
-                      transform: filtersOpen
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                      transition: "transform .2s",
-                    }}
+                    width="12" height="12" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="2.5"
+                    style={{ transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}
                   >
                     <path d="M18 15l-6-6-6 6" />
                   </svg>
@@ -572,11 +541,15 @@ export default function ForecastReport() {
                 </button>
               </div>
             </div>
+
+            {/* Filter fields */}
             <div
               className={`overflow-hidden transition-all duration-250 ease-out ${filtersOpen ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}
             >
               <div className="px-4 sm:px-6 lg:px-10 pb-3">
                 <div className="flex flex-wrap gap-3 items-end">
+
+                  {/* Date */}
                   <div>
                     <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
                       Date
@@ -588,6 +561,8 @@ export default function ForecastReport() {
                       className="h-9 pl-3 pr-2 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-[150px]"
                     />
                   </div>
+
+                  {/* Part No. */}
                   <div>
                     <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
                       Part No.
@@ -601,6 +576,8 @@ export default function ForecastReport() {
                       />
                     </div>
                   </div>
+
+                  {/* SA No. */}
                   <div>
                     <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
                       SA No.
@@ -614,15 +591,31 @@ export default function ForecastReport() {
                       />
                     </div>
                   </div>
+
+                  {/* Supplier */}
+                  <div>
+                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
+                      Supplier
+                    </label>
+                    <div className="w-[170px]">
+                      <ValueHelpInput
+                        placeholder="Select Supplier"
+                        value={supplier}
+                        onOpen={() => openVh("supplier")}
+                        onClear={() => setSupplier("")}
+                      />
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
+
+            {/* Toolbar row */}
             <div className="px-4 sm:px-6 lg:px-10 py-2 flex items-center justify-between gap-3 bg-[#fafbfc] border-t border-[#e5e5e5]">
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-[#6a6d70] font-medium">
-                    Supply
-                  </span>
+                  <span className="text-[12px] text-[#6a6d70] font-medium">Supply</span>
                   <Toggle value={showSupply} onChange={setShowSupply} />
                 </div>
                 <div className="flex h-8 bg-[#e5e5e5] rounded-lg p-[3px] gap-[3px]">
@@ -630,7 +623,11 @@ export default function ForecastReport() {
                     <button
                       key={m}
                       onClick={() => handleViewChange(m)}
-                      className={`px-4 text-[12px] font-semibold rounded-md transition-all duration-200 ${viewMode === m ? "bg-white text-[#0a6ed1] shadow-sm" : "text-[#6a6d70] hover:text-[#32363a]"}`}
+                      className={`px-4 text-[12px] font-semibold rounded-md transition-all duration-200 ${
+                        viewMode === m
+                          ? "bg-white text-[#0a6ed1] shadow-sm"
+                          : "text-[#6a6d70] hover:text-[#32363a]"
+                      }`}
                     >
                       {m}
                     </button>
@@ -647,14 +644,7 @@ export default function ForecastReport() {
                 disabled={rows.length === 0 || exporting}
                 className="flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:border-[#0a6ed1] hover:text-[#0a6ed1] transition-all disabled:opacity-40"
               >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
@@ -664,28 +654,21 @@ export default function ForecastReport() {
             </div>
           </div>
 
+          {/* ── Table area ── */}
           <div className="flex-1 overflow-hidden min-h-0">
             {!hasSearched && !loading ? (
               <div className="flex items-center justify-center h-full anim-fade">
                 <div className="text-center text-[#6a6d70]">
                   <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
+                    width="48" height="48" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="1.5"
                     className="mx-auto mb-3 opacity-25"
                   >
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <path d="M3 9h18M9 21V9M3 15h18" />
                   </svg>
-                  <div className="text-[14px] font-semibold mb-1">
-                    No report loaded
-                  </div>
-                  <div className="text-[12px]">
-                    Set filters and click <strong>Go</strong>
-                  </div>
+                  <div className="text-[14px] font-semibold mb-1">No report loaded</div>
+                  <div className="text-[12px]">Set filters and click <strong>Go</strong></div>
                 </div>
               </div>
             ) : loading ? (
@@ -698,14 +681,7 @@ export default function ForecastReport() {
             ) : error ? (
               <div className="flex items-center justify-center h-full">
                 <div className="flex items-center gap-2 px-4 py-3 bg-[#fce8e6] text-[#cc1c14] rounded-lg text-[13px]">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 8v4M12 16h.01" />
                   </svg>
@@ -738,45 +714,26 @@ export default function ForecastReport() {
                         : [<col key={c.key + "s"} style={{ width: 95 }} />],
                     )}
                   </colgroup>
+
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-[#f5f6f7] text-[#6a6d70]">
-                      <th
-                        rowSpan={2}
-                        className="text-center font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]"
-                      >
+                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
                         S.No
                       </th>
-                      <th
-                        rowSpan={2}
-                        className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]"
-                      >
+                      <th rowSpan={2} className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
                         SA No.
                       </th>
-                      <th
-                        rowSpan={2}
-                        className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]"
-                      >
+                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
                         Item
                       </th>
-                      <th
-                        rowSpan={2}
-                        className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]"
-                      >
+                      <th rowSpan={2} className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
                         Part
                       </th>
-                      <th
-                        rowSpan={2}
-                        className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]"
-                      >
+                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
                         Plant
                       </th>
-                      <th
-                        rowSpan={2}
-                        className="text-right font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7] whitespace-nowrap leading-tight"
-                      >
-                        Cum.
-                        <br />
-                        Backlog Qty
+                      <th rowSpan={2} className="text-right font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7] whitespace-nowrap leading-tight">
+                        Cum.<br />Backlog Qty
                       </th>
                       {displayColumns.map((c) => (
                         <th
@@ -792,44 +749,30 @@ export default function ForecastReport() {
                       {displayColumns.map((c) =>
                         showSupply
                           ? [
-                              <th
-                                key={c.key + "s"}
-                                className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase"
-                              >
+                              <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">
                                 Sched
                               </th>,
-                              <th
-                                key={c.key + "u"}
-                                className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase"
-                              >
+                              <th key={c.key + "u"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">
                                 Supply
                               </th>,
-                              <th
-                                key={c.key + "v"}
-                                className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]"
-                              >
-                                Variance%
+                              <th key={c.key + "v"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]">
+                                Variance
                               </th>,
                             ]
                           : [
-                              <th
-                                key={c.key + "s"}
-                                className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase"
-                              >
+                              <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">
                                 Sched
                               </th>,
                             ],
                       )}
                     </tr>
                   </thead>
+
                   <tbody className="row-stagger">
                     {rows.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={
-                            FIXED_COL_COUNT +
-                            displayColumns.length * colsPerPeriod
-                          }
+                          colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod}
                           className="py-12 text-center text-[13px] text-[#6a6d70]"
                         >
                           No records
@@ -837,7 +780,7 @@ export default function ForecastReport() {
                       </tr>
                     ) : (
                       rows.map((row, idx) => {
-                        const pm = getRowPeriodMap(row);
+                        const pm     = getRowPeriodMap(row);
                         const cumNet = row.cumBacklogQty - row.grnQty;
                         return (
                           <tr
@@ -866,56 +809,41 @@ export default function ForecastReport() {
                             </td>
                             <td className="py-2 px-2 text-right border-r border-[#f0f0f0]">
                               <span
-                                className={`tabular-nums ${cumNet > 0 ? "font-bold text-[#b45309]" : cumNet < 0 ? "font-bold text-[#cc1c14]" : "text-[#d9d9d9]"}`}
+                                className={`tabular-nums ${
+                                  cumNet > 0
+                                    ? "font-bold text-[#b45309]"
+                                    : cumNet < 0
+                                    ? "font-bold text-[#cc1c14]"
+                                    : "text-[#d9d9d9]"
+                                }`}
                               >
                                 {cumNet.toFixed(3)}
                               </span>
                             </td>
                             {displayColumns.map((col) => {
-                              const p = pm.get(col.key) || {
-                                schedule: 0,
-                                supply: 0,
-                              };
+                              const p = pm.get(col.key) || { schedule: 0, supply: 0 };
                               const v = calcVariance(p.schedule, p.supply);
                               return showSupply
                                 ? [
-                                    <td
-                                      key={col.key + "s"}
-                                      className="py-2 px-1 text-center border-r border-[#f0f0f0]"
-                                    >
-                                      <span
-                                        className={`tabular-nums text-[11px] ${p.schedule > 0 ? "font-semibold text-[#32363a]" : "text-[#d9d9d9]"}`}
-                                      >
+                                    <td key={col.key + "s"} className="py-2 px-1 text-center border-r border-[#f0f0f0]">
+                                      <span className={`tabular-nums text-[11px] ${p.schedule > 0 ? "font-semibold text-[#32363a]" : "text-[#d9d9d9]"}`}>
                                         {p.schedule.toFixed(3)}
                                       </span>
                                     </td>,
-                                    <td
-                                      key={col.key + "u"}
-                                      className="py-2 px-1 text-center border-r border-[#f0f0f0]"
-                                    >
-                                      <span
-                                        className={`tabular-nums text-[11px] ${p.supply > 0 ? "font-semibold text-[#32363a]" : "text-[#d9d9d9]"}`}
-                                      >
+                                    <td key={col.key + "u"} className="py-2 px-1 text-center border-r border-[#f0f0f0]">
+                                      <span className={`tabular-nums text-[11px] ${p.supply > 0 ? "font-semibold text-[#32363a]" : "text-[#d9d9d9]"}`}>
                                         {p.supply.toFixed(3)}
                                       </span>
                                     </td>,
-                                    <td
-                                      key={col.key + "v"}
-                                      className="py-2 px-1 text-center border-r border-[#f0f0f0]"
-                                    >
+                                    <td key={col.key + "v"} className="py-2 px-1 text-center border-r border-[#f0f0f0]">
                                       <span className={`tabular-nums text-[11px] ${v > 0 ? "font-semibold text-[#107e3e]" : v < 0 ? "font-semibold text-[#cc1c14]" : "text-[#d9d9d9]"}`}>
-  {v === 0 ? '0.000' : `${v.toFixed(2)}%`}
-</span>
+                                        {v === 0 ? "0.000" : `${v.toFixed(2)}%`}
+                                      </span>
                                     </td>,
                                   ]
                                 : [
-                                    <td
-                                      key={col.key + "s"}
-                                      className="py-2 px-1 text-center border-r border-[#f0f0f0]"
-                                    >
-                                      <span
-                                        className={`tabular-nums text-[11px] ${p.schedule > 0 ? "font-semibold text-[#32363a]" : "text-[#d9d9d9]"}`}
-                                      >
+                                    <td key={col.key + "s"} className="py-2 px-1 text-center border-r border-[#f0f0f0]">
+                                      <span className={`tabular-nums text-[11px] ${p.schedule > 0 ? "font-semibold text-[#32363a]" : "text-[#d9d9d9]"}`}>
                                         {p.schedule.toFixed(3)}
                                       </span>
                                     </td>,
@@ -925,13 +853,11 @@ export default function ForecastReport() {
                         );
                       })
                     )}
+
                     {loadingMore && (
                       <tr>
                         <td
-                          colSpan={
-                            FIXED_COL_COUNT +
-                            displayColumns.length * colsPerPeriod
-                          }
+                          colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod}
                           className="py-4 text-center"
                         >
                           <div className="flex items-center justify-center gap-2 text-[12px] text-[#6a6d70]">
@@ -941,13 +867,11 @@ export default function ForecastReport() {
                         </td>
                       </tr>
                     )}
+
                     {!hasMore && rows.length > 0 && (
                       <tr>
                         <td
-                          colSpan={
-                            FIXED_COL_COUNT +
-                            displayColumns.length * colsPerPeriod
-                          }
+                          colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod}
                           className="py-3 text-center text-[11px] text-[#6a6d70]"
                         >
                           All records loaded
@@ -959,6 +883,7 @@ export default function ForecastReport() {
               </div>
             )}
           </div>
+
         </div>
       </div>
     </PageLayout>

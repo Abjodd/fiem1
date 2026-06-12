@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// forecastReportService.js — Forecast Report OData Service
+// ForecastReport.js — Forecast Report OData Service
 // Service: SUPP_PORTAL_POSA_REPORT_SRV
 // ═══════════════════════════════════════════════════════════════
 
@@ -7,8 +7,12 @@ const SRV = '/sap/opu/odata/shiv/SUPP_PORTAL_POSA_REPORT_SRV'
 
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
-    headers: { Accept: 'application/json', Loginid: "401122",
-        Logintype: "P",},
+    headers: {
+      Accept: 'application/json',
+      Loginid: "401122",
+      Logintype: "P",
+
+    },
     credentials: 'include',
   })
   if (!res.ok) {
@@ -34,7 +38,7 @@ function extractPeriods(raw) {
     if (!sd) continue
     periods.push({
       index: i,
-      startdate: sd,                                  // 'dd.MM.yyyy'
+      startdate: sd,                 // 'dd.MM.yyyy'
       indicator: str(raw[`W${i}Indicator`]),
       schedule:  num(raw[`W${i}Schedule`]),
       supply:    num(raw[`W${i}Supply`]),
@@ -47,7 +51,6 @@ function extractPeriods(raw) {
 export function groupPeriodsMonthly(periods) {
   const map = new Map()
   periods.forEach(p => {
-    // startdate = 'dd.MM.yyyy' → extract 'MM.yyyy'
     const parts = p.startdate.split('.')
     if (parts.length !== 3) return
     const monthKey = `${parts[1]}.${parts[2]}`
@@ -86,7 +89,8 @@ function mapReportRow(raw) {
 }
 
 const mapMaterial = (raw) => ({ code: str(raw.Matnr), label: str(raw.Maktx) })
-const mapSa = (raw) => ({ code: str(raw.Ebeln), label: '' })
+const mapSa       = (raw) => ({ code: str(raw.Ebeln), label: '' })
+const mapSupplier = (raw) => ({ code: str(raw.Supplier), label: str(raw.SupplierName) })
 
 // ═══════════════════════════════════════════════════════════════
 // API — with pagination ($skip / $top)
@@ -121,7 +125,12 @@ export const ForecastReportApi = {
 
   // Material value help
   async fetchMaterials({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 20 } = {}) {
-    const parts = [`InputDate eq '${inputDate}'`, `Matnr eq '${matnr}'`, `Ebeln eq '${ebeln}'`, `Supplier eq '${supplier}'`]
+    const parts = [
+      `InputDate eq '${inputDate}'`,
+      `Matnr eq '${matnr}'`,
+      `Ebeln eq '${ebeln}'`,
+      `Supplier eq '${supplier}'`,
+    ]
     const f = encodeURIComponent(`(${parts.join(' and ')})`)
     const data = await odata(`/MaterialHelpSet?$skip=${skip}&$top=${top}&$filter=${f}`)
     return (data.d?.results || []).map(mapMaterial)
@@ -129,10 +138,28 @@ export const ForecastReportApi = {
 
   // SA value help
   async fetchSaNumbers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 20 } = {}) {
-    const parts = [`InputDate eq '${inputDate}'`, `Matnr eq '${matnr}'`, `Ebeln eq '${ebeln}'`, `Supplier eq '${supplier}'`]
+    const parts = [
+      `InputDate eq '${inputDate}'`,
+      `Matnr eq '${matnr}'`,
+      `Ebeln eq '${ebeln}'`,
+      `Supplier eq '${supplier}'`,
+    ]
     const f = encodeURIComponent(`(${parts.join(' and ')})`)
     const data = await odata(`/SaHelpSet?$skip=${skip}&$top=${top}&$filter=${f}`)
     return (data.d?.results || []).map(mapSa)
+  },
+
+  // Supplier value help
+  async fetchSuppliers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 20 } = {}) {
+    const parts = [
+      `InputDate eq '${inputDate}'`,
+      `Matnr eq '${matnr}'`,
+      `Ebeln eq '${ebeln}'`,
+      `Supplier eq '${supplier}'`,
+    ]
+    const f = encodeURIComponent(`(${parts.join(' and ')})`)
+    const data = await odata(`/SupplierHelpSet?$skip=${skip}&$top=${top}&$filter=${f}`)
+    return (data.d?.results || []).map(mapSupplier)
   },
 }
 

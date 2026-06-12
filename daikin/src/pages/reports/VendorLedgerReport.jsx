@@ -69,6 +69,10 @@ const api = {
     if (USE_MOCK) { await new Promise(r => setTimeout(r, 60)); return MOCK_INVOICES }
     return VendorLedgerApi.fetchInvoices()
   },
+  async fetchDocumentNos() {
+    if (USE_MOCK) { await new Promise(r => setTimeout(r, 60)); return [] }
+    return VendorLedgerApi.fetchDocumentNos()
+  },
   async fetchReport(params) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 400))
@@ -81,6 +85,7 @@ const api = {
       lifnr: params.supplier,
       blart: params.docType,
       xblnr: params.invoiceNo,
+      belnr: params.documentNo,
       bldat: params.documentDate ? toSapDate(params.documentDate) : '',
       openItem: params.openItem ? 'X' : '',
       clearedItem: params.clearedItems ? 'X' : '',
@@ -326,16 +331,18 @@ function DetailPage({ row, onBack }) {
 // ═══════════════════════════════════════════════════════════════
 export default function VendorLedgerReport() {
   // ── Dropdown option stores ──
-  const [suppliers, setSuppliers]           = useState([])
+  const [suppliers,    setSuppliers]    = useState([])
   const [childSuppliers, setChildSuppliers] = useState([])
-  const [docTypes, setDocTypes]             = useState([])
-  const [invoices, setInvoices]             = useState([])
+  const [docTypes,     setDocTypes]     = useState([])
+  const [invoices,     setInvoices]     = useState([])
+  const [documentNos,  setDocumentNos]  = useState([])
 
   // ── Core filters ──
   const [supplier,         setSupplier]         = useState('')
   const [supplierChild,    setSupplierChild]    = useState('')
   const [selectedDocTypes, setSelectedDocTypes] = useState([])
   const [invoiceNo,        setInvoiceNo]        = useState('')
+  const [documentNo,       setDocumentNo]       = useState('')
   const [documentDate,     setDocumentDate]     = useState('')
 
   // ── Exclusive checkboxes ──
@@ -365,6 +372,7 @@ export default function VendorLedgerReport() {
     api.fetchSuppliers().then(setSuppliers).catch(console.error)
     api.fetchDocTypes().then(setDocTypes).catch(console.error)
     api.fetchInvoices().then(setInvoices).catch(console.error)
+    api.fetchDocumentNos().then(setDocumentNos).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -385,6 +393,7 @@ export default function VendorLedgerReport() {
 
   const validationErrors = useMemo(() => {
     const e = []
+    if (!supplier) e.push('Supplier is required.')
     if (!activeCheck) e.push('Select one of Open Item, Cleared Items, or All Item.')
     if (activeCheck === 'open' && !openItemDate) e.push('Open Item Date is required.')
     if (activeCheck === 'cleared') {
@@ -397,7 +406,7 @@ export default function VendorLedgerReport() {
       if (!postTo)   e.push('Post To is required.')
     }
     return e
-  }, [activeCheck, openItemDate, clearingDateFrom, clearingDateTo, openAtKeyDate, postFrom, postTo])
+  }, [supplier, activeCheck, openItemDate, clearingDateFrom, clearingDateTo, openAtKeyDate, postFrom, postTo])
 
   const handleGo = async () => {
     if (validationErrors.length) return
@@ -408,6 +417,7 @@ export default function VendorLedgerReport() {
         childSupplier: supplierChild,
         docType: selectedDocTypes.join(','),
         invoiceNo,
+        documentNo,
         documentDate,
         openItem: activeCheck === 'open',
         openItemDate,
@@ -432,7 +442,7 @@ export default function VendorLedgerReport() {
   }
 
   const handleClear = () => {
-    setSupplier(''); setSupplierChild(''); setSelectedDocTypes([]); setInvoiceNo(''); setDocumentDate('')
+    setSupplier(''); setSupplierChild(''); setSelectedDocTypes([]); setInvoiceNo(''); setDocumentNo(''); setDocumentDate('')
     setActiveCheck(''); setOpenItemDate(''); setClearingDateFrom(''); setClearingDateTo(''); setOpenAtKeyDate('')
     setPostFrom(''); setPostTo(''); setOpenBal(0); setCloseBal(0)
     setRows([]); setHasSearched(false); setError(null)
@@ -456,17 +466,19 @@ export default function VendorLedgerReport() {
 
   const openDD = (field) => {
     const cfg = {
-      supplier: { title: 'Select Supplier',  options: suppliers, multi: false },
-      docType:  { title: 'Document Type',    options: docTypes,  multi: true, selected: selectedDocTypes },
-      invoice:  { title: 'Invoice Number',   options: invoices,  multi: false },
+      supplier:   { title: 'Select Supplier',  options: suppliers,   multi: false },
+      docType:    { title: 'Document Type',    options: docTypes,    multi: true, selected: selectedDocTypes },
+      invoice:    { title: 'Invoice Number',   options: invoices,    multi: false },
+      documentNo: { title: 'Document Number',  options: documentNos, multi: false },
     }
     setDdModal({ field, ...cfg[field] })
   }
 
   const handleDDDone = (val) => {
-    if (ddModal.field === 'supplier') setSupplier(val)
-    if (ddModal.field === 'docType')  setSelectedDocTypes(Array.isArray(val) ? val : [val])
-    if (ddModal.field === 'invoice')  setInvoiceNo(val)
+    if (ddModal.field === 'supplier')   setSupplier(val)
+    if (ddModal.field === 'docType')    setSelectedDocTypes(Array.isArray(val) ? val : [val])
+    if (ddModal.field === 'invoice')    setInvoiceNo(val)
+    if (ddModal.field === 'documentNo') setDocumentNo(val)
     setDdModal(null)
   }
 
@@ -611,7 +623,10 @@ export default function VendorLedgerReport() {
                       <DropdownTrigger placeholder="Select supplier" displayValue={supplierLabel} onClick={() => openDD('supplier')} onClear={() => setSupplier('')} />
                     </div>
 
-                    
+                    <div>
+                      <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Document No.</label>
+                      <DropdownTrigger placeholder="Select doc no." displayValue={documentNo} onClick={() => openDD('documentNo')} onClear={() => setDocumentNo('')} />
+                    </div>
 
                     <div>
                       <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Document Type</label>

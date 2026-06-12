@@ -33,7 +33,7 @@ async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
     headers: {
       Accept: 'application/json',
-      Loginid: 'manishgupta8@kpmg.com',
+      Loginid: 'aryas@kpmg.com',
       Logintype: 'E',
     },
     credentials: 'include',
@@ -69,6 +69,11 @@ const mapDocType = (raw) => ({
 const mapInvoice = (raw) => ({
   code:  raw.Xblnr,
   label: '',
+})
+
+const mapDocumentNo = (raw) => ({
+  code:  raw.Belnr,
+  label: raw.Belnr,
 })
 
 // VendorDeailsSet → full row
@@ -155,6 +160,11 @@ export const VendorLedgerApi = {
     return (data.d?.results || []).map(mapSupplier)
   },
 
+  async fetchDocumentNos(skip = 0, top = 50) {
+  const data = await odata(`/DocumentNumberHelpSetSet?$skip=${skip}&$top=${top}`)
+  return (data.d?.results || []).map(mapDocumentNo)
+  },
+
   async fetchChildSuppliers(lifnr) {
     const data = await odata(`/ChildSuppHelpSet?$filter=Lifnr%20eq%20'${encodeURIComponent(lifnr)}'`)
     return (data.d?.results || []).map(mapChildSupplier)
@@ -170,6 +180,8 @@ export const VendorLedgerApi = {
     return (data.d?.results || []).map(mapInvoice)
   },
 
+  
+
   // All date params accept ISO strings (YYYY-MM-DD); conversion is done here.
   async fetchReport({
     lifnr       = '',
@@ -184,6 +196,7 @@ export const VendorLedgerApi = {
     clearFrom   = '',
     clearTo     = '',
     keyDate     = '',
+    belnr       = '',
     postFrom    = '',
     postTo      = '',
     bukrs       = 'DSAL',
@@ -196,7 +209,7 @@ export const VendorLedgerApi = {
     // Multi-value doc type (or-clause when more than one selected)
     const blartFilter = buildMultiFilter('Blart', blart)
     if (blartFilter)  filters.push(blartFilter)
-
+    if (belnr)        filters.push(`Belnr eq '${belnr}'`)
     if (xblnr)        filters.push(`Xblnr eq '${xblnr}'`)
     if (bldat)        filters.push(`Bldat eq '${toSapDate(bldat)}'`)
     if (openItem)     filters.push(`OpenItem eq '${openItem}'`)
