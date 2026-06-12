@@ -2,10 +2,9 @@
 // Route: /purchasing/po-lineitem
 // Schedule line items for a single PO item, shown in a calendar grid.
 // Cell colour logic:
-//   green  = deliveredQty > 0 AND confirmedQty > 0  (delivered + confirmed)
-//   red    = deliveredQty > 0 AND confirmedQty == 0 (delivered but not confirmed)
-//   orange = deliveredQty == 0 AND confirmedQty > 0 (confirmed but not yet delivered)
-//   grey   = no data for that date
+//   green = confirmedQty > 0  (confirmed)
+//   red   = confirmedQty == 0 (not yet confirmed)
+//   grey  = no data for that date
 
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -88,31 +87,6 @@ function mapLineToColKey(line) {
   const d = parseDeliveryDate(line.deliveryDate)
   if (!d) return null
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-}
-
-// ── Resolve cell colour based on delivered + confirmed state ───
-// green  = delivered AND confirmed
-// red    = delivered but NOT confirmed
-// orange = confirmed but not yet delivered
-// grey   = no data
-function resolveCellStyle(deliveredQty, confirmedQty, hasData) {
-  if (!hasData) {
-    return { cellBg: 'transparent', cellText: '#d9d9d9', cellBorder: 'none', icon: 'none' }
-  }
-  if (deliveredQty > 0 && confirmedQty > 0) {
-    // delivered + confirmed → green
-    return { cellBg: '#e8f5e9', cellText: '#2e7d32', cellBorder: '1.5px solid #a5d6a7', icon: 'check' }
-  }
-  if (deliveredQty > 0 && confirmedQty === 0) {
-    // delivered but not confirmed → red
-    return { cellBg: '#fce8e6', cellText: '#cc1c14', cellBorder: '1.5px solid #ef9a9a', icon: 'clock' }
-  }
-  if (deliveredQty === 0 && confirmedQty > 0) {
-    // confirmed but not yet delivered → amber
-    return { cellBg: '#fff8e1', cellText: '#e65100', cellBorder: '1.5px solid #ffcc80', icon: 'check' }
-  }
-  // has a schedule line but nothing delivered or confirmed yet → red
-  return { cellBg: '#fce8e6', cellText: '#cc1c14', cellBorder: '1.5px solid #ef9a9a', icon: 'clock' }
 }
 
 // ── Calendar Grid ──────────────────────────────────────────────
@@ -255,20 +229,23 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
             {/* Date cells */}
             {calCols.map((cd) => {
               const line         = colMap[cd.key]
-              const deliveredQty = line ? (Number(line.deliveredQty)     || 0) : 0
               const confirmedQty = line ? (Number(line.confirmedQty)     || 0) : 0
-              const displayQty   = line ? (Number(line.deliverySchedule) || 0) : 0
+              const deliveryQty  = line ? (Number(line.deliverySchedule) || 0) : 0
               const unit         = line ? (line.unit || item.deliveryUnit || '') : ''
               const hasData      = !!line
 
-              const { cellBg, cellText, cellBorder, icon } = resolveCellStyle(deliveredQty, confirmedQty, hasData)
+              // green = confirmed, red = not confirmed, transparent = no data
+              let cellBg, cellText, cellBorder
+              if (!hasData) {
+                cellBg = 'transparent'; cellText = '#d9d9d9'; cellBorder = 'none'
+              } else if (confirmedQty > 0) {
+                cellBg = '#e8f5e9'; cellText = '#2e7d32'; cellBorder = '1.5px solid #a5d6a7'
+              } else {
+                cellBg = '#fce8e6'; cellText = '#cc1c14'; cellBorder = '1.5px solid #ef9a9a'
+              }
 
-              // qty to show in cell: confirmed if available, else delivered, else scheduled
-              const shownQty = confirmedQty > 0
-                ? confirmedQty
-                : deliveredQty > 0
-                  ? deliveredQty
-                  : displayQty
+              // show confirmed qty if available, else scheduled qty
+              const shownQty = confirmedQty > 0 ? confirmedQty : deliveryQty
 
               return (
                 <td
@@ -293,7 +270,7 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
                         )}
                       </span>
                       {/* Icon */}
-                      {icon === 'check' ? (
+                      {confirmedQty > 0 ? (
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={cellText} strokeWidth="3" strokeLinecap="round">
                           <path d="M5 13l4 4L19 7"/>
                         </svg>
@@ -410,15 +387,15 @@ export default function POlineitem() {
 
           {/* Material info */}
           <div className="flex items-start justify-between flex-wrap gap-4">
-             <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-            Back to Items
-          </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M15 18l-6-6 6-6"/>
+              </svg>
+              Back to Items
+            </button>
             <div>
               <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Material Number</div>
               <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>
@@ -439,15 +416,11 @@ export default function POlineitem() {
           <div className="mt-4 flex items-center gap-4 text-[11px] text-[#6a6d70] flex-wrap">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm inline-block" style={{ background: '#e8f5e9', border: '1.5px solid #a5d6a7' }} />
-              Delivered &amp; confirmed
+              Confirmed
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm inline-block" style={{ background: '#fce8e6', border: '1.5px solid #ef9a9a' }} />
-              Delivered, not confirmed
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm inline-block" style={{ background: '#fff8e1', border: '1.5px solid #ffcc80' }} />
-              Confirmed, not yet delivered
+              Pending confirmation
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm inline-block" style={{ background: '#fff1f0', border: '1px solid #ffd6d6' }} />
