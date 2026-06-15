@@ -4,13 +4,15 @@
 // ═══════════════════════════════════════════════════════════════
 
 const SRV = '/sap/opu/odata/shiv/SUPP_PORTAL_POSA_REPORT_SRV'
+export const authConfig = { loginId: '', loginType: '' }
+
 
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
     headers: {
       Accept: 'application/json',
-      Loginid: "401122",
-      Logintype: "P",
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
 
     },
     credentials: 'include',

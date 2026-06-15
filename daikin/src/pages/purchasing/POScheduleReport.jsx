@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import ReactDOM from 'react-dom'
-import { POScheduleReportApi, toSapDate, fromSapDateDisplay } from '../../services/poScheduleService.js'
-
+import { POScheduleReportApi, toSapDate, fromSapDateDisplay, authConfig } from '../../services/poScheduleService.js'
+import { useUser } from '../../context/UserContext.jsx'
 // ═══════════════════════════════════════════════════════════════
 // MOCK DATA — remove when backend is live
 // ═══════════════════════════════════════════════════════════════
@@ -254,6 +254,10 @@ export default function POScheduleReport() {
   const [material,  setMaterial]  = useState('')
   const [plant,     setPlant]     = useState('')
 
+  const { loginId, loginType, loading: userLoading } = useUser();
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
+
   // Dropdown option stores — loaded from backend
   const [vendorOpts,   setVendorOpts]   = useState([])
   const [poOpts,       setPoOpts]       = useState([])
@@ -267,12 +271,14 @@ export default function POScheduleReport() {
 
   // Load dropdown options on mount
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     const pt = poType === 'Purchase Order' ? 'P' : poType === 'Scheduling Agreement' ? 'S' : 'P'
     api.fetchVendors(pt).then(setVendorOpts).catch(console.error)
     api.fetchPONumbers(pt).then(setPoOpts).catch(console.error)
     api.fetchMaterials(pt, poNumber).then(setMaterialOpts).catch(console.error)
     api.fetchPlants(pt, poNumber, material).then(setPlantOpts).catch(console.error)
-  }, [poType, poNumber, material])
+  }, [userLoading, loginId, loginType, poType, poNumber, material])
 
   const dateError = useMemo(() => {
     if (!deliveryDateFrom || !deliveryDateTo) return null

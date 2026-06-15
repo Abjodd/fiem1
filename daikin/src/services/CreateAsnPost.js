@@ -1,12 +1,14 @@
 // src/services/CreateAsnPost.js
 
 const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
+export const authConfig = { loginId: '', loginType: '' }
+
 
 const HEADERS = {
   'Content-Type': 'application/json',
   Accept: 'application/json',
-  Loginid: '401122',
-  Logintype: 'P',
+  Loginid: authConfig.loginId,
+  Logintype: authConfig.loginType,
 }
 
 const str = (v) => String(v ?? '').trim()

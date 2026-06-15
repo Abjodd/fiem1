@@ -4,6 +4,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 const SRV = '/sap/opu/odata/shiv/SUP_PRTL_VENDR_ITM_DISP_SRV'
+export const authConfig = { loginId: '', loginType: '' }
+
 
 // ── SAP Date helpers ──────────────────────────────────────────
 // All date conversion is handled here in the service.
@@ -33,8 +35,8 @@ async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
     headers: {
       Accept: 'application/json',
-      Loginid: 'aryas@kpmg.com',
-      Logintype: 'E',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
     },
     credentials: 'include',
   })

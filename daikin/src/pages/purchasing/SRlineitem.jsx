@@ -7,8 +7,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { scheduleReleaseApi } from '../../services/Schedulerelease.js'
-
+import { scheduleReleaseApi, authConfig } from '../../services/Schedulerelease.js'
+import { useUser } from '../../context/UserContext.jsx'
 // ── Constants ──────────────────────────────────────────────────
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAY_ABBR    = ['SUN','MON','TUE','WED','THU','FRI','SAT']
@@ -313,6 +313,9 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
 export default function SRlineitem() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { loginId, loginType, loading: userLoading } = useUser();
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
 
   const { agreement, item: drilledItem } = location.state || {}
 
@@ -321,6 +324,8 @@ export default function SRlineitem() {
   const [linesError,    setLinesError]    = useState(null)
 
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     if (!drilledItem || !agreement) return
     let cancelled = false
     setLinesLoading(true)
@@ -336,7 +341,7 @@ export default function SRlineitem() {
       .catch(err  => { if (!cancelled) setLinesError(err.message) })
       .finally(()  => { if (!cancelled) setLinesLoading(false) })
     return () => { cancelled = true }
-  }, [drilledItem, agreement])
+  }, [userLoading, loginId, loginType, drilledItem, agreement])
 
   const calCols     = useMemo(() => buildCalendarCols(scheduleLines), [scheduleLines])
   const monthGroups = useMemo(() => groupByMonth(calCols), [calCols])

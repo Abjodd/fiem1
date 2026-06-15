@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { createAsnService } from '../../services/CreateAsn.js'
+import { createAsnService, authConfig } from '../../services/CreateAsn.js'
 import { postCreateAsn } from '../../services/CreateAsnPost.js'
-
+import { useUser } from '../../context/UserContext.jsx'
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
@@ -797,6 +797,9 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
 export default function CreateASN({ agreement: propAgreement }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
 
   // agreement + pdirRefs come from PurchaseOrder.jsx navigate state
   const agreementFromState = location.state?.agreement || propAgreement
@@ -839,6 +842,8 @@ export default function CreateASN({ agreement: propAgreement }) {
 
   // ── Fetch items + PDIR on mount ──
   useEffect(() => {
+    if (userLoading) return
+    if (!loginId || !loginType) return
     if (!poNo) return
     let cancelled = false
     setLoading(true)
@@ -856,7 +861,7 @@ export default function CreateASN({ agreement: propAgreement }) {
       .catch(err => { if (!cancelled) setLoadError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [poNo])
+  }, [userLoading, loginId, loginType, poNo])
 
   // ── Local filter (client-side on loaded items) ──
   const filteredItems = useMemo(() => {

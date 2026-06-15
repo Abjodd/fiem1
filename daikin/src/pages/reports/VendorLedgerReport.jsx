@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { VendorLedgerApi, toSapDate } from '../../services/vendorLedgerService.js'
-
+import { VendorLedgerApi, toSapDate, authConfig } from '../../services/vendorLedgerService.js'
+import { useUser } from '../../context/UserContext.jsx'
 // ═══════════════════════════════════════════════════════════════
 // MOCK DATA — remove when backend is live
 // ═══════════════════════════════════════════════════════════════
@@ -330,6 +330,9 @@ function DetailPage({ row, onBack }) {
 // MAIN
 // ═══════════════════════════════════════════════════════════════
 export default function VendorLedgerReport() {
+  const { loginId, loginType, loading: userLoading } = useUser();
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
   // ── Dropdown option stores ──
   const [suppliers,    setSuppliers]    = useState([])
   const [childSuppliers, setChildSuppliers] = useState([])
@@ -369,16 +372,20 @@ export default function VendorLedgerReport() {
   const [ddModal,     setDdModal]     = useState(null)
 
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     api.fetchSuppliers().then(setSuppliers).catch(console.error)
     api.fetchDocTypes().then(setDocTypes).catch(console.error)
     api.fetchInvoices().then(setInvoices).catch(console.error)
     api.fetchDocumentNos().then(setDocumentNos).catch(console.error)
-  }, [])
+  }, [userLoading, loginId, loginType])
 
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     if (!supplier) { setChildSuppliers([]); setSupplierChild(''); return }
     api.fetchChildSuppliers(supplier).then(setChildSuppliers).catch(console.error)
-  }, [supplier])
+  }, [userLoading, loginId, loginType, supplier])
 
   const toggleCheck = (which) => {
     if (activeCheck === which) {

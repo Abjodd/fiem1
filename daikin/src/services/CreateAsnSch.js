@@ -1,4 +1,6 @@
 const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
+export const authConfig = { loginId: '', loginType: '' }
+
 
 const str = (v) => String(v ?? '').trim()
 
@@ -40,8 +42,8 @@ function toSap8(v) {
 
 const COMMON_HEADERS = {
   Accept: 'application/json',
-  Loginid: '401122',
-  Logintype: 'P',
+  Loginid: authConfig.loginId,
+  Logintype: authConfig.loginType,
 }
 
 async function odataGet(path) {
@@ -273,8 +275,8 @@ export const createAsnApi = {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         'X-CSRF-Token': token,
-        Loginid: '401122',
-        Logintype: 'P',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
       },
       credentials: 'include',
       body: JSON.stringify(payload),

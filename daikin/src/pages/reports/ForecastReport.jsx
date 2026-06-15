@@ -4,7 +4,9 @@ import {
   ForecastReportApi,
   toSapDate,
   groupPeriodsMonthly,
+  authConfig
 } from "../../services/ForecastReport.js";
+import { useUser } from "../../context/UserContext.jsx";
 
 const todayIso = () => {
   const d = new Date();
@@ -148,6 +150,9 @@ function Toggle({ value, onChange }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function ForecastReport() {
+  const { loginId, loginType, loading: userLoading } = useUser();
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
   // ── Filter state
   const [date, setDate] = useState(todayIso());
   const [partNo, setPartNo] = useState("");
@@ -258,6 +263,8 @@ export default function ForecastReport() {
 
   // ── On mount: load default report (no filters)
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     const defaultParams = {
       inputDate: toSapDate(todayIso()),
       matnr: "",
@@ -276,7 +283,7 @@ export default function ForecastReport() {
         setHasSearched(true);
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }, [userLoading, loginId, loginType]);
 
   // ── Scroll listener — triggers loadMore when near bottom
   useEffect(() => {

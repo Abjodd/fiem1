@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { createAsnApi } from '../../services/CreateAsnSch.js'
-
+import { createAsnApi, authConfig } from '../../services/CreateAsnSch.js'
+import { useUser } from '../../context/UserContext.jsx'
 
 // ═══════════════════════════════════════════════════════════════
 // FILE / ATTACHMENT HELPERS
@@ -859,6 +859,9 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
 export default function CreateASN2({ agreement: propAgreement }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { loginId, loginType, loading: userLoading } = useUser();
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
   const agreement = location.state?.agreement || propAgreement
   const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState('info')
@@ -890,6 +893,8 @@ export default function CreateASN2({ agreement: propAgreement }) {
 
   // Auto-load items and PDIR options on mount
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     if (!agreement?.id) return
     setItemsLoading(true)
     setItemsError(null)
@@ -903,7 +908,7 @@ export default function CreateASN2({ agreement: propAgreement }) {
       })
       .catch(err => setItemsError(err.message))
       .finally(() => setItemsLoading(false))
-  }, [agreement?.id])
+  }, [userLoading, loginId, loginType, agreement?.id])
 
   // ── Selection helpers ──────────────────────────────────────────────────────
   // Only selectable items are those with avlAsnQty > 0
