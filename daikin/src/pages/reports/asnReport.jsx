@@ -1,187 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
-
-// ═══════════════════════════════════════════════════════════════
-// DUMMY DATA
-// ═══════════════════════════════════════════════════════════════
-const MOCK_ROWS = [
-  {
-    plant: '1000', plantDesc: 'KRL',
-    invoiceNumber: 'fewf', invoiceDate: 'May 11, 2026',
-    ibdNo: '', gateEntryNo: '',
-    asnNumber: '1200000060/2026', shipmentNo: '',
-    createdOn: 'May 11, 2026', shipmentDate: '',
-    baseDocument: '5100000254', baseDocumentType: 'SA',
-    vendorCode: '2000092', vendorName: 'NECCO TOOLS1',
-    purchaseGroup: '100',
-    asnStatus: 'New', grStatus: 'Pending', invStatus: 'Pending',
-    currency: 'INR', qty: '1.000',
-    ewayBillNo: '', ewayBillDate: '',
-    reachedPlantDate: '', etaDate: '', etaTime: '',
-    gateEntryDate: '', gateEntryTime: '', gateExitDate: '', gateExitTime: '',
-    material: 'CPKV6T 11010AA', materialName: 'SHFT-STR MTR ARMA',
-    challanNo: '', qualityStatus: 'Pending',
-    packingMaterialType: 'EXP', packingMaterialQty: '0.000',
-    items: [
-      { materialCode: 'CPKV6T 11010AA', materialName: 'SHFT-STR MTR ARMA', challanNo: '', qty: '1.000 EA', qualityStatus: 'Pending', packingMaterialType: 'EXP', packingMaterialQty: '0.000' },
-    ],
-  },
-  {
-    plant: '1000', plantDesc: 'KRL',
-    invoiceNumber: '897999', invoiceDate: 'Apr 28, 2026',
-    ibdNo: '180001473', gateEntryNo: '4500000476',
-    asnNumber: '1200000059/2026', shipmentNo: '3000000620',
-    createdOn: 'Apr 28, 2026', shipmentDate: 'Apr 28, 2026',
-    baseDocument: '5100000248', baseDocumentType: 'SA',
-    vendorCode: '2000092', vendorName: 'NECCO TOOLS1',
-    purchaseGroup: '106',
-    asnStatus: 'Completed', grStatus: 'Completed', invStatus: 'Pending',
-    currency: 'INR', qty: '6000.000',
-    ewayBillNo: '', ewayBillDate: '',
-    reachedPlantDate: 'Apr 28, 2026', etaDate: 'Apr 28, 2026', etaTime: '80:03:3',
-    gateEntryDate: 'Apr 28, 2026', gateEntryTime: '08:00:51', gateExitDate: 'Apr 28, 2026', gateExitTime: '08:00:53',
-    material: 'YS4U 11393A', materialName: 'PLUNGER-STARTING MOTOR',
-    challanNo: '', qualityStatus: 'Completed',
-    packingMaterialType: 'EXP', packingMaterialQty: '0.000',
-    items: [
-      { materialCode: 'YS4U 11393A', materialName: 'PLUNGER-STARTING MOTOR', challanNo: '', qty: '6000.000 EA', qualityStatus: 'Completed', packingMaterialType: 'EXP', packingMaterialQty: '0.000' },
-    ],
-  },
-  {
-    plant: '1000', plantDesc: 'KRL',
-    invoiceNumber: '897999', invoiceDate: 'Apr 28, 2026',
-    ibdNo: '180001473', gateEntryNo: '4500000476',
-    asnNumber: '1200000059/2026', shipmentNo: '3000000620',
-    createdOn: 'Apr 28, 2026', shipmentDate: 'Apr 28, 2026',
-    baseDocument: '5100000248', baseDocumentType: 'SA',
-    vendorCode: '2000092', vendorName: 'NECCO TOOLS1',
-    purchaseGroup: '106',
-    asnStatus: 'Completed', grStatus: 'Completed', invStatus: 'Pending',
-    currency: 'INR', qty: '2100.000',
-    ewayBillNo: '', ewayBillDate: '',
-    reachedPlantDate: 'Apr 28, 2026', etaDate: 'Apr 28, 2026', etaTime: '80:03:3',
-    gateEntryDate: 'Apr 28, 2026', gateEntryTime: '08:00:51', gateExitDate: 'Apr 28, 2026', gateExitTime: '08:00:53',
-    material: 'YS4U 11448B', materialName: 'BEARING-STR MTR DRV',
-    challanNo: '', qualityStatus: 'Completed',
-    packingMaterialType: 'EXP', packingMaterialQty: '0.000',
-    items: [
-      { materialCode: 'YS4U 11448B', materialName: 'BEARING-STR MTR DRV', challanNo: '', qty: '2100.000 EA', qualityStatus: 'Completed', packingMaterialType: 'EXP', packingMaterialQty: '0.000' },
-    ],
-  },
-  {
-    plant: '1000', plantDesc: 'KRL',
-    invoiceNumber: '897999', invoiceDate: 'Apr 28, 2026',
-    ibdNo: '180001473', gateEntryNo: '4500000476',
-    asnNumber: '1200000059/2026', shipmentNo: '3000000620',
-    createdOn: 'Apr 28, 2026', shipmentDate: 'Apr 28, 2026',
-    baseDocument: '5100000248', baseDocumentType: 'SA',
-    vendorCode: '2000092', vendorName: 'NECCO TOOLS1',
-    purchaseGroup: '106',
-    asnStatus: 'Completed', grStatus: 'Completed', invStatus: 'Pending',
-    currency: 'INR', qty: '1900.000',
-    ewayBillNo: '', ewayBillDate: '',
-    reachedPlantDate: 'Apr 28, 2026', etaDate: 'Apr 28, 2026', etaTime: '80:03:3',
-    gateEntryDate: 'Apr 28, 2026', gateEntryTime: '08:00:51', gateExitDate: 'Apr 28, 2026', gateExitTime: '08:00:53',
-    material: 'YS4U 11448A', materialName: 'BEARING-STR MTR DRV',
-    challanNo: '', qualityStatus: 'Completed',
-    packingMaterialType: 'EXP', packingMaterialQty: '0.000',
-    items: [
-      { materialCode: 'YS4U 11448A', materialName: 'BEARING-STR MTR DRV', challanNo: '', qty: '1900.000 EA', qualityStatus: 'Completed', packingMaterialType: 'EXP', packingMaterialQty: '0.000' },
-    ],
-  },
-  {
-    plant: '1000', plantDesc: 'KRL',
-    invoiceNumber: '79698', invoiceDate: 'Apr 28, 2026',
-    ibdNo: '180001472', gateEntryNo: '4500000475',
-    asnNumber: '1200000058/2026', shipmentNo: '3000000619',
-    createdOn: 'Apr 28, 2026', shipmentDate: 'Apr 28, 2026',
-    baseDocument: '5100000146', baseDocumentType: 'SA',
-    vendorCode: '2000001', vendorName: '3C WELDING L',
-    purchaseGroup: '100',
-    asnStatus: 'Completed', grStatus: 'Completed', invStatus: 'Pending',
-    currency: 'INR', qty: '1500.000',
-    ewayBillNo: '', ewayBillDate: '',
-    reachedPlantDate: 'Apr 28, 2026', etaDate: 'Apr 28, 2026', etaTime: '74:82:0',
-    gateEntryDate: 'Apr 28, 2026', gateEntryTime: '07:48:46', gateExitDate: 'Apr 28, 2026', gateExitTime: '07:48:50',
-    material: 'XS7U 11K19', materialName: 'GEAR ASY-STARTER MOTOR',
-    challanNo: '', qualityStatus: 'Completed',
-    packingMaterialType: 'EXP', packingMaterialQty: '0.000',
-    items: [
-      { materialCode: 'XS7U 11K19', materialName: 'GEAR ASY-STARTER MOTOR', challanNo: '', qty: '1500.000 EA', qualityStatus: 'Completed', packingMaterialType: 'EXP', packingMaterialQty: '0.000' },
-    ],
-  },
-]
-
-const VH_OPTIONS = {
-  supplier:  [{ code: '2000092', label: 'NECCO TOOLS1' }, { code: '2000001', label: '3C WELDING L' }, { code: 'ECCO', label: 'ECCO TOOLS' }],
-  material:  [{ code: 'CPKV6T 11010AA', label: 'SHFT-STR MTR ARMA' }, { code: 'YS4U 11393A', label: 'PLUNGER-STARTING MOTOR' }, { code: 'YS4U 11448B', label: 'BEARING-STR MTR DRV' }],
-  invoice:   [{ code: 'fewf', label: '' }, { code: '897999', label: '' }, { code: '79698', label: '' }],
-  refDoc:    [{ code: '5100000254', label: 'SA' }, { code: '5100000248', label: 'SA' }, { code: '5100000146', label: 'SA' }],
-  asn:       [{ code: '1200000060/2026', label: '' }, { code: '1200000059/2026', label: '' }, { code: '1200000058/2026', label: '' }],
-  shipment:  [{ code: '3000000620', label: '' }, { code: '3000000619', label: '' }],
-  ibd:       [{ code: '180001473', label: '' }, { code: '180001472', label: '' }],
-  plant:     [{ code: '1000', label: 'KRL' }, { code: '1001', label: 'MHR' }, { code: '1002', label: 'BLR' }],
-}
-
-const STATUS_OPTIONS = ['', 'GR Completed', 'GR Pending', 'INV. Completed', 'INV. Pending', 'ASN-In Transit']
-const companyCode = 'FIEM (FIEM Industries Limited)'
-// ═══════════════════════════════════════════════════════════════
-// API STRUCTURE
-// ═══════════════════════════════════════════════════════════════
-const API_BASE_URL = '/api/v1'
-const USE_MOCK = true
-
-const AsnReportApi = {
-  async fetchReport({ asnDateFrom='', asnDateTo='', supplier='', material='', invoiceNo='', refDoc='', asnNo='', shipmentNo='', ibdNo='',  status='', plant=''} = {}) {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 350))
-      let rows = [...MOCK_ROWS]
-      if (supplier)   rows = rows.filter(r => r.vendorCode.includes(supplier) || r.vendorName.toLowerCase().includes(supplier.toLowerCase()))
-      if (material)   rows = rows.filter(r => r.material.toLowerCase().includes(material.toLowerCase()) || r.materialName.toLowerCase().includes(material.toLowerCase()))
-      if (invoiceNo)  rows = rows.filter(r => r.invoiceNumber.includes(invoiceNo))
-      if (refDoc)     rows = rows.filter(r => r.baseDocument.includes(refDoc))
-      if (asnNo)      rows = rows.filter(r => r.asnNumber.includes(asnNo))
-      if (shipmentNo) rows = rows.filter(r => r.shipmentNo.includes(shipmentNo))
-      if (plant)      rows = rows.filter(r => r.plant === plant) 
-      if (ibdNo)      rows = rows.filter(r => r.ibdNo.includes(ibdNo))
-      if (status) {
-        if (status === 'GR Completed')    rows = rows.filter(r => r.grStatus === 'Completed')
-        if (status === 'GR Pending')      rows = rows.filter(r => r.grStatus === 'Pending')
-        if (status === 'INV. Completed')  rows = rows.filter(r => r.invStatus === 'Completed')
-        if (status === 'INV. Pending')    rows = rows.filter(r => r.invStatus === 'Pending')
-        if (status === 'ASN-In Transit')  rows = rows.filter(r => r.asnStatus === 'New')
-      }
-      return rows
-    }
-    const params = new URLSearchParams()
-    if (asnDateFrom) params.set('asnDateFrom', asnDateFrom)
-    if (asnDateTo)   params.set('asnDateTo', asnDateTo)
-    if (supplier)    params.set('supplier', supplier)
-    if (material)    params.set('material', material)
-    if (invoiceNo)   params.set('invoiceNo', invoiceNo)
-    if (refDoc)      params.set('refDoc', refDoc)
-    if (asnNo)       params.set('asnNo', asnNo)
-    if (shipmentNo)  params.set('shipmentNo', shipmentNo)
-    if (ibdNo)       params.set('ibdNo', ibdNo)
-    if (status)      params.set('status', status)
-    const res = await fetch(`${API_BASE_URL}/asn-report?${params}`)
-    if (!res.ok) throw new Error('Failed to fetch ASN report')
-    return res.json()
-  },
-
-  async fetchValueHelp(field, query = '') {
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 60))
-      const opts = VH_OPTIONS[field] || []
-      if (!query) return opts
-      const q = query.toLowerCase()
-      return opts.filter(o => o.code.toLowerCase().includes(q) || (o.label && o.label.toLowerCase().includes(q)))
-    }
-    const res = await fetch(`${API_BASE_URL}/value-help/${field}?q=${encodeURIComponent(query)}`)
-    if (!res.ok) throw new Error('Failed')
-    return res.json()
-  },
-}
+import { AsnReportApi, authConfig } from '../../services/Asnreport.js'
 
 // ═══════════════════════════════════════════════════════════════
 // DATE HELPERS
@@ -202,9 +21,58 @@ const getDownloadFilename = () => {
   return `asnReport_${MONTHS_SHORT[d.getMonth()]}_${String(d.getDate()).padStart(2,'0')}.xlsx`
 }
 
+const companyCode = 'FIEM (FIEM Industries Limited)'
+
+const STATUS_OPTIONS = ['', 'GR Completed', 'GR Pending', 'INV. Completed', 'INV. Pending', 'ASN-In Transit']
+
+// ── Client-side status filter ─────────────────────────────────
+// Status dropdown filters the already-fetched rows locally.
+// GR status col → grStatus, INV status col → invStatus, ASN status col → asnStatus
+function applyStatusFilter(rows, status) {
+  if (!status) return rows
+  switch (status) {
+    case 'GR Completed':   return rows.filter(r => r.grStatus  === 'Completed')
+    case 'GR Pending':     return rows.filter(r => r.grStatus  === 'Pending')
+    case 'INV. Completed': return rows.filter(r => r.invStatus === 'Completed')
+    case 'INV. Pending':   return rows.filter(r => r.invStatus === 'Pending')
+    case 'ASN-In Transit': return rows.filter(r => {
+      const s = (r.asnStatus || '').toLowerCase()
+      return s === 'in transit' || s === 'new' || s.includes('transit')
+    })
+    default:               return rows
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
-// VALUE HELP MODAL
+// EXPORT PROGRESS MODAL (same as MIGO)
 // ═══════════════════════════════════════════════════════════════
+function ExportModal({ progress, total, onCancel }) {
+  const pct = total > 0 ? Math.round((progress / total) * 100) : 0
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+      <div className="bg-white rounded-xl shadow-2xl w-[440px] max-w-[95vw] p-6" style={{ animation: 'modalIn 0.2s ease-out both' }}>
+        <h3 className="text-[16px] font-semibold text-[#32363a] mb-4">Export Document</h3>
+        <p className="text-[14px] text-[#6a6d70] mb-4">Generating file…</p>
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-[13px] text-[#32363a] font-semibold tabular-nums min-w-[60px]">{progress} / {total}</span>
+          <div className="flex-1 h-3 bg-[#f0f0f0] rounded-full overflow-hidden">
+            <div className="h-full bg-[#107e3e] rounded-full transition-all duration-200" style={{ width: `${pct}%` }} />
+          </div>
+          {pct >= 100 && (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#107e3e" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10"/><path d="M5 13l4 4L19 7"/>
+            </svg>
+          )}
+        </div>
+        <div className="flex justify-end">
+          <button onClick={onCancel} className="px-5 h-9 text-[14px] font-semibold text-[#6a6d70] hover:bg-[#f5f6f7] rounded-lg transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 function ValueHelpModal({ title, options, onSelect, onCancel }) {
   const [search, setSearch] = useState('')
   const filtered = useMemo(() => {
@@ -285,6 +153,7 @@ function StatusBadge({ value }) {
     Completed:       { bg: 'bg-[#e8f5ec]', text: 'text-[#107e3e]' },
     'Reached Plant': { bg: 'bg-[#ebf5ff]', text: 'text-[#0a6ed1]' },
     New:             { bg: 'bg-[#f0f4f8]', text: 'text-[#32363a]' },
+    'In Transit':    { bg: 'bg-[#fff4e5]', text: 'text-[#c06000]' },
     Pending:         { bg: 'bg-[#fef7e6]', text: 'text-[#b45309]' },
   }
   const c = cfg[value] || { bg: 'bg-[#f5f6f7]', text: 'text-[#6a6d70]' }
@@ -297,7 +166,7 @@ function StatusBadge({ value }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COLUMN DEFINITIONS (all columns from images)
+// COLUMN DEFINITIONS
 // ═══════════════════════════════════════════════════════════════
 const COLUMNS = [
   { key: 'plant',            label: 'Plant',               width: 90  },
@@ -327,17 +196,16 @@ const COLUMNS = [
   { key: 'invoicePdir',      label: 'Invoice/PDIR',        width: 100 },
 ]
 
-const TOTAL_WIDTH = COLUMNS.reduce((s, c) => s + c.width, 0) + 48 // +48 for arrow col
+const TOTAL_WIDTH = COLUMNS.reduce((s, c) => s + c.width, 0) + 48
 
 // ═══════════════════════════════════════════════════════════════
-// DETAIL PAGE (image 7)
+// DETAIL PAGE
 // ═══════════════════════════════════════════════════════════════
 function AsnDetailPage({ row, onBack }) {
   return (
     <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
       <main className="bg-white" style={{ minHeight: 'calc(100vh - 220px)' }}>
 
-        {/* Header bar */}
         <div className="px-4 sm:px-6 lg:px-10 pt-4 pb-3 border-b border-[#e5e5e5] bg-[#fafbfc] flex items-center gap-3">
           <button onClick={onBack}
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all flex-shrink-0">
@@ -351,15 +219,12 @@ function AsnDetailPage({ row, onBack }) {
         </div>
 
         <div className="px-4 sm:px-6 lg:px-10 pt-6 pb-8">
-          {/* Company Code */}
           <div className="px-4 sm:px-6 lg:px-10 pt-3 pb-2 bg-white border-b border-[#e5e5e5] flex-shrink-0">
             <div className="text-[13px] text-[#32363a] text-center font-medium">
               Company Code: <strong>{companyCode}</strong>
             </div>
           </div>
-          
 
-          {/* ASN card */}
           <div className="rounded-xl border border-[#e5e5e5] shadow-sm bg-white p-5 sm:p-6 mb-6">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
               <div>
@@ -376,7 +241,6 @@ function AsnDetailPage({ row, onBack }) {
             </div>
           </div>
 
-          {/* Items table */}
           <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px] border-collapse" style={{ minWidth: '640px' }}>
@@ -428,7 +292,7 @@ export default function AsnReport() {
   const [asnNo,        setAsnNo]        = useState('')
   const [shipmentNo,   setShipmentNo]   = useState('')
   const [ibdNo,        setIbdNo]        = useState('')
-  const [plant, setPlant] = useState('')
+  // plant REMOVED from filter
   const [status,       setStatus]       = useState('')
 
   const [filterBarVisible, setFilterBarVisible] = useState(true)
@@ -437,8 +301,8 @@ export default function AsnReport() {
   const [vhModal,   setVhModal]   = useState(null)
   const [vhOptions, setVhOptions] = useState([])
 
-  // ── Data ──
-  const [rows,        setRows]        = useState([])
+  // ── Data — rawRows = full OData result, rows = after client status filter ──
+  const [rawRows,     setRawRows]     = useState([])
   const [loading,     setLoading]     = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [error,       setError]       = useState(null)
@@ -447,27 +311,58 @@ export default function AsnReport() {
   const [selectedRow, setSelectedRow] = useState(null)
 
   // ── Downloading ──
-  const [downloading, setDownloading] = useState(false)
+  const [exporting,      setExporting]      = useState(false)
+  const [exportProgress, setExportProgress] = useState(0)
+  const [exportTotal,    setExportTotal]    = useState(0)
+  const exportCancelRef = useRef(false)
+
+  // ── Derived: apply client-side status filter on top of raw rows ──
+  const rows = useMemo(() => applyStatusFilter(rawRows, status), [rawRows, status])
 
   const dateError = useMemo(() => {
     if (!asnDateFrom || !asnDateTo) return null
     return new Date(asnDateFrom) > new Date(asnDateTo) ? 'From date must be before To date' : null
   }, [asnDateFrom, asnDateTo])
 
-  const VH_TITLES = { supplier: 'Supplier', material: 'Material', invoice: 'Invoice Number', refDoc: 'Reference Document', asn: 'ASN Number', shipment: 'Shipment Number', ibd: 'IBD Number',plant: 'Plant'}
+  const VH_TITLES = {
+    supplier: 'Supplier',
+    material: 'Material',
+    invoice:  'Invoice Number',
+    refDoc:   'Reference Document',
+    asn:      'ASN Number',
+    shipment: 'Shipment Number',
+    ibd:      'IBD Number',
+  }
 
+  // ── Open VH ──
   const openVh = async (field) => {
     setVhModal(field)
     setVhOptions([])
     try {
-      const opts = await AsnReportApi.fetchValueHelp(field, '')
+      let opts = []
+      const dateArgs = { startDate: asnDateFrom, endDate: asnDateTo }
+      switch (field) {
+        case 'asn':      opts = await AsnReportApi.fetchAsnHelp(dateArgs);      break
+        case 'material': opts = await AsnReportApi.fetchMaterialHelp(dateArgs); break
+        case 'invoice':  opts = await AsnReportApi.fetchInvoiceHelp(dateArgs);  break
+        case 'refDoc':   opts = await AsnReportApi.fetchRefDocHelp(dateArgs);   break
+        case 'shipment': opts = await AsnReportApi.fetchShipmentHelp(dateArgs); break
+        case 'ibd':      opts = await AsnReportApi.fetchIbdHelp(dateArgs);      break
+        case 'supplier': opts = await AsnReportApi.fetchSupplierHelp();          break
+        default:         opts = []
+      }
       setVhOptions(opts)
-    } catch { setVhOptions([]) }
+    } catch {
+      setVhOptions([])
+    }
   }
 
   const handleVhSelect = (opt) => {
-    const map = { plant: setPlant, supplier: setSupplier, material: setMaterial, invoice: setInvoiceNo,
-              refDoc: setRefDoc, asn: setAsnNo, shipment: setShipmentNo, ibd: setIbdNo }
+    const map = {
+      supplier: setSupplier, material: setMaterial,
+      invoice: setInvoiceNo, refDoc: setRefDoc, asn: setAsnNo,
+      shipment: setShipmentNo, ibd: setIbdNo,
+    }
     map[vhModal]?.(opt.code)
     setVhModal(null)
   }
@@ -477,8 +372,12 @@ export default function AsnReport() {
     setLoading(true)
     setError(null)
     try {
-      const data = await AsnReportApi.fetchReport({ asnDateFrom, asnDateTo, supplier, material, invoiceNo, refDoc, asnNo, shipmentNo, ibdNo, plant, status })
-      setRows(data)
+      // Status NOT sent to OData — applied client-side after fetch
+      const data = await AsnReportApi.fetchReport({
+        asnDateFrom, asnDateTo, supplier, material, invoiceNo,
+        refDoc, asnNo, shipmentNo, ibdNo,
+      })
+      setRawRows(data)
       setHasSearched(true)
     } catch (err) {
       setError(err.message || 'Failed to fetch')
@@ -491,50 +390,84 @@ export default function AsnReport() {
     setAsnDateFrom(monthsAgoIso(1)); setAsnDateTo(todayIso())
     setSupplier(''); setMaterial(''); setInvoiceNo(''); setRefDoc('')
     setAsnNo(''); setShipmentNo(''); setIbdNo(''); setStatus('')
-    setRows([]); setHasSearched(false); setError(null)
-    setPlant('')
+    setRawRows([]); setHasSearched(false); setError(null)
   }
 
-  // ── Download ──
+  // ── Download — MIGO-style progress export ──
   const handleDownload = async () => {
-    if (!rows.length || downloading) return
-    setDownloading(true)
+    if (!rows.length || exporting) return
+    setExporting(true)
+    exportCancelRef.current = false
+    setExportTotal(rows.length)
+    setExportProgress(0)
     try {
       const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs')
+
       const headers = [
         'Plant', 'Plant Description', 'Invoice Number', 'Invoice Date', 'IBD No.',
         'Gate Entry No.', 'ASN Number', 'Shipment', 'ASN Created On', 'Shipment Date',
         'Base Document', 'Base Document Type', 'Material', 'Material Description',
-        'Vendor Name', 'Purchase Group', 'ASN Status', 'GR Status', 'Inv. Status',
+        'Vendor Code', 'Vendor Name', 'Purchase Group',
+        'ASN Status', 'GR Status', 'Inv. Status',
         'Currency', 'Qty', 'Eway Bill No.', 'Eway Bill Date',
         'Reached Plant Date', 'ETA Date', 'ETA Time',
         'Gate Entry Date', 'Gate Entry Time', 'Gate Exit Date', 'Gate Exit Time',
       ]
-      const dataRows = rows.map(r => [
-        r.plant, r.plantDesc, r.invoiceNumber, r.invoiceDate, r.ibdNo,
-        r.gateEntryNo, r.asnNumber, r.shipmentNo, r.createdOn, r.shipmentDate,
-        r.baseDocument, r.baseDocumentType, r.material, r.materialName,
-        `${r.vendorCode}\n${r.vendorName}`, r.purchaseGroup,
-        r.asnStatus, r.grStatus, r.invStatus,
-        r.currency, r.qty, r.ewayBillNo, r.ewayBillDate,
-        r.reachedPlantDate, r.etaDate, r.etaTime,
-        r.gateEntryDate, r.gateEntryTime, r.gateExitDate, r.gateExitTime,
-      ])
+
+      // Helper: convert column index to Excel letter(s) — handles AA, AB etc.
+      const colLetter = (n) => {
+        let s = ''
+        n += 1
+        while (n > 0) {
+          n--
+          s = String.fromCharCode(65 + (n % 26)) + s
+          n = Math.floor(n / 26)
+        }
+        return s
+      }
+
+      const dataRows = []
+      for (let i = 0; i < rows.length; i++) {
+        if (exportCancelRef.current) break
+        const r = rows[i]
+        dataRows.push([
+          r.plant,            r.plantDesc,        r.invoiceNumber,  r.invoiceDate,
+          r.ibdNo,            r.gateEntryNo,      r.asnNumber,      r.shipmentNo,
+          r.createdOn,        r.shipmentDate,     r.baseDocument,   r.baseDocumentType,
+          r.material,         r.materialName,     r.vendorCode,     r.vendorName,
+          r.purchaseGroup,    r.asnStatus,        r.grStatus,       r.invStatus,
+          r.currency,         r.qty,              r.ewayBillNo,     r.ewayBillDate,
+          r.reachedPlantDate, r.etaDate,          r.etaTime,
+          r.gateEntryDate,    r.gateEntryTime,    r.gateExitDate,   r.gateExitTime,
+        ])
+        setExportProgress(i + 1)
+        await new Promise(res => setTimeout(res, 8))
+      }
+
+      if (exportCancelRef.current) return
+
       const wb = XLSX.utils.book_new()
       const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows])
-      ws['!cols'] = headers.map((h, i) => ({ wch: i < 4 ? 14 : i < 8 ? 20 : 16 }))
-      ws['!autofilter'] = { ref: `A1:${String.fromCharCode(65 + headers.length - 1)}1` }
+      ws['!cols'] = headers.map(() => ({ wch: 18 }))
+      ws['!autofilter'] = { ref: `A1:${colLetter(headers.length - 1)}1` }
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 }
+
       const range = XLSX.utils.decode_range(ws['!ref'])
       for (let C = range.s.c; C <= range.e.c; C++) {
         const addr = XLSX.utils.encode_cell({ r: 0, c: C })
-        if (ws[addr]) ws[addr].s = { font: { bold: true, name: 'Arial', sz: 11 }, fill: { fgColor: { rgb: 'D9E1F2' } } }
+        if (!ws[addr]) continue
+        ws[addr].s = { font: { bold: true, name: 'Arial', sz: 11 }, fill: { fgColor: { rgb: 'D9E1F2' } } }
       }
-      XLSX.utils.book_append_sheet(wb, ws, 'SAPUI5 Export')
+
+      XLSX.utils.book_append_sheet(wb, ws, 'ASN Report')
       XLSX.writeFile(wb, getDownloadFilename())
+      await new Promise(res => setTimeout(res, 600))
     } catch (err) {
       console.error('Download failed:', err)
+      alert(`Download failed: ${err.message}`)
     } finally {
-      setDownloading(false)
+      setExporting(false)
+      setExportProgress(0)
     }
   }
 
@@ -580,7 +513,6 @@ export default function AsnReport() {
     }
   }
 
-  // Show detail page
   if (selectedRow) {
     return (
       <PageLayout>
@@ -608,10 +540,13 @@ export default function AsnReport() {
         <ValueHelpModal title={VH_TITLES[vhModal]} options={vhOptions} onSelect={handleVhSelect} onCancel={() => setVhModal(null)} />
       )}
 
+      {exporting && (
+        <ExportModal progress={exportProgress} total={exportTotal}
+          onCancel={() => { exportCancelRef.current = true; setExporting(false) }} />
+      )}
+
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
         <main className="flex flex-col bg-white" style={{ minHeight: 'calc(100vh - 220px)' }}>
-
-          
 
           {/* Action buttons */}
           <div className="px-4 sm:px-6 lg:px-10 pt-3 pb-2 flex items-center justify-end gap-2 flex-shrink-0">
@@ -630,11 +565,11 @@ export default function AsnReport() {
             </button>
           </div>
 
-          {/* Filter bar — 5+5 grid */}
+          {/* Filter bar — plant REMOVED, 5+5 layout */}
           {filterBarVisible && (
             <div className="px-4 sm:px-6 lg:px-10 pt-1 pb-4 flex-shrink-0 border-b border-[#e5e5e5] anim-fade">
 
-              {/* Row 1: 5 fields */}
+              {/* Row 1: dates + supplier + material + invoice */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-3">
                 <div>
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">ASN Creation Date From <span className="text-[#cc1c14]">*</span></label>
@@ -666,8 +601,8 @@ export default function AsnReport() {
                 </div>
               </div>
 
-              {/* Row 2: 5 fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+              {/* Row 2: refDoc + asn + shipment + ibd + status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                 <div>
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">Reference Document:</label>
                   <VhInput placeholder="Select Reference Doc." value={refDoc} onOpen={() => openVh('refDoc')} />
@@ -684,11 +619,6 @@ export default function AsnReport() {
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">IBD Number:</label>
                   <VhInput placeholder="Select IBD No." value={ibdNo} onOpen={() => openVh('ibd')} />
                 </div>
-                <div>
-                  <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">Plant</label>
-                  <VhInput placeholder="Select Plant" value={plant} onOpen={() => openVh('plant')} />
-                </div>
-                
                 <div>
                   <label className="block text-[12px] text-[#6a6d70] mb-1 font-semibold">Status:</label>
                   <div className="relative">
@@ -742,6 +672,9 @@ export default function AsnReport() {
                 <div className="px-4 py-2 border-b border-[#e5e5e5] bg-[#fafbfc] flex-shrink-0">
                   <span className="text-[13px] text-[#6a6d70]">
                     <span className="font-semibold text-[#32363a]">{rows.length}</span> record{rows.length !== 1 ? 's' : ''} found
+                    {status && rawRows.length !== rows.length && (
+                      <span className="ml-2 text-[#6a6d70]">(filtered from {rawRows.length} total)</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex-1 overflow-auto min-h-0">
@@ -790,9 +723,9 @@ export default function AsnReport() {
 
           {/* Download button */}
           <div className="px-4 sm:px-6 lg:px-10 py-3 flex justify-end flex-shrink-0 border-t border-[#e5e5e5] bg-white">
-            <button onClick={handleDownload} disabled={!rows.length || downloading}
+            <button onClick={handleDownload} disabled={!rows.length || exporting}
               className="flex items-center gap-2 px-5 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
-              {downloading
+              {exporting
                 ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -800,7 +733,7 @@ export default function AsnReport() {
                     <line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
               }
-              {downloading ? 'Downloading…' : 'Download'}
+              {exporting ? 'Downloading…' : 'Download'}
             </button>
           </div>
 
