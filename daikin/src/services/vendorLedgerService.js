@@ -164,6 +164,7 @@ export const VendorLedgerApi = {
 
   async fetchDocumentNos(skip = 0, top = 50) {
   const data = await odata(`/DocumentNumberHelpSetSet?$skip=${skip}&$top=${top}`)
+  console.log('docNo raw response:', data)
   return (data.d?.results || []).map(mapDocumentNo)
   },
 

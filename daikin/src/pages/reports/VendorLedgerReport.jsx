@@ -375,9 +375,10 @@ export default function VendorLedgerReport() {
     if (userLoading) return;
     if (!loginId || !loginType) return;
     api.fetchSuppliers().then(setSuppliers).catch(console.error)
+    api.fetchDocumentNos().then(setDocumentNos).catch(console.error)
     api.fetchDocTypes().then(setDocTypes).catch(console.error)
     api.fetchInvoices().then(setInvoices).catch(console.error)
-    api.fetchDocumentNos().then(setDocumentNos).catch(console.error)
+    
   }, [userLoading, loginId, loginType])
 
   useEffect(() => {
@@ -474,9 +475,10 @@ export default function VendorLedgerReport() {
   const openDD = (field) => {
     const cfg = {
       supplier:   { title: 'Select Supplier',  options: suppliers,   multi: false },
+      documentNo: { title: 'Document Number',  options: documentNos, multi: false },
       docType:    { title: 'Document Type',    options: docTypes,    multi: true, selected: selectedDocTypes },
       invoice:    { title: 'Invoice Number',   options: invoices,    multi: false },
-      documentNo: { title: 'Document Number',  options: documentNos, multi: false },
+      
     }
     setDdModal({ field, ...cfg[field] })
   }

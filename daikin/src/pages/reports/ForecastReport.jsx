@@ -4,7 +4,9 @@ import {
   ForecastReportApi,
   toSapDate,
   groupPeriodsMonthly,
+  authConfig
 } from "../../services/ForecastReport.js";
+import { useUser } from "../../context/UserContext.jsx";
 
 const todayIso = () => {
   const d = new Date();
@@ -110,6 +112,7 @@ export default function ForecastReport() {
   const [date, setDate] = useState(todayIso());
   const [partNo, setPartNo] = useState("");
   const [saNo, setSaNo] = useState("");
+  const [supplier, setSupplier] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [vhModal, setVhModal] = useState(null);
   const [vhOptions, setVhOptions] = useState([]);
@@ -136,18 +139,16 @@ export default function ForecastReport() {
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
 
   const buildParams = useCallback(
-    (overrideMode) => ({
-      inputDate: toSapDate(date),
-      matnr: partNo,
-      ebeln: saNo,
-      supplier: "",
-      bukrs: "DSAL",
-      // ✅ FIX: Accept overrideMode so handleViewChange can pass new mode
-      //         before React re-renders the viewMode state
-      mdIndicator: (overrideMode ?? viewMode) === "Daily" ? "D" : "M",
-    }),
-    [date, partNo, saNo, viewMode],
-  );
+  () => ({
+    inputDate: toSapDate(date),
+    matnr: partNo,
+    ebeln: saNo,
+    supplier: supplier,        
+    bukrs: "DSAL",
+    mdIndicator: viewMode === "Daily" ? "D" : "M",
+  }),
+  [date, partNo, saNo, supplier, viewMode],
+);
 
   // ✅ FIX: doFetch resets ALL pagination state cleanly on every new search
   const doFetch = useCallback(async (params) => {
@@ -256,6 +257,7 @@ export default function ForecastReport() {
     setDate(todayIso());
     setPartNo("");
     setSaNo("");
+    setSupplier("");
     setRows([]);
     setHasSearched(false);
     setError(null);
@@ -273,8 +275,10 @@ export default function ForecastReport() {
       const inputDate = toSapDate(date);
       const opts =
         field === "part"
-          ? await ForecastReportApi.fetchMaterials({ inputDate })
-          : await ForecastReportApi.fetchSaNumbers({ inputDate });
+        ? await ForecastReportApi.fetchMaterials({ inputDate })
+        : field === "sa"
+        ? await ForecastReportApi.fetchSaNumbers({ inputDate })
+        : await ForecastReportApi.fetchSuppliers({ inputDate });
       setVhOptions(opts);
     } catch {
       setVhOptions([]);
@@ -284,7 +288,8 @@ export default function ForecastReport() {
 
   const handleVhSelect = (opt) => {
     if (vhModal === "part") setPartNo(opt.code);
-    else setSaNo(opt.code);
+    else if (vhModal === "sa") setSaNo(opt.code);
+    else setSupplier(opt.code);
     setVhModal(null);
   };
 
@@ -389,6 +394,9 @@ export default function ForecastReport() {
       {vhModal === "sa" && (
         <ValueHelpModal title="SA No." options={vhOptions} onSelect={handleVhSelect} onCancel={() => setVhModal(null)} loading={vhLoading} />
       )}
+      {vhModal === "supplier" && (
+        <ValueHelpModal title="Supplier" options={vhOptions} onSelect={handleVhSelect} onCancel={() => setVhModal(null)} loading={vhLoading} />
+      )}
 
       {exporting && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
@@ -454,6 +462,12 @@ export default function ForecastReport() {
                     <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">SA No.</label>
                     <div className="w-[170px]">
                       <ValueHelpInput placeholder="Select SA" value={saNo} onOpen={() => openVh("sa")} onClear={() => setSaNo("")} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Supplier</label>
+                    <div className="w-[170px]">
+                    <ValueHelpInput placeholder="Select Supplier" value={supplier} onOpen={() => openVh("supplier")} onClear={() => setSupplier("")}/>
                     </div>
                   </div>
                 </div>

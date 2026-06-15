@@ -162,6 +162,7 @@ export const ForecastReportApi = {
     return (data.d?.results || []).map(mapSa)
   },
 
+
   // Supplier value help
   async fetchSuppliers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 200 } = {}) {
     const f = buildFilter(
