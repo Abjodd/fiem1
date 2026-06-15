@@ -4,19 +4,14 @@ import {
   ForecastReportApi,
   toSapDate,
   groupPeriodsMonthly,
-
 } from "../../services/ForecastReport.js";
-
 
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const MONTHS_SHORT = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec",
-];
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const getExportFilename = (viewMode) => {
   const d = new Date();
@@ -30,7 +25,7 @@ const calcVariance = (schedule, supply) => {
 
 const PAGE_SIZE = 100;
 
-// ─── Value Help Modal ──────────────────────────────────────────
+// ─── Value Help Modal ────────────────────────────────────────────────────────
 function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => {
@@ -39,7 +34,7 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
     return options.filter(
       (o) =>
         o.code.toLowerCase().includes(q) ||
-        (o.label && o.label.toLowerCase().includes(q)),
+        (o.label && o.label.toLowerCase().includes(q))
     );
   }, [options, search]);
 
@@ -71,11 +66,7 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
               placeholder="Search"
               className="w-full h-9 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
             />
-            <svg
-              width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2"
-              className="absolute right-3 top-2.5 text-[#6a6d70]"
-            >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-2.5 text-[#6a6d70]">
               <circle cx="11" cy="11" r="7" />
               <path d="m21 21-4.3-4.3" />
             </svg>
@@ -88,9 +79,7 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
               Loading…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="py-10 text-center text-[13px] text-[#6a6d70]">
-              No results
-            </div>
+            <div className="py-10 text-center text-[13px] text-[#6a6d70]">No results</div>
           ) : (
             filtered.map((opt) => (
               <button
@@ -98,14 +87,8 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
                 onClick={() => onSelect(opt)}
                 className="w-full text-left px-5 py-3 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] transition-colors"
               >
-                <div className="text-[14px] font-semibold text-[#0a6ed1]">
-                  {opt.code}
-                </div>
-                {opt.label && (
-                  <div className="text-[12px] text-[#6a6d70] mt-0.5">
-                    {opt.label}
-                  </div>
-                )}
+                <div className="text-[14px] font-semibold text-[#0a6ed1]">{opt.code}</div>
+                {opt.label && <div className="text-[12px] text-[#6a6d70] mt-0.5">{opt.label}</div>}
               </button>
             ))
           )}
@@ -123,7 +106,7 @@ function ValueHelpModal({ title, options, onSelect, onCancel, loading }) {
   );
 }
 
-// ─── Value Help Input ──────────────────────────────────────────
+// ─── Value Help Input ────────────────────────────────────────────────────────
 function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
   return (
     <div className="flex h-9 border border-[#d9d9d9] rounded-lg overflow-hidden bg-white focus-within:border-[#0a6ed1] focus-within:ring-2 focus-within:ring-[#0a6ed1]/20 transition-all">
@@ -135,21 +118,13 @@ function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
         )}
       </div>
       {value && (
-        <button
-          type="button"
-          onClick={onClear}
-          className="flex-shrink-0 w-6 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14]"
-        >
+        <button type="button" onClick={onClear} className="flex-shrink-0 w-6 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14]">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
       )}
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex-shrink-0 w-8 flex items-center justify-center border-l border-[#e5e5e5] text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all"
-      >
+      <button type="button" onClick={onOpen} className="flex-shrink-0 w-8 flex items-center justify-center border-l border-[#e5e5e5] text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="9" y="9" width="13" height="13" rx="2" />
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -159,65 +134,78 @@ function ValueHelpInput({ placeholder, value, onOpen, onClear }) {
   );
 }
 
-// ─── Toggle ────────────────────────────────────────────────────
+// ─── Toggle ──────────────────────────────────────────────────────────────────
 function Toggle({ value, onChange }) {
   return (
     <button
       onClick={() => onChange(!value)}
       className={`relative inline-flex w-11 h-6 items-center rounded-full transition-colors duration-200 ${value ? "bg-[#0a6ed1]" : "bg-[#d9d9d9]"}`}
     >
-      <span
-        className={`inline-block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${value ? "translate-x-[22px]" : "translate-x-0.5"}`}
-      />
+      <span className={`inline-block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${value ? "translate-x-[22px]" : "translate-x-0.5"}`} />
     </button>
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function ForecastReport() {
-
-  const [date, setDate]           = useState(todayIso());
-  const [partNo, setPartNo]       = useState("");
-  const [saNo, setSaNo]           = useState("");
-  const [supplier, setSupplier]   = useState("");
+  // ── Filter state
+  const [date, setDate] = useState(todayIso());
+  const [partNo, setPartNo] = useState("");
+  const [saNo, setSaNo] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(true);
-  const [vhModal, setVhModal]     = useState(null);   // 'part' | 'sa' | 'supplier'
+
+  // ── Value help modal state
+  const [vhModal, setVhModal] = useState(null);
   const [vhOptions, setVhOptions] = useState([]);
   const [vhLoading, setVhLoading] = useState(false);
-  const [showSupply, setShowSupply]   = useState(true);
-  const [viewMode, setViewMode]   = useState("Daily");
-  const [rows, setRows]           = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore]     = useState(true);
+
+  // ── Display toggles
+  const [showSupply, setShowSupply] = useState(true);
+  const [viewMode, setViewMode] = useState("Daily");
+
+  // ── Data state
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);       // initial/Go load
+  const [loadingMore, setLoadingMore] = useState(false); // scroll load
+  const [hasMore, setHasMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [error, setError]         = useState(null);
+  const [error, setError] = useState(null);
+
+  // ── Export state
   const [exporting, setExporting] = useState(false);
   const [exportPct, setExportPct] = useState(0);
 
-  const tableBodyRef  = useRef(null);
-  const skipRef       = useRef(0);
-  const lastParamsRef = useRef(null);
+  // ── Refs
+  const tableBodyRef = useRef(null);  // scrollable table container
+  const skipRef = useRef(0);          // current offset for next page
+  const lastParamsRef = useRef(null); // params used for last Go/loadMore
+  const loadingMoreRef = useRef(false); // prevents duplicate scroll triggers
 
-  // ── Build params ─────────────────────────────────────────────
+  // ── Build OData params from current filter state
+  //    viewMode is passed explicitly so handleViewChange can override it
+  //    before React re-renders the state.
   const buildParams = useCallback(
-    () => ({
-      inputDate:   toSapDate(date),
-      matnr:       partNo,
-      ebeln:       saNo,
-      supplier:    supplier,
-      bukrs:       "DSAL",
-      mdIndicator: viewMode === "Daily" ? "D" : "M",
+    (overrideMode) => ({
+      inputDate: toSapDate(date),
+      matnr: partNo,
+      ebeln: saNo,
+      supplier: "",
+      bukrs: "DSAL",
+      mdIndicator: (overrideMode ?? viewMode) === "Daily" ? "D" : "M",
     }),
-    [date, partNo, saNo, supplier, viewMode],
+    [date, partNo, saNo, viewMode]
   );
 
-  // ── Initial fetch ────────────────────────────────────────────
+  // ── Fresh fetch (Go button / view change) — resets everything
   const doFetch = useCallback(async (params) => {
     setLoading(true);
     setError(null);
+    setRows([]);
+    setHasMore(false);
+    setHasSearched(false);
     skipRef.current = 0;
     lastParamsRef.current = params;
+
     try {
       const data = await ForecastReportApi.fetchReport({
         ...params,
@@ -225,106 +213,126 @@ export default function ForecastReport() {
         top: PAGE_SIZE,
       });
       setRows(data);
-      setHasMore(data.length >= PAGE_SIZE);
-      setHasSearched(true);
       skipRef.current = data.length;
+      setHasMore(data.length >= PAGE_SIZE); // if we got a full page, there may be more
+      setHasSearched(true);
     } catch (err) {
-      setError(err.message || "Failed");
+      setError(err.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // ── Load more (infinite scroll) ──────────────────────────────
+  // ── Load next page on scroll — appends to existing rows
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || !lastParamsRef.current) return;
+    // Guard: already loading, nothing more, or no prior params
+    if (loadingMoreRef.current || !lastParamsRef.current) return;
+
+    // Re-check hasMore from state via a ref trick isn't needed because
+    // loadMore is only called when hasMore is true (see scroll listener below)
+    loadingMoreRef.current = true;
     setLoadingMore(true);
+
     try {
       const data = await ForecastReportApi.fetchReport({
         ...lastParamsRef.current,
         skip: skipRef.current,
         top: PAGE_SIZE,
       });
-      if (data.length === 0) { setHasMore(false); return; }
+
+      if (data.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
       setRows((prev) => [...prev, ...data]);
       skipRef.current += data.length;
       setHasMore(data.length >= PAGE_SIZE);
     } catch (err) {
-      console.error(err);
+      console.error("loadMore error:", err);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore]);
+  }, []); // no deps — reads from refs to stay stable
 
-  // ── Default load on mount ────────────────────────────────────
+  // ── On mount: load default report (no filters)
   useEffect(() => {
+    const defaultParams = {
+      inputDate: toSapDate(todayIso()),
+      matnr: "",
+      ebeln: "",
+      supplier: "",
+      bukrs: "DSAL",
+      mdIndicator: "D",
+    };
+    lastParamsRef.current = defaultParams;
 
     ForecastReportApi.fetchDefaultReport({ skip: 0, top: PAGE_SIZE })
       .then((data) => {
         setRows(data);
-        setHasSearched(true);
-        setHasMore(data.length >= PAGE_SIZE);
         skipRef.current = data.length;
-        lastParamsRef.current = {
-          inputDate: toSapDate(todayIso()),
-          matnr: '', ebeln: '', supplier: '',
-          bukrs: 'DSAL', mdIndicator: 'D',
-        };
+        setHasMore(data.length >= PAGE_SIZE);
+        setHasSearched(true);
       })
       .catch((err) => setError(err.message));
   }, []);
 
-  // ── Scroll-based pagination ──────────────────────────────────
+  // ── Scroll listener — triggers loadMore when near bottom
   useEffect(() => {
     const el = tableBodyRef.current;
     if (!el) return;
-    const h = () => {
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) loadMore();
+
+    const handleScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      // Trigger 300px before the bottom, only if more data exists and not already loading
+      if (distanceFromBottom < 300 && !loadingMoreRef.current) {
+        // Read hasMore from DOM state — use a ref or check the button
+        // We pass hasMore check via a stable ref approach:
+        setHasMore((current) => {
+          if (current) loadMore();
+          return current; // don't change state, just read it
+        });
+      }
     };
-    el.addEventListener("scroll", h, { passive: true });
-    return () => el.removeEventListener("scroll", h);
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
   }, [loadMore]);
 
-  // ── Handlers ─────────────────────────────────────────────────
+  // ── Handlers
+  const handleGo = () => doFetch(buildParams());
+
   const handleViewChange = (mode) => {
     setViewMode(mode);
-    doFetch({
-      inputDate:   toSapDate(date),
-      matnr:       partNo,
-      ebeln:       saNo,
-      supplier:    supplier,
-      bukrs:       "DSAL",
-      mdIndicator: mode === "Daily" ? "D" : "M",
-    });
+    // Pass mode explicitly — state update is async so buildParams
+    // would still see the old viewMode if called directly
+    doFetch(buildParams(mode));
   };
-
-  const handleGo = () => doFetch(buildParams());
 
   const handleClear = () => {
     setDate(todayIso());
     setPartNo("");
     setSaNo("");
-    setSupplier("");
     setRows([]);
     setHasSearched(false);
     setError(null);
-    setHasMore(true);
+    setHasMore(false);
+    skipRef.current = 0;
+    lastParamsRef.current = null;
   };
 
+  // ── Value help
   const openVh = async (field) => {
     setVhLoading(true);
     setVhModal(field);
     setVhOptions([]);
     try {
       const inputDate = toSapDate(date);
-      let opts = [];
-      if (field === "part") {
-        opts = await ForecastReportApi.fetchMaterials({ inputDate });
-      } else if (field === "sa") {
-        opts = await ForecastReportApi.fetchSaNumbers({ inputDate });
-      } else if (field === "supplier") {
-        opts = await ForecastReportApi.fetchSuppliers({ inputDate });
-      }
+      const opts =
+        field === "part"
+          ? await ForecastReportApi.fetchMaterials({ inputDate })
+          : await ForecastReportApi.fetchSaNumbers({ inputDate });
       setVhOptions(opts);
     } catch {
       setVhOptions([]);
@@ -333,13 +341,12 @@ export default function ForecastReport() {
   };
 
   const handleVhSelect = (opt) => {
-    if (vhModal === "part")     setPartNo(opt.code);
-    else if (vhModal === "sa")  setSaNo(opt.code);
-    else                        setSupplier(opt.code);
+    if (vhModal === "part") setPartNo(opt.code);
+    else setSaNo(opt.code);
     setVhModal(null);
   };
 
-  // ── Display columns ──────────────────────────────────────────
+  // ── Derived display columns from first row's periods
   const displayColumns = useMemo(() => {
     if (rows.length === 0) return [];
     if (viewMode === "Monthly") {
@@ -351,6 +358,7 @@ export default function ForecastReport() {
     return rows[0].periods.map((p) => ({ key: p.startdate, label: p.startdate }));
   }, [rows, viewMode]);
 
+  // ── Map a row's periods into a key→{schedule,supply} lookup
   const getRowPeriodMap = useCallback(
     (row) => {
       const map = new Map();
@@ -365,13 +373,13 @@ export default function ForecastReport() {
       }
       return map;
     },
-    [viewMode],
+    [viewMode]
   );
 
-  const colsPerPeriod  = showSupply ? 3 : 1;
+  const colsPerPeriod = showSupply ? 3 : 1;
   const FIXED_COL_COUNT = 6;
 
-  // ── Export ───────────────────────────────────────────────────
+  // ── Export to XLSX
   const handleExport = async () => {
     if (rows.length === 0) return;
     setExporting(true);
@@ -382,9 +390,10 @@ export default function ForecastReport() {
       const periodH = displayColumns.flatMap((c) =>
         showSupply
           ? [`${c.label} Sched`, `${c.label} Supply`, `${c.label} Variance%`]
-          : [`${c.label} Sched`],
+          : [`${c.label} Sched`]
       );
       const headers = [...fixedH, ...periodH];
+
       const dataRows = new Array(rows.length);
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
@@ -401,6 +410,7 @@ export default function ForecastReport() {
           await new Promise((r) => setTimeout(r, 0));
         }
       }
+
       setExportPct(85);
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
@@ -409,9 +419,7 @@ export default function ForecastReport() {
         const a = XLSX.utils.encode_cell({ r: 0, c: C });
         if (ws[a]) ws[a].s = { font: { bold: true } };
       }
-      ws["!cols"] = headers.map((_, i) => ({
-        wch: i < 7 ? [6, 14, 6, 16, 28, 6, 18][i] : 14,
-      }));
+      ws["!cols"] = headers.map((_, i) => ({ wch: i < 7 ? [6, 14, 6, 16, 28, 6, 18][i] : 14 }));
       XLSX.utils.book_append_sheet(wb, ws, "FIEM Forecast Export");
       XLSX.writeFile(wb, getExportFilename(viewMode));
       setExportPct(100);
@@ -426,13 +434,13 @@ export default function ForecastReport() {
 
   const supplierName = rows[0]?.supplierName || "—";
 
-  // ── Render ───────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   return (
     <PageLayout>
       <style>{`
-        @keyframes fadeIn  { from { opacity:0; transform:translateY(6px)  } to { opacity:1; transform:translateY(0) } }
-        @keyframes modalIn { from { opacity:0; transform:scale(0.94)      } to { opacity:1; transform:scale(1)     } }
-        .anim-fade  { animation: fadeIn .3s ease-out both }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes modalIn { from { opacity:0; transform:scale(0.94) } to { opacity:1; transform:scale(1) } }
+        .anim-fade { animation: fadeIn .3s ease-out both }
         .row-stagger > * { animation: fadeIn .3s ease-out both }
         .row-stagger > *:nth-child(1) { animation-delay:.02s }
         .row-stagger > *:nth-child(2) { animation-delay:.04s }
@@ -441,51 +449,21 @@ export default function ForecastReport() {
         .row-stagger > *:nth-child(5) { animation-delay:.10s }
       `}</style>
 
-      {/* ── Value Help Modals ── */}
+      {/* ── Value Help Modals */}
       {vhModal === "part" && (
-        <ValueHelpModal
-          title="Part No."
-          options={vhOptions}
-          onSelect={handleVhSelect}
-          onCancel={() => setVhModal(null)}
-          loading={vhLoading}
-        />
+        <ValueHelpModal title="Part No." options={vhOptions} onSelect={handleVhSelect} onCancel={() => setVhModal(null)} loading={vhLoading} />
       )}
       {vhModal === "sa" && (
-        <ValueHelpModal
-          title="SA No."
-          options={vhOptions}
-          onSelect={handleVhSelect}
-          onCancel={() => setVhModal(null)}
-          loading={vhLoading}
-        />
-      )}
-      {vhModal === "supplier" && (
-        <ValueHelpModal
-          title="Supplier"
-          options={vhOptions}
-          onSelect={handleVhSelect}
-          onCancel={() => setVhModal(null)}
-          loading={vhLoading}
-        />
+        <ValueHelpModal title="SA No." options={vhOptions} onSelect={handleVhSelect} onCancel={() => setVhModal(null)} loading={vhLoading} />
       )}
 
-      {/* ── Export progress overlay ── */}
+      {/* ── Export Progress Modal */}
       {exporting && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl w-[380px] max-w-[90vw] p-5"
-            style={{ animation: "modalIn .2s ease-out both" }}
-          >
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
+          <div className="bg-white rounded-xl shadow-2xl w-[380px] max-w-[90vw] p-5" style={{ animation: "modalIn .2s ease-out both" }}>
             <div className="text-[15px] font-semibold text-[#32363a] mb-3">Exporting…</div>
             <div className="h-2.5 bg-[#f0f0f0] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#0a6ed1] rounded-full transition-all duration-150"
-                style={{ width: `${exportPct}%` }}
-              />
+              <div className="h-full bg-[#0a6ed1] rounded-full transition-all duration-150" style={{ width: `${exportPct}%` }} />
             </div>
             <div className="text-[12px] text-[#6a6d70] mt-2 text-right tabular-nums">{exportPct}%</div>
           </div>
@@ -495,18 +473,15 @@ export default function ForecastReport() {
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
         <div className="flex flex-col bg-white" style={{ height: "calc(100vh - 104px)" }}>
 
-          {/* ── Header + Filters ── */}
+          {/* ── Header & Filters */}
           <div className="flex-shrink-0 border-b border-[#e5e5e5]">
 
             {/* Title row */}
             <div className="px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between bg-white">
               <div>
-                <h2 className="text-[18px] sm:text-[20px] font-bold text-[#32363a] tracking-tight">
-                  Forecast Report
-                </h2>
+                <h2 className="text-[18px] sm:text-[20px] font-bold text-[#32363a] tracking-tight">Forecast Report</h2>
                 <div className="text-[12px] text-[#6a6d70] mt-0.5">
-                  Supplier:{" "}
-                  <span className="font-semibold text-[#32363a]">{supplierName}</span>
+                  Supplier: <span className="font-semibold text-[#32363a]">{supplierName}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -515,9 +490,7 @@ export default function ForecastReport() {
                   disabled={loading}
                   className="flex items-center gap-1.5 px-4 h-8 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-sm disabled:opacity-50"
                 >
-                  {loading && (
-                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  )}
+                  {loading && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                   Go
                 </button>
                 <button
@@ -525,11 +498,8 @@ export default function ForecastReport() {
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all"
                   title={filtersOpen ? "Collapse" : "Expand"}
                 >
-                  <svg
-                    width="12" height="12" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" strokeWidth="2.5"
-                    style={{ transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}
-                  >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    style={{ transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}>
                     <path d="M18 15l-6-6-6 6" />
                   </svg>
                 </button>
@@ -542,18 +512,12 @@ export default function ForecastReport() {
               </div>
             </div>
 
-            {/* Filter fields */}
-            <div
-              className={`overflow-hidden transition-all duration-250 ease-out ${filtersOpen ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}
-            >
+            {/* Collapsible filters */}
+            <div className={`overflow-hidden transition-all duration-250 ease-out ${filtersOpen ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}>
               <div className="px-4 sm:px-6 lg:px-10 pb-3">
                 <div className="flex flex-wrap gap-3 items-end">
-
-                  {/* Date */}
                   <div>
-                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
-                      Date
-                    </label>
+                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Date</label>
                     <input
                       type="date"
                       value={date}
@@ -561,52 +525,18 @@ export default function ForecastReport() {
                       className="h-9 pl-3 pr-2 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-[150px]"
                     />
                   </div>
-
-                  {/* Part No. */}
                   <div>
-                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
-                      Part No.
-                    </label>
+                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Part No.</label>
                     <div className="w-[170px]">
-                      <ValueHelpInput
-                        placeholder="Select Part"
-                        value={partNo}
-                        onOpen={() => openVh("part")}
-                        onClear={() => setPartNo("")}
-                      />
+                      <ValueHelpInput placeholder="Select Part" value={partNo} onOpen={() => openVh("part")} onClear={() => setPartNo("")} />
                     </div>
                   </div>
-
-                  {/* SA No. */}
                   <div>
-                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
-                      SA No.
-                    </label>
+                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">SA No.</label>
                     <div className="w-[170px]">
-                      <ValueHelpInput
-                        placeholder="Select SA"
-                        value={saNo}
-                        onOpen={() => openVh("sa")}
-                        onClear={() => setSaNo("")}
-                      />
+                      <ValueHelpInput placeholder="Select SA" value={saNo} onOpen={() => openVh("sa")} onClear={() => setSaNo("")} />
                     </div>
                   </div>
-
-                  {/* Supplier */}
-                  <div>
-                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">
-                      Supplier
-                    </label>
-                    <div className="w-[170px]">
-                      <ValueHelpInput
-                        placeholder="Select Supplier"
-                        value={supplier}
-                        onOpen={() => openVh("supplier")}
-                        onClear={() => setSupplier("")}
-                      />
-                    </div>
-                  </div>
-
                 </div>
               </div>
             </div>
@@ -614,31 +544,31 @@ export default function ForecastReport() {
             {/* Toolbar row */}
             <div className="px-4 sm:px-6 lg:px-10 py-2 flex items-center justify-between gap-3 bg-[#fafbfc] border-t border-[#e5e5e5]">
               <div className="flex items-center gap-4 flex-wrap">
+                {/* Supply toggle */}
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] text-[#6a6d70] font-medium">Supply</span>
                   <Toggle value={showSupply} onChange={setShowSupply} />
                 </div>
+                {/* Daily / Monthly toggle */}
                 <div className="flex h-8 bg-[#e5e5e5] rounded-lg p-[3px] gap-[3px]">
                   {["Daily", "Monthly"].map((m) => (
                     <button
                       key={m}
                       onClick={() => handleViewChange(m)}
-                      className={`px-4 text-[12px] font-semibold rounded-md transition-all duration-200 ${
-                        viewMode === m
-                          ? "bg-white text-[#0a6ed1] shadow-sm"
-                          : "text-[#6a6d70] hover:text-[#32363a]"
-                      }`}
+                      className={`px-4 text-[12px] font-semibold rounded-md transition-all duration-200 ${viewMode === m ? "bg-white text-[#0a6ed1] shadow-sm" : "text-[#6a6d70] hover:text-[#32363a]"}`}
                     >
                       {m}
                     </button>
                   ))}
                 </div>
+                {/* Row count */}
                 {hasSearched && (
                   <span className="text-[11px] text-[#6a6d70]">
-                    {rows.length} rows{hasMore ? "+" : ""}
+                    {rows.length} rows{hasMore ? "+" : " (all loaded)"}
                   </span>
                 )}
               </div>
+              {/* Export */}
               <button
                 onClick={handleExport}
                 disabled={rows.length === 0 || exporting}
@@ -654,16 +584,12 @@ export default function ForecastReport() {
             </div>
           </div>
 
-          {/* ── Table area ── */}
+          {/* ── Table area */}
           <div className="flex-1 overflow-hidden min-h-0">
             {!hasSearched && !loading ? (
               <div className="flex items-center justify-center h-full anim-fade">
                 <div className="text-center text-[#6a6d70]">
-                  <svg
-                    width="48" height="48" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" strokeWidth="1.5"
-                    className="mx-auto mb-3 opacity-25"
-                  >
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-3 opacity-25">
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <path d="M3 9h18M9 21V9M3 15h18" />
                   </svg>
@@ -689,6 +615,7 @@ export default function ForecastReport() {
                 </div>
               </div>
             ) : (
+              /* ── Scrollable table wrapper — scroll events fire here */
               <div ref={tableBodyRef} className="overflow-auto h-full">
                 <table
                   className="text-[12px] border-collapse"
@@ -711,27 +638,18 @@ export default function ForecastReport() {
                             <col key={c.key + "u"} style={{ width: 90 }} />,
                             <col key={c.key + "v"} style={{ width: 90 }} />,
                           ]
-                        : [<col key={c.key + "s"} style={{ width: 95 }} />],
+                        : [<col key={c.key + "s"} style={{ width: 95 }} />]
                     )}
                   </colgroup>
 
+                  {/* Sticky double header */}
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-[#f5f6f7] text-[#6a6d70]">
-                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
-                        S.No
-                      </th>
-                      <th rowSpan={2} className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
-                        SA No.
-                      </th>
-                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
-                        Item
-                      </th>
-                      <th rowSpan={2} className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
-                        Part
-                      </th>
-                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">
-                        Plant
-                      </th>
+                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">S.No</th>
+                      <th rowSpan={2} className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">SA No.</th>
+                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">Item</th>
+                      <th rowSpan={2} className="text-left font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">Part</th>
+                      <th rowSpan={2} className="text-center font-semibold py-2.5 px-1 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7]">Plant</th>
                       <th rowSpan={2} className="text-right font-semibold py-2.5 px-2 text-[10px] uppercase tracking-wider border-b border-r border-[#e5e5e5] bg-[#f5f6f7] whitespace-nowrap leading-tight">
                         Cum.<br />Backlog Qty
                       </th>
@@ -749,74 +667,43 @@ export default function ForecastReport() {
                       {displayColumns.map((c) =>
                         showSupply
                           ? [
-                              <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">
-                                Sched
-                              </th>,
-                              <th key={c.key + "u"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">
-                                Supply
-                              </th>,
-                              <th key={c.key + "v"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]">
-                                Variance
-                              </th>,
+                              <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">Sched</th>,
+                              <th key={c.key + "u"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">Supply</th>,
+                              <th key={c.key + "v"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]">Variance%</th>,
                             ]
                           : [
-                              <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">
-                                Sched
-                              </th>,
-                            ],
+                              <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">Sched</th>,
+                            ]
                       )}
                     </tr>
                   </thead>
 
-                  <tbody className="row-stagger">
+                  <tbody>
                     {rows.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod}
-                          className="py-12 text-center text-[13px] text-[#6a6d70]"
-                        >
+                        <td colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod} className="py-12 text-center text-[13px] text-[#6a6d70]">
                           No records
                         </td>
                       </tr>
                     ) : (
                       rows.map((row, idx) => {
-                        const pm     = getRowPeriodMap(row);
+                        const pm = getRowPeriodMap(row);
                         const cumNet = row.cumBacklogQty - row.grnQty;
                         return (
                           <tr
                             key={`${row.ebeln}-${row.ebelp}-${idx}`}
                             className="border-b border-[#f0f0f0] hover:bg-[#fafbfc] transition-colors"
                           >
-                            <td className="py-2 px-2 text-center text-[#6a6d70] font-semibold border-r border-[#f0f0f0]">
-                              {row.srNo || idx + 1}
-                            </td>
-                            <td className="py-2 px-2 text-[#0a6ed1] font-semibold border-r border-[#f0f0f0] whitespace-nowrap">
-                              {row.ebeln}
-                            </td>
-                            <td className="py-2 px-1 text-center text-[#32363a] border-r border-[#f0f0f0]">
-                              {row.ebelp}
-                            </td>
+                            <td className="py-2 px-2 text-center text-[#6a6d70] font-semibold border-r border-[#f0f0f0]">{row.srNo || idx + 1}</td>
+                            <td className="py-2 px-2 text-[#0a6ed1] font-semibold border-r border-[#f0f0f0] whitespace-nowrap">{row.ebeln}</td>
+                            <td className="py-2 px-1 text-center text-[#32363a] border-r border-[#f0f0f0]">{row.ebelp}</td>
                             <td className="py-2 px-2 border-r border-[#f0f0f0]">
-                              <div className="font-semibold text-[#0a6ed1] text-[11px]">
-                                {row.matnr || "—"}
-                              </div>
-                              <div className="text-[#6a6d70] text-[10px] truncate">
-                                {row.maktx}
-                              </div>
+                              <div className="font-semibold text-[#0a6ed1] text-[11px]">{row.matnr || "—"}</div>
+                              <div className="text-[#6a6d70] text-[10px] truncate">{row.maktx}</div>
                             </td>
-                            <td className="py-2 px-1 text-center text-[#32363a] font-semibold border-r border-[#f0f0f0]">
-                              {row.werks}
-                            </td>
+                            <td className="py-2 px-1 text-center text-[#32363a] font-semibold border-r border-[#f0f0f0]">{row.werks}</td>
                             <td className="py-2 px-2 text-right border-r border-[#f0f0f0]">
-                              <span
-                                className={`tabular-nums ${
-                                  cumNet > 0
-                                    ? "font-bold text-[#b45309]"
-                                    : cumNet < 0
-                                    ? "font-bold text-[#cc1c14]"
-                                    : "text-[#d9d9d9]"
-                                }`}
-                              >
+                              <span className={`tabular-nums ${cumNet > 0 ? "font-bold text-[#b45309]" : cumNet < 0 ? "font-bold text-[#cc1c14]" : "text-[#d9d9d9]"}`}>
                                 {cumNet.toFixed(3)}
                               </span>
                             </td>
@@ -854,27 +741,23 @@ export default function ForecastReport() {
                       })
                     )}
 
+                    {/* Loading more indicator — appears as last row while fetching */}
                     {loadingMore && (
                       <tr>
-                        <td
-                          colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod}
-                          className="py-4 text-center"
-                        >
+                        <td colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod} className="py-4 text-center">
                           <div className="flex items-center justify-center gap-2 text-[12px] text-[#6a6d70]">
                             <div className="w-4 h-4 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin" />
-                            Loading more…
+                            Loading more rows…
                           </div>
                         </td>
                       </tr>
                     )}
 
+                    {/* End of data indicator */}
                     {!hasMore && rows.length > 0 && (
                       <tr>
-                        <td
-                          colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod}
-                          className="py-3 text-center text-[11px] text-[#6a6d70]"
-                        >
-                          All records loaded
+                        <td colSpan={FIXED_COL_COUNT + displayColumns.length * colsPerPeriod} className="py-3 text-center text-[11px] text-[#6a6d70]">
+                          ✓ All {rows.length} records loaded
                         </td>
                       </tr>
                     )}
