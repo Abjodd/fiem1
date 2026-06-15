@@ -6,14 +6,12 @@
 const SRV = '/sap/opu/odata/shiv/SUPP_PORTAL_POSA_REPORT_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
-
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
     headers: {
       Accept: 'application/json',
       Loginid: authConfig.loginId,
       Logintype: authConfig.loginType,
-
     },
     credentials: 'include',
   })
@@ -40,7 +38,7 @@ function extractPeriods(raw) {
     if (!sd) continue
     periods.push({
       index: i,
-      startdate: sd,                 // 'dd.MM.yyyy'
+      startdate: sd,
       indicator: str(raw[`W${i}Indicator`]),
       schedule:  num(raw[`W${i}Schedule`]),
       supply:    num(raw[`W${i}Supply`]),
@@ -94,16 +92,34 @@ const mapMaterial = (raw) => ({ code: str(raw.Matnr), label: str(raw.Maktx) })
 const mapSa       = (raw) => ({ code: str(raw.Ebeln), label: '' })
 const mapSupplier = (raw) => ({ code: str(raw.Supplier), label: str(raw.SupplierName) })
 
+// ── Build filter string — only include params that have a value ──
+// FIX: Sending empty string filters like Matnr eq '' causes SAP Gateway
+//      to crash with an internal server error. Only add a filter clause
+//      when the value is actually provided.
+function buildFilter(required = {}, optional = {}) {
+  const parts = []
+  // Required params are always included (e.g. Bukrs, MDIndicator)
+  Object.entries(required).forEach(([key, val]) => {
+    parts.push(`${key} eq '${val}'`)
+  })
+  // Optional params are only included when non-empty
+  Object.entries(optional).forEach(([key, val]) => {
+    if (val && val.trim() !== '') parts.push(`${key} eq '${val}'`)
+  })
+  return encodeURIComponent(`(${parts.join(' and ')})`)
+}
+
 // ═══════════════════════════════════════════════════════════════
-// API — with pagination ($skip / $top)
+// API
 // ═══════════════════════════════════════════════════════════════
 export const ForecastReportApi = {
 
-  // Page load default
+  // Page load default — only Bukrs filter, no $skip (SAP may not support it)
   async fetchDefaultReport({ bukrs = 'DSAL', skip = 0, top = 100 } = {}) {
-    const data = await odata(
-      `/POSA_REPORT_OUTPUTSet?$filter=Bukrs%20eq%20'${bukrs}'&$skip=${skip}&$top=${top}`
-    )
+    const f = buildFilter({ Bukrs: bukrs })
+    // FIX: Use $skip only when skip > 0, some SAP services reject $skip=0
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/POSA_REPORT_OUTPUTSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(mapReportRow)
   },
 
@@ -112,55 +128,48 @@ export const ForecastReportApi = {
     inputDate = '', matnr = '', ebeln = '', supplier = '',
     bukrs = 'DSAL', mdIndicator = 'D', skip = 0, top = 100,
   } = {}) {
-    const parts = [
-      `InputDate eq '${inputDate}'`,
-      `Matnr eq '${matnr}'`,
-      `Ebeln eq '${ebeln}'`,
-      `Supplier eq '${supplier}'`,
-      `Bukrs eq '${bukrs}'`,
-      `MDIndicator eq '${mdIndicator}'`,
-    ]
-    const filterStr = encodeURIComponent(`(${parts.join(' and ')})`)
-    const data = await odata(`/POSA_REPORT_OUTPUTSet?$filter=${filterStr}&$skip=${skip}&$top=${top}`)
+    // FIX: Bukrs and MDIndicator are always required.
+    //      InputDate, Matnr, Ebeln, Supplier are optional — only sent if filled.
+    const f = buildFilter(
+      { Bukrs: bukrs, MDIndicator: mdIndicator },
+      { InputDate: inputDate, Matnr: matnr, Ebeln: ebeln, Supplier: supplier }
+    )
+    // FIX: Use $skip only when skip > 0
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/POSA_REPORT_OUTPUTSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(mapReportRow)
   },
 
   // Material value help
-  async fetchMaterials({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 20 } = {}) {
-    const parts = [
-      `InputDate eq '${inputDate}'`,
-      `Matnr eq '${matnr}'`,
-      `Ebeln eq '${ebeln}'`,
-      `Supplier eq '${supplier}'`,
-    ]
-    const f = encodeURIComponent(`(${parts.join(' and ')})`)
-    const data = await odata(`/MaterialHelpSet?$skip=${skip}&$top=${top}&$filter=${f}`)
+  async fetchMaterials({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 200 } = {}) {
+    const f = buildFilter(
+      {},
+      { InputDate: inputDate, Matnr: matnr, Ebeln: ebeln, Supplier: supplier }
+    )
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/MaterialHelpSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(mapMaterial)
   },
 
   // SA value help
-  async fetchSaNumbers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 20 } = {}) {
-    const parts = [
-      `InputDate eq '${inputDate}'`,
-      `Matnr eq '${matnr}'`,
-      `Ebeln eq '${ebeln}'`,
-      `Supplier eq '${supplier}'`,
-    ]
-    const f = encodeURIComponent(`(${parts.join(' and ')})`)
-    const data = await odata(`/SaHelpSet?$skip=${skip}&$top=${top}&$filter=${f}`)
+  async fetchSaNumbers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 200 } = {}) {
+    const f = buildFilter(
+      {},
+      { InputDate: inputDate, Matnr: matnr, Ebeln: ebeln, Supplier: supplier }
+    )
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/SaHelpSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(mapSa)
   },
 
   // Supplier value help
-  async fetchSuppliers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 20 } = {}) {
-    const parts = [
-      `InputDate eq '${inputDate}'`,
-      `Matnr eq '${matnr}'`,
-      `Ebeln eq '${ebeln}'`,
-      `Supplier eq '${supplier}'`,
-    ]
-    const f = encodeURIComponent(`(${parts.join(' and ')})`)
-    const data = await odata(`/SupplierHelpSet?$skip=${skip}&$top=${top}&$filter=${f}`)
+  async fetchSuppliers({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 200 } = {}) {
+    const f = buildFilter(
+      {},
+      { InputDate: inputDate, Matnr: matnr, Ebeln: ebeln, Supplier: supplier }
+    )
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/SupplierHelpSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(mapSupplier)
   },
 }
