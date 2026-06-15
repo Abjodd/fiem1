@@ -333,7 +333,7 @@ export default function ForecastReport() {
       const fixedH = ["S No.", "SA No.", "Item", "Part No.", "Part Name", "Plant", "Cumulative Backlog Qty"];
       const periodH = displayColumns.flatMap((c) =>
         showSupply
-          ? [`${c.label} Sched`, `${c.label} Supply`, `${c.label} Variance%`]
+          ? [`${c.label} Sched`, `${c.label} Supply`, `${c.label} Variance`]
           : [`${c.label} Sched`],
       );
       const headers = [...fixedH, ...periodH];
@@ -579,7 +579,7 @@ export default function ForecastReport() {
                           ? [
                               <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">Sched</th>,
                               <th key={c.key + "u"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">Supply</th>,
-                              <th key={c.key + "v"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]">Variance%</th>,
+                              <th key={c.key + "v"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase text-[#b45309]">Variance</th>,
                             ]
                           : [
                               <th key={c.key + "s"} className="text-center font-semibold py-1.5 px-1 text-[9px] border-b border-r border-[#e5e5e5] uppercase">Sched</th>,
