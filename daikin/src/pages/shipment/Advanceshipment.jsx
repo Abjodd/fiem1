@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { asnApi } from '../../services/Advanceshipment.js'
+import { asnApi, authConfig } from '../../services/Advanceshipment.js'
+import { useUser } from '../../context/UserContext.jsx'
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -252,6 +253,9 @@ function SidebarContent({
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
   const navigate = useNavigate()
   const [asns, setAsns] = useState([])
   const [asn, setAsn] = useState(null)
@@ -282,6 +286,9 @@ export default function AdvanceShippingNote() {
 
   // ── Fetch list ──
   useEffect(() => {
+    if (userLoading) return
+    if (!loginId || !loginType) return
+
     let cancelled = false
     setLoading(true)
     setError(null)
@@ -290,7 +297,7 @@ export default function AdvanceShippingNote() {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [searchQuery, selectedPlants])
+  }, [userLoading, loginId, loginType, searchQuery, selectedPlants])
 
   // ── Auto-select first ASN ──
   useEffect(() => {
@@ -299,6 +306,9 @@ export default function AdvanceShippingNote() {
 
   // ── Fetch ASN detail + attachments ──
   useEffect(() => {
+    if (userLoading) return
+    if (!loginId || !loginType) return
+
     let cancelled = false
     if (!selectedAsnId) { setAsn(null); return }
 
@@ -315,7 +325,7 @@ export default function AdvanceShippingNote() {
       })
       .catch(err => { if (!cancelled) console.error('ASN detail fetch failed:', err) })
     return () => { cancelled = true }
-  }, [selectedAsnId])
+  }, [userLoading, loginId, loginType, selectedAsnId])
 
   // ── Close filter on outside click ──
   useEffect(() => {

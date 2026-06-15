@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { scheduleReleaseApi } from '../../services/Schedulerelease.js'
+import { scheduleReleaseApi, authConfig } from '../../services/Schedulerelease.js'
+import { useUser } from '../../context/UserContext.jsx'
+
 
 // ── date helpers ──
 const ddmmyyyyToIso = (s) => {
@@ -386,6 +388,9 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════
 export default function ScheduleRelease() {
   const navigate = useNavigate()
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
 
   const [agreements,          setAgreements]          = useState([])
   const [agreement,           setAgreement]           = useState(null)
@@ -404,14 +409,18 @@ export default function ScheduleRelease() {
 
   // ── Load agreement list ──
   useEffect(() => {
-    let cancelled = false
-    setLoading(true); setError(null)
-    scheduleReleaseApi.listAgreements({ search: searchQuery, plants: selectedPlants })
-      .then(data  => { if (!cancelled) setAgreements(data) })
-      .catch(err  => { if (!cancelled) setError(err.message) })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [searchQuery, selectedPlants])
+  if (userLoading) return
+  if (!loginId || !loginType) return
+
+  let cancelled = false
+  setLoading(true)
+  setError(null)
+  scheduleReleaseApi.listAgreements({ search: searchQuery, plants: selectedPlants })
+    .then(data  => { if (!cancelled) setAgreements(data) })
+    .catch(err  => { if (!cancelled) setError(err.message) })
+    .finally(() => { if (!cancelled) setLoading(false) })
+  return () => { cancelled = true }
+}, [userLoading, loginId, loginType, searchQuery, selectedPlants])
 
   // ── Auto-select first agreement ──
   useEffect(() => {

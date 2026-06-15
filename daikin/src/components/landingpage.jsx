@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NAV_MODULES } from '../router/index';
-import { getUser } from '../lib/auth'
+import { useUser } from '../context/UserContext'
 import { ArrowRight, Bell, Search, Menu, Sun, Moon } from 'lucide-react';
 
 export default function DaikinPortal() {
-    const currentUser = getUser();
-    const userName = currentUser?.data?.firstname && currentUser?.data?.lastname
-  ? `${currentUser.data.firstname} ${currentUser.data.lastname}`
-  : currentUser?.data?.name ?? 'User';
+    const { user, role } = useUser()
+    const userName = user?.firstname && user?.lastname? `${user.firstname} ${user.lastname}`: user?.name ?? 'User'
     const [greeting, setGreeting] = useState("Good Morning");
     const [time, setTime] = useState(new Date());
     const [scrolled, setScrolled] = useState(false);
@@ -457,7 +455,7 @@ export default function DaikinPortal() {
                                 </div>
                                 <div className="hidden md:block text-left">
                                     <div className="text-xs leading-tight" style={{ color: t.userRole }}>
-                                        {currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User'}
+                                        {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'User'}
                                     </div>
                                     <div className="text-sm leading-tight" style={{ color: t.userName }}>{userName}</div>
                                 </div>
@@ -475,14 +473,13 @@ export default function DaikinPortal() {
                                     <div className="px-4 py-3" style={{ borderBottom: `1px solid ${t.logoSubBorder}` }}>
                                         <div className="text-xs" style={{ color: t.userRole }}>Signed in as</div>
                                         <div className="text-sm font-medium mt-0.5 truncate" style={{ color: t.userName }}>
-                                            {currentUser?.data?.email ?? ''}
+                                            {user?.email ?? ''}
                                         </div>
                                     </div>
 
                                     {/* Logout */}
                                     <button
                                         onClick={() => {
-                                            localStorage.removeItem("user");
                                             window.location.href = "/do/logout";
                                         }}
                                         className="w-full flex items-center gap-3 px-4 py-3 text-sm"

@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 const SRV = '/sap/opu/odata/shiv/SUPP_PORTAL_GATE_ENTRY_SRV'
+export const authConfig = { loginId: '', loginType: '' }
 
 const str = (v) => String(v ?? '').trim()
 const num = (v) => parseFloat(String(v ?? '0').trim()) || 0
@@ -152,8 +153,8 @@ const buildKey = (trackNo, year) => `TrackNo='${trackNo}',Year='${year}'`
 
 const BASE_HEADERS = {
   Accept:    'application/json',
-  Loginid:   'vakeel.ahmad@daikinindia.com',
-  Logintype: 'E',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
 }
 
 // ── SAP error extractor ───────────────────────────────────────

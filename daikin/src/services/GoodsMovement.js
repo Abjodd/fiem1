@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 const SRV = '/sap/opu/odata/shiv/SUP_PORTAL_GDS_MVT_APP_SRV'
+export const authConfig = { loginId: '', loginType: '' }
 
 // ── SAP Date/Time helpers ─────────────────────────────────────
 
@@ -207,8 +208,9 @@ const mapAsnDropdown = (raw) => ({
 // ── Generic OData fetch ───────────────────────────────────────
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
-    headers: { Accept: 'application/json', Loginid: "manishgupta8@kpmg.com",
-        Logintype: "E", },
+    headers: { Accept: 'application/json',       
+          Loginid: authConfig.loginId,
+          Logintype: authConfig.loginType, },
     credentials: 'include',
   })
   if (!res.ok) {

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { findModuleByTilePath, NAV_MODULES } from '../router/index.jsx'
-import { getUser } from '../lib/auth'
+import { useUser } from '../context/UserContext'
 
 const COMPANY = 'DSAL'
 const COMPANY_FULL = 'FIEM Industries Limited'
@@ -499,13 +499,10 @@ export default function Header() {
   const wrapRef = useRef(null)
   const menuRef = useRef(null)
 
-  const user = getUser()
-  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    ?? user?.data?.firstname?.[0]?.toUpperCase()
-    ?? 'U'
+  const { user, loginId } = useUser()
+  const initials = user?.firstname?.[0]?.toUpperCase() ?? loginId?.[0]?.toUpperCase() ?? 'U'
 
   const handleLogout = () => {
-    localStorage.removeItem('user')
     window.location.href = '/do/logout'
   }
 
@@ -719,7 +716,7 @@ export default function Header() {
               <div className="hdr-user-menu">
                 <div className="hdr-user-menu-info">
                   <div className="hdr-user-menu-label">SIGNED IN AS</div>
-                  <div className="hdr-user-menu-email">{user?.data?.email ?? ''}</div>
+                  <div className="hdr-user-menu-email">{user?.email ?? ''}</div>
                 </div>
                 <button className="hdr-user-menu-btn" onClick={handleLogout}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

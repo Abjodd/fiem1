@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import CreateMovement from './createMovement.jsx'
-import { goodsMovementApi } from '../../services/GoodsMovement.js'
+import { goodsMovementApi, authConfig } from '../../services/GoodsMovement.js'
 import { useNavigate } from 'react-router-dom'
 import { generateShipmentNote } from '../../utils/generateShipmentNote.js'
 import {
@@ -10,6 +10,8 @@ import {
   ShieldCheck, HardHat, CalendarDays, Car, Phone, User, MapPin,
   Hash, Banknote, Edit3, ExternalLink, Save, PlayCircle, AlertTriangle,
 } from 'lucide-react'
+import { useUser } from '../../context/UserContext.jsx'
+
 
 // ═══════════════════════════════════════════════════════════════
 // STATUS CHECK HELPERS
@@ -158,6 +160,9 @@ function SidebarContent({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function GoodsMovement() {
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
   const navigate = useNavigate()
   const [trackings, setTrackings] = useState([])
   const [tracking, setTracking] = useState(null)
@@ -197,19 +202,23 @@ useEffect(() => {
 }, [])
 
   // ── Load tracking list ──────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false
-    goodsMovementApi.listTrackings({ search: searchQuery })
-      .then(data => {
-        if (!cancelled) {
-          setTrackings(data)
-          setTotalCount(prev => searchQuery ? prev : data.length)
-          if (!cancelled && data.length && !selectedId) setSelectedId(data[0].id)
-        }
-      })
-      .catch(err => console.error(err))
-    return () => { cancelled = true }
-  }, [searchQuery])
+
+useEffect(() => {
+  if (userLoading) return
+  if (!loginId || !loginType) return
+
+  let cancelled = false
+  goodsMovementApi.listTrackings({ search: searchQuery })
+    .then(data => {
+      if (!cancelled) {
+        setTrackings(data)
+        setTotalCount(prev => searchQuery ? prev : data.length)
+        if (data.length && !selectedId) setSelectedId(data[0].id)
+      }
+    })
+    .catch(err => console.error(err))
+  return () => { cancelled = true }
+}, [userLoading, loginId, loginType, searchQuery])
 
   // ── Load detail on selection ────────────────────────────────
   useEffect(() => {

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { gateEntryApi } from '../../services/Gateingateout.js'
+import { gateEntryApi, authConfig } from '../../services/Gateingateout.js'
+import { useUser } from '../../context/UserContext.jsx'
+
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -114,7 +116,7 @@ const canGateIn = (tracking) =>
 // ═══════════════════════════════════════════════════════════════
 // TRACKING POPUP
 // ═══════════════════════════════════════════════════════════════
-function TrackingPopup({ onSubmit }) {
+function TrackingPopup({ onSubmit, userLoading }) {
   const [combined, setCombined] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -193,7 +195,7 @@ function TrackingPopup({ onSubmit }) {
         <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end">
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || userLoading}
             className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-60"
           >
             {loading && (
@@ -363,6 +365,9 @@ function ErrorDialog({ message, onClose }) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function GateInGateOut() {
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
   const [tracking, setTracking]             = useState(null)
   const [showLookup, setShowLookup]         = useState(true)
   const [activeTab, setActiveTab]           = useState('timeline')
@@ -675,7 +680,7 @@ export default function GateInGateOut() {
         .anim-fade { animation: fadeIn .3s ease-out both }
       `}</style>
 
-      {showLookup && <TrackingPopup onSubmit={handleLoaded} />}
+      {showLookup && <TrackingPopup onSubmit={handleLoaded} userLoading={userLoading} />}
       {asnPopup   && <AsnItemsPopup asnNum={asnPopup.asnNum} fisYear={asnPopup.fisYear} onClose={() => setAsnPopup(null)} />}
       {successOpen && <SuccessDialog message={successMsg} onClose={() => setSuccessOpen(false)} />}
       {errorOpen   && <ErrorDialog   message={errorMsg}   onClose={() => setErrorOpen(false)}   />}

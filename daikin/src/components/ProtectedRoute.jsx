@@ -1,5 +1,6 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { getUser, canAccess } from '../lib/auth';
+import { canAccess } from '../lib/auth';
+import { useUser } from '../context/UserContext';
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap');
@@ -319,25 +320,15 @@ function AccessDenied({ user, pathname }) {
 }
 
 export default function ProtectedRoute({ children }) {
-  const user     = getUser();
+  const { user, role, loading } = useUser();
   const location = useLocation();
 
+  if (loading) return <div>Loading...</div>;
+
   if (!user) return <Navigate to="/login" replace />;
-  // if (!user) {
-  // localStorage.setItem(
-  //   "user",
-  //   JSON.stringify({
-  //     name: "Developer",
-  //     email: "dev@local.com",
-  //     role: "partner"
-  //   })
-  // );
 
-  return children;
-// }
-
-  if (!canAccess(user.role, location.pathname)) {
-    return <AccessDenied user={user} pathname={location.pathname} />;
+  if (!canAccess(role, location.pathname)) {
+    return <AccessDenied user={{ ...user, role }} pathname={location.pathname} />;
   }
 
   return children;

@@ -1,4 +1,5 @@
 const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
+export const authConfig = { loginId: '', loginType: '' }
 
 const num = (v) => Number(String(v ?? '').trim() || 0)
 const str = (v) => String(v ?? '').trim()
@@ -18,7 +19,9 @@ const isoToSap8 = (iso) => (iso || '').replace(/-/g, '')
 // ── OData helpers ──
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
-    headers: { Accept: 'application/json', Loginid: '401122', Logintype: 'P' },
+    headers: { Accept: 'application/json',     
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType, },
     credentials: 'include',
   })
   if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`)
@@ -164,8 +167,8 @@ export const scheduleReleaseApi = {
       headers: {
         'X-CSRF-Token': 'Fetch',
         Accept: 'application/json',
-        Loginid: 'akashbishnoi1@kpmg.com',
-        Logintype: 'E',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
       },
       credentials: 'include',
     })
@@ -180,8 +183,8 @@ export const scheduleReleaseApi = {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         'X-CSRF-Token': token,
-        Loginid: '401122',
-        Logintype: 'P',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
       },
       credentials: 'include',
       body: JSON.stringify({

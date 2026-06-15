@@ -6,30 +6,6 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
   .tg-wrap {
-<<<<<<< HEAD
-    --accent:        #0b3d91;
-    --accent-light:  #1e5dd6;
-    --accent-deep:   #07296b;
-    --accent-soft:   rgba(11,61,145,0.05);
-    --accent-mid:    rgba(11,61,145,0.10);
-    --accent-brd:    rgba(11,61,145,0.18);
-
-    --surface:       #ffffff;
-    --surface-2:     #f1f4f9;
-    --bg:            #e9edf3;
-
-    --border:        rgba(15,23,42,0.08);
-    --border-hard:   rgba(15,23,42,0.14);
-
-    --ink:           #0f172a;
-    --ink-2:         #334155;
-    --ink-3:         #64748b;
-    --muted:         #94a3b8;
-
-    --mono: 'Geist Mono', monospace;
-    --sans: 'Geist', -apple-system, sans-serif;
-    --serif: 'Instrument Serif', serif;
-=======
     --accent:      #0082c4;
     --accent-soft: rgba(0,130,196,0.08);
     --border:      rgba(0,130,196,0.10);
@@ -39,7 +15,6 @@ const CSS = `
     --surface:     #ffffff;
     --mono: 'IBM Plex Mono', monospace;
     --sans: 'IBM Plex Sans', sans-serif;
->>>>>>> 5c6458343e6ece76694fae1823e1af9fda1b7ce4
     font-family: var(--sans);
 
     position: relative;
