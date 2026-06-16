@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import {
   FileText, Package, Truck, Printer, Search, X, Menu, ChevronLeft,
@@ -145,13 +146,11 @@ const amountToWords = (amount) => {
   const lakh = Math.floor((rounded % 1e7) / 1e5)
   const thousand = Math.floor((rounded % 1e5) / 1e3)
   const rest = rounded % 1e3
-
   const parts = []
   if (crore) parts.push(numToWordsBelow1000(crore) + ' Crore')
   if (lakh) parts.push(numToWordsBelow1000(lakh) + ' Lakh')
   if (thousand) parts.push(numToWordsBelow1000(thousand) + ' Thousand')
   if (rest) parts.push(numToWordsBelow1000(rest))
-
   return parts.join(' ') + ' Rupees'
 }
 
@@ -165,7 +164,6 @@ const statusStyle = (printOk) =>
   printOk ? 'text-[#107e3e] bg-[#e8f5ec]' : 'text-[#e76500] bg-[#fff3e8]'
 const statusDotColor = (printOk) => (printOk ? '#107e3e' : '#e76500')
 
-// ── Tabs config (matches Goods Movement icon-pill style) ──
 const TABS = [
   { key: 'general',   label: 'General Data', color: '#0a6ed1', icon: (a) => <FileText size={20} color={a ? 'white' : '#0a6ed1'} strokeWidth={2} /> },
   { key: 'consignee', label: 'Consignee',     color: '#107e3e', icon: (a) => <Building2 size={20} color={a ? 'white' : '#107e3e'} strokeWidth={2} /> },
@@ -173,7 +171,324 @@ const TABS = [
 ]
 
 // ═══════════════════════════════════════════════════════════════
-// SIDEBAR — extracted for stable identity (avoids focus loss bug)
+// PRINT TEMPLATE — renders into a portal, visible only on print
+// ═══════════════════════════════════════════════════════════════
+function DeliveryChallanPrint({ doc }) {
+  if (!doc) return null
+
+  const fmt = (n) =>
+    n == null || n === ''
+      ? ''
+      : Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const totals = doc.items.reduce(
+    (acc, it) => ({
+      qty: acc.qty + (it.quantity || 0),
+      disc: acc.disc + (Number(it.disc) || 0),
+      taxable: acc.taxable + (it.taxableValue || 0),
+      cgst: acc.cgst + (it.cgstAmount || 0),
+      sgst: acc.sgst + (it.sgstAmount || 0),
+      igst: acc.igst + (it.igstAmount || 0),
+    }),
+    { qty: 0, disc: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0 }
+  )
+
+  const printStyles = `
+    @media print {
+      /* Hide the app shell; show only our challan */
+      body > #root { display: none !important; }
+      body > .dc-print-portal { display: block !important; }
+
+      @page { size: A4 portrait; margin: 8mm 10mm; }
+
+      * { box-sizing: border-box; }
+
+      .dc-page {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9pt;
+        color: #000;
+        width: 100%;
+      }
+      .dc-outer { border: 1.5px solid #000; width: 100%; }
+
+      /* header */
+      .dc-header { display: flex; border-bottom: 1px solid #000; }
+      .dc-logo-block {
+        width: 155px; flex-shrink: 0; padding: 6px 8px;
+        border-right: 1px solid #000;
+        display: flex; flex-direction: column;
+        align-items: flex-start; justify-content: center; gap: 4px;
+      }
+      .dc-logo-block img { width: 110px; height: auto; }
+      .dc-logo-tagline { font-size: 7.5pt; font-weight: bold; letter-spacing: 0.5px; }
+      .dc-title-block {
+        flex: 1; text-align: center; padding: 6px 10px;
+        border-right: 1px solid #000;
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .dc-title-main { font-size: 13pt; font-weight: bold; letter-spacing: 0.3px; }
+      .dc-title-co   { font-size: 11pt; font-weight: bold; }
+      .dc-title-sub  { font-size: 7.5pt; margin-top: 2px; }
+      .dc-title-addr { font-size: 7.5pt; }
+      .dc-doc-info-block {
+        width: 200px; flex-shrink: 0; padding: 5px 8px;
+        font-size: 8pt; display: flex; flex-direction: column;
+        gap: 3px; justify-content: center;
+      }
+      .dc-doc-info-block .orig { font-weight: bold; font-size: 8.5pt; text-align: right; margin-bottom: 4px; }
+      .dc-dir { display: flex; gap: 3px; }
+      .dc-dir .lbl { font-weight: bold; white-space: nowrap; }
+
+      /* gstin */
+      .dc-gstin { border-bottom: 1px solid #000; text-align: center; padding: 3px; font-size: 8pt; font-weight: bold; }
+
+      /* consignee */
+      .dc-consignee-section { display: flex; border-bottom: 1px solid #000; }
+      .dc-consignee-block { flex: 1; padding: 5px 8px; border-right: 1px solid #000; font-size: 8.5pt; }
+      .dc-cons-label { font-weight: bold; font-size: 8.5pt; text-decoration: underline; margin-bottom: 3px; }
+      .dc-cf { margin-bottom: 2px; }
+      .dc-cf .lbl { font-weight: bold; }
+      .dc-po-block { width: 260px; flex-shrink: 0; padding: 5px 8px; font-size: 8.5pt; }
+      .dc-po-row { display: flex; gap: 5px; margin-bottom: 3px; align-items: baseline; }
+      .dc-po-row .lbl { font-weight: bold; white-space: nowrap; }
+
+      /* items table */
+      .dc-tbl { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+      .dc-tbl th, .dc-tbl td { border: 1px solid #000; padding: 3px 4px; vertical-align: middle; }
+      .dc-tbl thead th { font-weight: bold; text-align: center; }
+      .dc-tbl tbody td { text-align: center; }
+      .dc-tbl tbody td.left { text-align: left; }
+      .dc-tbl tfoot td { font-weight: bold; text-align: center; }
+      .dc-right { text-align: right !important; }
+      .dc-bold  { font-weight: bold; }
+
+      /* bottom */
+      .dc-bottom { display: flex; border-top: 1px solid #000; }
+      .dc-remarks { flex: 1; padding: 5px 8px; font-size: 8.5pt; border-right: 1px solid #000; }
+      .dc-remarks .lbl { font-weight: bold; }
+      .dc-totals { width: 200px; flex-shrink: 0; padding: 5px 8px; font-size: 8.5pt; }
+      .dc-tr { display: flex; justify-content: space-between; margin-bottom: 2px; }
+      .dc-tr .lbl { font-weight: bold; }
+      .dc-grand { display: flex; justify-content: space-between; font-weight: bold; font-size: 9.5pt; border-top: 1px solid #000; padding-top: 3px; margin-top: 2px; }
+
+      /* words */
+      .dc-words { border-top: 1px solid #000; padding: 4px 8px; font-size: 8.5pt; }
+      .dc-words .lbl { font-weight: bold; }
+
+      /* signatory */
+      .dc-sign { display: flex; border-top: 1px solid #000; min-height: 55px; }
+      .dc-sign-left { flex: 1; padding: 5px 8px; font-size: 8pt; border-right: 1px solid #000; }
+      .dc-sign-right { width: 200px; flex-shrink: 0; padding: 5px 8px; font-size: 8pt; text-align: right; display: flex; flex-direction: column; justify-content: space-between; }
+      .dc-sign-right .co { font-weight: bold; }
+
+      /* disclaimer */
+      .dc-disc { border-top: 1px solid #000; padding: 4px 8px; font-size: 7.5pt; font-weight: bold; }
+
+      /* reg footer */
+      .dc-reg { border-top: 1px solid #000; padding: 4px 8px; font-size: 7pt; text-align: center; }
+
+      .dc-pgnum { text-align: right; font-size: 7.5pt; padding-right: 4px; }
+    }
+  `
+
+  return createPortal(
+    <>
+      <style>{printStyles}</style>
+      <div className="dc-print-portal" style={{ display: 'none' }}>
+        <div className="dc-page">
+          <div className="dc-outer">
+
+            {/* HEADER */}
+            <div className="dc-header">
+              <div className="dc-logo-block">
+                {/* Put your logo at public/fiem-logo.png  — or change the src below */}
+                <img src="/fiem-logo.png" alt="Fiem Industries" />
+                <div className="dc-logo-tagline">LIGHT UP THE WORLD</div>
+              </div>
+              <div className="dc-title-block">
+                <div className="dc-title-main">DELIVERY CHALLAN CUM REJECTION NOTE</div>
+                <div className="dc-title-co">FIEM INDUSTRIES LIMITED</div>
+                <div className="dc-title-sub">AUTOMOTIVE LIGHTING EQUIPEMENTS &amp; PLASTIC MOULDED PARTS</div>
+                <div className="dc-title-addr">Plot No.1915, HSIDC, Phase-V-Rai Distt. Sonepat-131029</div>
+                <div className="dc-title-addr">Phone: 01302367905,06</div>
+              </div>
+              <div className="dc-doc-info-block">
+                <div className="orig">ORIGINAL FOR CONSIGNEE</div>
+                <div className="dc-dir"><span className="lbl">Delivery Challan No. :</span> <span>{doc.id}</span></div>
+                <div className="dc-dir"><span className="lbl">Document Date:</span> <span>{doc.documentDate}</span></div>
+                <div className="dc-dir"><span className="lbl">Plant Code:</span> <span>{doc.plantCode}</span></div>
+                <div className="dc-dir"><span className="lbl">Document No:</span> <span>{doc.documentNo}</span></div>
+                <div className="dc-dir"><span className="lbl">Posting Date:</span> <span>{doc.postingDate}</span></div>
+              </div>
+            </div>
+
+            {/* GSTIN */}
+            <div className="dc-gstin">
+              GSTIN: 06AAACF1034E1ZD &nbsp;&nbsp; CIN: L36999DL1989PLC034928
+            </div>
+
+            {/* CONSIGNEE + PO */}
+            <div className="dc-consignee-section">
+              <div className="dc-consignee-block">
+                <div className="dc-cons-label">Name and Address of Consignee</div>
+                <div className="dc-cf"><span className="lbl">Name: </span>{doc.consignee.name}</div>
+                <div className="dc-cf" style={{ marginTop: 4 }}><span className="lbl">Address: </span>{doc.consignee.address}</div>
+                <div className="dc-cf" style={{ marginTop: 6 }}>
+                  <span className="lbl">State Code: </span>{doc.consignee.stateCode}&nbsp;&nbsp;
+                  <span className="lbl">State: </span>{doc.consignee.state}&nbsp;&nbsp;
+                  <span className="lbl">Country: </span>{doc.consignee.country}
+                </div>
+                <div className="dc-cf"><span className="lbl">GSTIN: </span>{doc.consignee.gstin}</div>
+              </div>
+              <div className="dc-po-block">
+                <div className="dc-po-row">
+                  <span className="lbl">PO No.:</span><span>{doc.generalData.poNo}</span>
+                  <span className="lbl" style={{ marginLeft: 8 }}>PO Date:</span><span>{doc.generalData.poDate}</span>
+                </div>
+                <div className="dc-po-row"><span className="lbl">Vend Code:</span><span>{doc.generalData.vendCode}</span></div>
+                <div className="dc-po-row"><span className="lbl">Vehicle No:</span><span>{doc.generalData.vehicleNo || ''}</span></div>
+                <div className="dc-po-row">
+                  <span className="lbl">GR No.:</span><span>{doc.generalData.grNo}</span>
+                  <span className="lbl" style={{ marginLeft: 8 }}>Org Inv</span><span>{doc.generalData.orgInv}</span>
+                </div>
+                <div className="dc-po-row">
+                  <span className="lbl">Eway Bill No. :</span><span>{doc.generalData.ewayBillNo || ''}</span>
+                  <span className="lbl" style={{ marginLeft: 8 }}>Date :</span><span>{doc.generalData.date}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ITEMS TABLE */}
+            <table className="dc-tbl">
+              <thead>
+                <tr>
+                  <th rowSpan={2} style={{ width: 28 }}>Sr. No</th>
+                  <th rowSpan={2} style={{ width: 110 }}>Item Code &amp;<br />Item Description</th>
+                  <th rowSpan={2} style={{ width: 62 }}>HSN/SAC<br />Code</th>
+                  <th rowSpan={2} style={{ width: 32 }}>Qty</th>
+                  <th rowSpan={2} style={{ width: 28 }}>UOM</th>
+                  <th rowSpan={2} style={{ width: 42 }}>Rate<br />Per<br />Unit</th>
+                  <th rowSpan={2} style={{ width: 52 }}>Total</th>
+                  <th rowSpan={2} style={{ width: 34 }}>Disc.</th>
+                  <th rowSpan={2} style={{ width: 44 }}>Other<br />Charges</th>
+                  <th rowSpan={2} style={{ width: 56 }}>Taxable<br />Value</th>
+                  <th colSpan={2}>CGST</th>
+                  <th colSpan={2}>SGST</th>
+                  <th colSpan={2}>IGST</th>
+                </tr>
+                <tr>
+                  <th style={{ width: 32 }}>Rate%</th>
+                  <th style={{ width: 50 }}>Amount</th>
+                  <th style={{ width: 32 }}>Rate%</th>
+                  <th style={{ width: 50 }}>Amount</th>
+                  <th style={{ width: 32 }}>Rate%</th>
+                  <th style={{ width: 50 }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {doc.items.map((item, idx) => (
+                  <tr key={idx}>
+                    <td>{item.itemNo}</td>
+                    <td className="left">
+                      <div className="dc-bold">{item.itemCode}</div>
+                      <div>{item.itemDesc}</div>
+                    </td>
+                    <td>{item.hsnCode}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.uom}</td>
+                    <td className="dc-right">{fmt(item.ratePerUnit)}</td>
+                    <td className="dc-right">{fmt(item.total)}</td>
+                    <td>{item.disc || ''}</td>
+                    <td>{item.otherCharges || ''}</td>
+                    <td className="dc-right">{fmt(item.taxableValue)}</td>
+                    <td>{item.cgstRate}.00</td>
+                    <td className="dc-right">{fmt(item.cgstAmount)}</td>
+                    <td>{item.sgstRate}.00</td>
+                    <td className="dc-right">{fmt(item.sgstAmount)}</td>
+                    <td>{item.igstRate}.00</td>
+                    <td className="dc-right">{item.igstAmount ? fmt(item.igstAmount) : ''}</td>
+                  </tr>
+                ))}
+                {/* filler rows */}
+                {Array.from({ length: Math.max(0, 5 - doc.items.length) }).map((_, i) => (
+                  <tr key={`blank-${i}`} style={{ height: 18 }}>
+                    {Array.from({ length: 16 }).map((__, j) => <td key={j}>&nbsp;</td>)}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td></td>
+                  <td>Total</td>
+                  <td></td>
+                  <td>{totals.qty}</td>
+                  <td></td><td></td><td></td>
+                  <td className="dc-right">{totals.disc ? fmt(totals.disc) : '0.00'}</td>
+                  <td></td>
+                  <td className="dc-right">{fmt(totals.taxable)}</td>
+                  <td></td>
+                  <td className="dc-right">{fmt(totals.cgst)}</td>
+                  <td></td>
+                  <td className="dc-right">{fmt(totals.sgst)}</td>
+                  <td></td>
+                  <td className="dc-right">{totals.igst ? fmt(totals.igst) : '0.00'}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            {/* REMARKS + TOTALS */}
+            <div className="dc-bottom">
+              <div className="dc-remarks">
+                <span className="lbl">Remarks : </span>{doc.remarks}
+              </div>
+              <div className="dc-totals">
+                <div className="dc-tr"><span className="lbl">Total Value:</span><span>{fmt(doc.totalValue)}</span></div>
+                <div className="dc-tr"><span className="lbl">CGST:</span><span>{fmt(doc.cgst)}</span></div>
+                <div className="dc-tr"><span className="lbl">SGST:</span><span>{fmt(doc.sgst)}</span></div>
+                <div className="dc-tr"><span className="lbl">IGST:</span><span>{fmt(doc.igst)}</span></div>
+                <div className="dc-grand"><span>Grand Total:</span><span>{fmt(doc.grandTotal)}</span></div>
+              </div>
+            </div>
+
+            {/* AMOUNT IN WORDS */}
+            <div className="dc-words">
+              <span className="lbl">Total Value(in Words): </span>
+              {doc.totalValueInWords || amountToWords(doc.grandTotal)}
+            </div>
+
+            {/* SIGNATORY */}
+            <div className="dc-sign">
+              <div className="dc-sign-left"></div>
+              <div className="dc-sign-right">
+                <div className="co">For FIEM INDUSTRIES LIMITED</div>
+                <div>Authorised Signatory</div>
+              </div>
+            </div>
+
+            {/* DISCLAIMER */}
+            <div className="dc-disc">
+              SUPPLIER NEED TO ISSUE CREDIT NOTE WITHIN MONTH OF THE RECEIPT OF THIS DELIVERY CHALLAN AND SEND THE SAME TO FIEM.
+            </div>
+
+            {/* REGISTERED OFFICE */}
+            <div className="dc-reg">
+              * Registered office: Unit No. 1A &amp; 1C, First Floor, Commercial Towers, Hotel JW Marriott,
+              Aerocity, New Delhi-110037 Tel: +91-9821795327/28/29/30<br />
+              Email:info@fiemindustries.com, Website:www.fiemindustries.com, CIN:L36999DL1989PLC034928
+            </div>
+
+            <div className="dc-pgnum">1 of 1</div>
+
+          </div>{/* dc-outer */}
+        </div>{/* dc-page */}
+      </div>
+    </>,
+    document.body
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR
 // ═══════════════════════════════════════════════════════════════
 function SidebarContent({
   documents, totalCount, selectedId, searchQuery, sidebarCollapsed,
@@ -211,7 +526,6 @@ function SidebarContent({
                   <X size={15} />
                 </button>
               )}
-              <Search size={14} className="absolute right-1.5 top-1.5 text-[#9ca3af] pointer-events-none opacity-0" />
             </div>
             {!searchQuery && (
               <Search size={14} className="absolute right-3 top-3 text-[#9ca3af] pointer-events-none" />
@@ -285,9 +599,6 @@ function SidebarContent({
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Info field — for header info grid (icon + label + value)
-// ═══════════════════════════════════════════════════════════════
 function InfoField({ Icon, label, value }) {
   return (
     <div className="flex items-start gap-2">
@@ -324,7 +635,6 @@ export default function ReturnPOMatdoc() {
     )
   }, [searchQuery])
 
-  // Close mobile sidebar on outside click
   useEffect(() => {
     if (!mobileSidebarOpen) return
     const handler = (e) => {
@@ -334,16 +644,17 @@ export default function ReturnPOMatdoc() {
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileSidebarOpen])
 
-  // Reset to first tab whenever doc changes
-  useEffect(() => {
-    setActiveTab('general')
-  }, [selectedId])
+  useEffect(() => { setActiveTab('general') }, [selectedId])
 
   const handleSelectDocument = (id) => {
     setSelectedId(id)
     setMobileSidebarOpen(false)
   }
 
+  // ── PRINT HANDLER ──
+  // The DeliveryChallanPrint portal is always rendered (when printOk).
+  // On click we just call window.print(); the @media print CSS hides the app
+  // and shows the challan automatically.
   const handlePrint = () => {
     if (!selectedDoc || !isPrintEnabled(selectedDoc.status) || printLoading) return
     setPrintLoading(true)
@@ -367,7 +678,6 @@ export default function ReturnPOMatdoc() {
   const doc = selectedDoc
   const printOk = doc ? isPrintEnabled(doc.status) : false
 
-  // ── General Data tab ──
   const renderGeneral = () => {
     if (!doc) return null
     return (
@@ -392,7 +702,6 @@ export default function ReturnPOMatdoc() {
     )
   }
 
-  // ── Consignee tab ──
   const renderConsignee = () => {
     if (!doc) return null
     return (
@@ -415,12 +724,10 @@ export default function ReturnPOMatdoc() {
     )
   }
 
-  // ── Items tab ──
   const renderItems = () => {
     if (!doc) return null
     return (
       <div className="anim-fade px-4 sm:px-6 lg:px-10 py-6 space-y-4">
-        {/* Items table */}
         <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
           <table className="w-full text-[13px]" style={{ minWidth: '1150px', borderCollapse: 'collapse' }}>
             <thead>
@@ -476,7 +783,6 @@ export default function ReturnPOMatdoc() {
           </table>
         </div>
 
-        {/* Remarks + Summary */}
         <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden bg-white">
           <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[#e5e5e5]">
             <div className="px-5 py-5 space-y-4">
@@ -540,7 +846,8 @@ export default function ReturnPOMatdoc() {
         .sidebar-transition{transition:width .25s ease}
       `}</style>
 
-    
+      {/* ── PRINT PORTAL — always mounted when a printable doc is selected ── */}
+      {printOk && <DeliveryChallanPrint doc={doc} />}
 
       <div className="bg-[#f5f6f7]">
         <div className="flex" style={{ height: 'calc(100vh - 96px)' }}>
@@ -549,7 +856,6 @@ export default function ReturnPOMatdoc() {
             <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)} />
           )}
 
-          {/* Mobile sidebar drawer */}
           <aside data-sidebar className={`fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50 md:hidden anim-drawer ${mobileSidebarOpen ? 'flex' : 'hidden'}`}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e5] bg-[#fafbfc]">
               <span className="text-[14px] font-semibold text-[#32363a]">Return Documents</span>
@@ -560,104 +866,100 @@ export default function ReturnPOMatdoc() {
             <SidebarContent {...sidebarProps} />
           </aside>
 
-          {/* Desktop sidebar — independent scroll */}
           <aside data-sidebar className={`hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-full overflow-y-auto ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
             <SidebarContent {...sidebarProps} />
           </aside>
 
-          {/* Right pane — independent scroll, header+tabs sticky */}
           <main className="flex-1 bg-white overflow-y-auto anim-slide-r min-w-0 h-full">
             {doc && (
               <>
-                {/* Sticky header + tabs */}
                 <div className="sticky top-0 z-20 bg-white">
                   <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
-                  <div className="flex items-center gap-3 mb-4 md:hidden">
-                    <button data-sidebar-toggle onClick={() => setMobileSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all">
-                      <Menu size={16} />
-                    </button>
-                    <span className="text-[13px] text-[#6a6d70]">Return Documents</span>
-                  </div>
-
-                  <div className="flex items-start justify-between flex-wrap gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Delivery Challan No.</div>
-                      <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight break-all">{doc.id}</h2>
-                    </div>
-
-                    <div className="flex items-center gap-3 ml-3 flex-shrink-0 relative group">
-                      <span className={`text-[13px] sm:text-[14px] font-bold px-3 py-1 rounded-full whitespace-nowrap ${statusStyle(printOk)}`}>
-                        <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: statusDotColor(printOk) }} />
-                        {doc.status}
-                      </span>
-                      <button
-                        onClick={handlePrint}
-                        disabled={!printOk || printLoading}
-                        className={`flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold rounded-lg transition-all shadow-md ${
-                          printOk
-                            ? 'text-white bg-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'
-                            : 'text-[#b0b0b0] bg-[#f0f0f0] cursor-not-allowed shadow-none'
-                        }`}
-                      >
-                        {printLoading ? (
-                          <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <Printer size={15} />
-                        )}
-                        Print
+                    <div className="flex items-center gap-3 mb-4 md:hidden">
+                      <button data-sidebar-toggle onClick={() => setMobileSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all">
+                        <Menu size={16} />
                       </button>
-                      {!printOk && (
-                        <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-[#32363a] text-white text-[11px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                          Print available only when Return Started
-                          <div className="absolute bottom-full right-4 border-4 border-transparent border-b-[#32363a]" />
+                      <span className="text-[13px] text-[#6a6d70]">Return Documents</span>
+                    </div>
+
+                    <div className="flex items-start justify-between flex-wrap gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Delivery Challan No.</div>
+                        <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight break-all">{doc.id}</h2>
+                      </div>
+
+                      <div className="flex items-center gap-3 ml-3 flex-shrink-0 relative group">
+                        <span className={`text-[13px] sm:text-[14px] font-bold px-3 py-1 rounded-full whitespace-nowrap ${statusStyle(printOk)}`}>
+                          <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: statusDotColor(printOk) }} />
+                          {doc.status}
+                        </span>
+                        <button
+                          onClick={handlePrint}
+                          disabled={!printOk || printLoading}
+                          className={`flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold rounded-lg transition-all shadow-md ${
+                            printOk
+                              ? 'text-white bg-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'
+                              : 'text-[#b0b0b0] bg-[#f0f0f0] cursor-not-allowed shadow-none'
+                          }`}
+                        >
+                          {printLoading ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <Printer size={15} />
+                          )}
+                          Print
+                        </button>
+                        {!printOk && (
+                          <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-[#32363a] text-white text-[11px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                            Print available only when Return Started
+                            <div className="absolute bottom-full right-4 border-4 border-transparent border-b-[#32363a]" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-5">
+                      {[
+                        { Icon: Building2, label: 'Plant Code',    value: doc.plantCode },
+                        { Icon: Calendar,  label: 'Document Date', value: doc.documentDate },
+                        { Icon: Hash,      label: 'Document No',   value: doc.documentNo },
+                        { Icon: Calendar,  label: 'Posting Date',  value: doc.postingDate },
+                      ].map(({ Icon, label, value }) => (
+                        <div key={label} className="flex items-start gap-2.5">
+                          <Icon size={18} className="text-[#6a6d70] mt-[2px] flex-shrink-0" strokeWidth={1.8} />
+                          <div className="min-w-0">
+                            <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold">{label}</div>
+                            <div className="text-[17px] sm:text-[19px] font-bold text-[#32363a] mt-1 break-words">{value || '—'}</div>
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
 
-                  {/* Info fields — bigger, only the 4 key fields */}
-                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-5">
-                    {[
-                      { Icon: Building2, label: 'Plant Code',   value: doc.plantCode },
-                      { Icon: Calendar,  label: 'Document Date', value: doc.documentDate },
-                      { Icon: Hash,      label: 'Document No',   value: doc.documentNo },
-                      { Icon: Calendar,  label: 'Posting Date',  value: doc.postingDate },
-                    ].map(({ Icon, label, value }) => (
-                      <div key={label} className="flex items-start gap-2.5">
-                        <Icon size={18} className="text-[#6a6d70] mt-[2px] flex-shrink-0" strokeWidth={1.8} />
-                        <div className="min-w-0">
-                          <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold">{label}</div>
-                          <div className="text-[17px] sm:text-[19px] font-bold text-[#32363a] mt-1 break-words">{value || '—'}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  </div>
-                <div className="px-4 sm:px-6 lg:px-10 pt-6 pb-0 border-b border-[#e5e5e5] bg-white">
-                  <div className="flex items-end gap-6 sm:gap-10 overflow-x-auto">
-                    {TABS.map((tab) => {
-                      const isActive = activeTab === tab.key
-                      return (
-                        <button
-                          key={tab.key}
-                          onClick={() => setActiveTab(tab.key)}
-                          className={`flex flex-col items-center pb-3 border-b-2 transition-all duration-200 flex-shrink-0 ${isActive ? 'border-[#0a6ed1]' : 'border-transparent hover:border-[#d9d9d9]'}`}
-                        >
-                          <div
-                            className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all duration-200 ${isActive ? '' : 'hover:scale-105'}`}
-                            style={{ backgroundColor: isActive ? tab.color : '#f0f4f8' }}
+                  <div className="px-4 sm:px-6 lg:px-10 pt-6 pb-0 border-b border-[#e5e5e5] bg-white">
+                    <div className="flex items-end gap-6 sm:gap-10 overflow-x-auto">
+                      {TABS.map((tab) => {
+                        const isActive = activeTab === tab.key
+                        return (
+                          <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`flex flex-col items-center pb-3 border-b-2 transition-all duration-200 flex-shrink-0 ${isActive ? 'border-[#0a6ed1]' : 'border-transparent hover:border-[#d9d9d9]'}`}
                           >
-                            {tab.icon(isActive)}
-                          </div>
-                          <span className={`text-[13px] font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#0a6ed1]' : 'text-[#6a6d70] hover:text-[#32363a]'}`}>
-                            {tab.label}
-                          </span>
-                        </button>
-                      )
-                    })}
+                            <div
+                              className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all duration-200 ${isActive ? '' : 'hover:scale-105'}`}
+                              style={{ backgroundColor: isActive ? tab.color : '#f0f4f8' }}
+                            >
+                              {tab.icon(isActive)}
+                            </div>
+                            <span className={`text-[13px] font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#0a6ed1]' : 'text-[#6a6d70] hover:text-[#32363a]'}`}>
+                              {tab.label}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-
                 </div>
 
                 <div key={`${doc.id}-${activeTab}`}>{tabContent[activeTab]?.()}</div>
@@ -670,7 +972,7 @@ export default function ReturnPOMatdoc() {
                 <span className="text-[14px]">Select a document from the list</span>
               </div>
             )}
-          </main> 
+          </main>
         </div>
       </div>
     </PageLayout>
