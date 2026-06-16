@@ -4,12 +4,12 @@ const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
 
-const HEADERS = {
+const getHeaders = () => ({
   'Content-Type': 'application/json',
   Accept: 'application/json',
   Loginid: authConfig.loginId,
   Logintype: authConfig.loginType,
-}
+})
 
 const str = (v) => String(v ?? '').trim()
 
@@ -124,13 +124,13 @@ export async function postCreateAsn({ poNo, invoice, selectedItems, header = {} 
   // Fetch CSRF token (SAP OData requires for POST)
   const tokenRes = await fetch(`${ODATA_BASE}/PO_ASN_HEADERSet`, {
     method: 'GET',
-    headers: { ...HEADERS, 'X-CSRF-Token': 'Fetch' },
+    headers: { ...getHeaders(), 'X-CSRF-Token': 'Fetch' },
   })
   const csrfToken = tokenRes.headers.get('x-csrf-token') || ''
 
   const res = await fetch(`${ODATA_BASE}/PO_ASN_HEADERSet`, {
     method: 'POST',
-    headers: { ...HEADERS, 'X-CSRF-Token': csrfToken },
+    headers: { ...getHeaders(), 'X-CSRF-Token': csrfToken },
     body: JSON.stringify(payload),
   })
 

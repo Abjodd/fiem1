@@ -4,14 +4,14 @@ const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
 
-const HEADERS = {
+const getHeaders = () => ({
   Accept: 'application/json',
   Loginid: authConfig.loginId,
   Logintype: authConfig.loginType,
-}
+})
 
 async function odataGet(path) {
-  const res = await fetch(`${ODATA_BASE}${path}`, { headers: HEADERS })
+  const res = await fetch(`${ODATA_BASE}${path}`, { headers: getHeaders() })
   if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`)
   return res.json()
 }

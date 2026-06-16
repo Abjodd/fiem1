@@ -40,14 +40,14 @@ function toSap8(v) {
 // HTTP helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const COMMON_HEADERS = {
+const getHeaders = () => ({
   Accept: 'application/json',
   Loginid: authConfig.loginId,
   Logintype: authConfig.loginType,
-}
+})
 
 async function odataGet(path) {
-  const res = await fetch(`${ODATA_BASE}${path}`, { headers: COMMON_HEADERS })
+  const res = await fetch(`${ODATA_BASE}${path}`, { headers: getHeaders() })
   if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`)
   return res.json()
 }
@@ -55,7 +55,7 @@ async function odataGet(path) {
 async function fetchCsrfToken() {
   const res = await fetch(`${ODATA_BASE}/`, {
     method: 'GET',
-    headers: { ...COMMON_HEADERS, 'X-CSRF-Token': 'Fetch' },
+    headers: { ...getHeaders(), 'X-CSRF-Token': 'Fetch' },
     credentials: 'include',
   })
   return res.headers.get('X-CSRF-Token') || res.headers.get('x-csrf-token') || ''

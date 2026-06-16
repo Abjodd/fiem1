@@ -1,14 +1,19 @@
 // src/pages/purchasing/ScheduleGenerate.jsx
-// FIXES:
-// 1. supplier + agreement + items persisted in sessionStorage so navigating
-//    to ScheduleLines and back does NOT lose state or re-show the supplier popup.
-// 2. showSupplierPopup is only set true on first mount when sessionStorage has
-//    no saved supplier (i.e. genuinely first visit).
+// OData integration: ZSCHEDULE_GENERATE_SRV
+//
+// Changes vs mock version:
+//  • handleWeek / handleDayGenerate now call the real API (weekSet / daySet)
+//    before navigating to ScheduleLines so the server-computed distribution
+//    is available immediately.
+//  • handleApprove passes the full item objects (needed for approveSet payload).
+//  • supplier.code is forwarded as `lifnr` to every API call that needs it.
+//  • days array is 31-element to match day1…day31 on all entity sets.
 
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { scheduleGenerateApi } from '../../services/ScheduleGenerate.js'
+import { scheduleGenerateApi, generateDays, authConfig } from '../../services/ScheduleGenerate.js'
+import { useUser } from '../../context/UserContext.jsx'
 
 const SS_KEY = 'scheduleGenerate_state'
 
@@ -18,11 +23,9 @@ function loadSession() {
     return raw ? JSON.parse(raw) : null
   } catch { return null }
 }
-
 function saveSession(data) {
   try { sessionStorage.setItem(SS_KEY, JSON.stringify(data)) } catch {}
 }
-
 function clearSession() {
   try { sessionStorage.removeItem(SS_KEY) } catch {}
 }
@@ -30,7 +33,7 @@ function clearSession() {
 // ═══════════════════════════════════════════════════════════════
 // SUPPLIER CODE POPUP
 // ═══════════════════════════════════════════════════════════════
-function SupplierPopup({ onSubmit, onCancel, canCancel }) {
+function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,7 +45,7 @@ function SupplierPopup({ onSubmit, onCancel, canCancel }) {
       const supp = await scheduleGenerateApi.fetchSupplier(code.trim())
       if (!supp) { setError(`Supplier "${code}" not found.`); setLoading(false); return }
       onSubmit(supp)
-    } catch (err) { setError(err.message || 'Failed'); setLoading(false) }
+    } catch (err) { setError(err.message || 'Failed to load supplier'); setLoading(false) }
   }
 
   return (
@@ -73,6 +76,7 @@ function SupplierPopup({ onSubmit, onCancel, canCancel }) {
             </button>
           )}
         </div>
+
         <div className="px-6 py-6">
           <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
             Supplier Code <span className="text-[#cc1c14]">*</span>
@@ -86,12 +90,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel }) {
             placeholder="e.g. FS859"
             className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
           />
-          <div className="mt-2 text-[11px] text-[#6a6d70]">
-            Available:{' '}
-            <span className="font-semibold text-[#0a6ed1]">FS859</span>,{' '}
-            <span className="font-semibold text-[#0a6ed1]">FS833</span>,{' '}
-            <span className="font-semibold text-[#0a6ed1]">FS827</span>
-          </div>
           {error && (
             <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -101,10 +99,11 @@ function SupplierPopup({ onSubmit, onCancel, canCancel }) {
             </div>
           )}
         </div>
+
         <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end">
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || disabled}
             className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-60"
           >
             {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
@@ -122,7 +121,8 @@ function SupplierPopup({ onSubmit, onCancel, canCancel }) {
 function DayCountPopup({ onSubmit, onCancel }) {
   const [days, setDays] = useState('')
   const n = parseInt(days, 10)
-  const valid = n >= 1 && n <= 30
+  const valid = n >= 1 && n <= 31
+
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center px-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
@@ -137,7 +137,7 @@ function DayCountPopup({ onSubmit, onCancel }) {
             autoFocus
             type="number"
             min="1"
-            max="30"
+            max="31"
             value={days}
             onChange={e => setDays(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && valid) onSubmit(n) }}
@@ -165,16 +165,18 @@ function DayCountPopup({ onSubmit, onCancel }) {
   )
 }
 
-// ─── Status helpers ───────────────────────────────────────────
+// ── Status helpers ───────────────────────────────────────────
 const STATUS_STYLE = {
-  'Generated':   'text-[#107e3e] bg-[#e8f5ec]',
-  'In Approval': 'text-[#0a6ed1] bg-[#ebf5ff]',
-  'In Draft':    'text-[#e76500] bg-[#fff3e8]',
+  'Generated':     'text-[#107e3e] bg-[#e8f5ec]',
+  'In Approval':   'text-[#0a6ed1] bg-[#ebf5ff]',
+  'In Draft':      'text-[#e76500] bg-[#fff3e8]',
+  'Not Generated': 'text-[#6a6d70] bg-[#f5f6f7]',
 }
 const STATUS_DOT = {
-  'Generated':   '#107e3e',
-  'In Approval': '#0a6ed1',
-  'In Draft':    '#e76500',
+  'Generated':     '#107e3e',
+  'In Approval':   '#0a6ed1',
+  'In Draft':      '#e76500',
+  'Not Generated': '#6a6d70',
 }
 const getStatusStyle = s => STATUS_STYLE[s] || 'text-[#b45309] bg-[#fef7e6]'
 const getStatusDot   = s => STATUS_DOT[s]   || '#b45309'
@@ -185,29 +187,36 @@ const getStatusDot   = s => STATUS_DOT[s]   || '#b45309'
 export default function ScheduleGenerate() {
   const navigate = useNavigate()
   const location = useLocation()
-
-  // ── Initialise from sessionStorage so navigation back doesn't reset state ──
   const session = loadSession()
 
-  const [supplier,          setSupplier]          = useState(session?.supplier    ?? null)
-  const [agreement,         setAgreement]         = useState(session?.agreement   ?? null)
-  const [items,             setItems]             = useState(session?.items       ?? [])
+  const [supplier,          setSupplier]          = useState(session?.supplier  ?? null)
+  const [agreement,         setAgreement]         = useState(session?.agreement ?? null)
+  const [items,             setItems]             = useState(session?.items     ?? [])
   const [fromDate,          setFromDate]          = useState('')
   const [toDate,            setToDate]            = useState('')
   const [selectedItems,     setSelectedItems]     = useState(new Set())
   const [showDayPopup,      setShowDayPopup]      = useState(false)
-  // Only show popup on first visit (no saved session). Never on back-navigation.
   const [showSupplierPopup, setShowSupplierPopup] = useState(!session?.supplier)
-  const [saving,            setSaving]            = useState(false)
+  // Shared loading/saving state covers both generate (API call) and approve
+  const [busy,              setBusy]              = useState(false)
+  const [busyLabel,         setBusyLabel]         = useState('')
 
-  // ── Persist supplier/agreement/items to sessionStorage whenever they change ──
+
+  const { loginId, loginType, loading: userLoading } = useUser();
+
+useEffect(() => {
+  if (userLoading) return;
+  if (!loginId || !loginType) return;
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
+}, [userLoading, loginId, loginType]);
+
+  // ── Persist state to sessionStorage ──
   useEffect(() => {
-    if (supplier) {
-      saveSession({ supplier, agreement, items })
-    }
+    if (supplier) saveSession({ supplier, agreement, items })
   }, [supplier, agreement, items])
 
-  // ── Pick up savedLines when returning from ScheduleLines (Save path) ──
+  // ── Pick up savedLines when returning from ScheduleLines ──
   useEffect(() => {
     const ret = location.state?.returnData
     if (!ret) return
@@ -218,19 +227,18 @@ export default function ScheduleGenerate() {
         if (!saved) return it
         return {
           ...it,
-          days:   [...saved.days],
-          status: 'In Draft',
+          days:      [...saved.days],
+          frozenDays: saved.frozenDays ?? it.frozenDays,
+          status:    'In Draft',
           ...(pendingIndicator ? { indicator: pendingIndicator } : {}),
         }
       })
-      // Persist updated items immediately
       saveSession({ supplier, agreement, items: next })
       return next
     })
     navigate(location.pathname, { replace: true, state: {} })
   }, [location.state?.returnData]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── When ScheduleLines is closed via X it sets preserveSupplier — just clear state ──
   useEffect(() => {
     if (location.state?.preserveSupplier) {
       navigate(location.pathname, { replace: true, state: {} })
@@ -251,17 +259,18 @@ export default function ScheduleGenerate() {
     }
   }
 
-  // ── Change Supplier — clears session so fresh start ──
   const handleChangeSupplier = () => {
     clearSession()
+    setSupplier(null)
+    setAgreement(null)
+    setItems([])
+    setSelectedItems(new Set())
     setShowSupplierPopup(true)
   }
 
   // ── Selection ──
   const toggleItem = itemNo => setSelectedItems(prev => {
-    const n = new Set(prev)
-    n.has(itemNo) ? n.delete(itemNo) : n.add(itemNo)
-    return n
+    const n = new Set(prev); n.has(itemNo) ? n.delete(itemNo) : n.add(itemNo); return n
   })
   const toggleAll = () =>
     setSelectedItems(selectedItems.size === items.length
@@ -276,12 +285,13 @@ export default function ScheduleGenerate() {
   const anyHaveW   = selArr.some(no => items.find(i => i.itemNo === no)?.indicator === 'W')
   const anyHaveInd = selArr.some(no => items.find(i => i.itemNo === no)?.indicator)
 
-  const weekDisabled = selArr.length === 0 || anyHaveD
-  const dayDisabled  = selArr.length === 0 || anyHaveW
-  const editDisabled = selArr.length === 0 || !anyHaveInd
+  const weekDisabled = selArr.length === 0 || anyHaveD || busy
+  const dayDisabled  = selArr.length === 0 || anyHaveW || busy
+  const editDisabled = selArr.length === 0 || !anyHaveInd || busy
 
   // ── Navigate to ScheduleLines ──
-  const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator) => {
+  const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
+    const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
     navigate('/purchasing/schedule-lines', {
       state: {
         selectedItemNos,
@@ -290,41 +300,106 @@ export default function ScheduleGenerate() {
         mode,
         pendingIndicator,
         agreementId:   agreement.id,
-        supplierCode:  supplier.code,
+        supplierCode:  supplier.code,   // = lifnr
         supplierName:  supplier.name,
         plantName:     agreement.plantName,
         companyCode:   agreement.companyCode,
         agreementDate: agreement.date,
-        itemsData: items.filter(it => selectedItemNos.includes(it.itemNo)),
+        itemsData:     itemsForLines,
       },
     })
   }
 
-  const handleWeek = () => {
+  // ── Week — call weekSet then navigate ──
+  const handleWeek = async () => {
     if (weekDisabled) return
-    openScheduleLines(selArr, false, 'Schedule Lines — Week', 'WEEKLY', 'W')
+    setBusy(true); setBusyLabel('Generating…')
+    try {
+      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
+
+      // Pre-compute local distribution (used in mock; server may override in live)
+      const itemsWithDays = selectedItemData.map(it => ({
+        ...it,
+        days: generateDays(it.totalQuantity, 'week', null),
+        indicator: 'W',
+      }))
+
+      // POST to weekSet — in live mode the server returns the authoritative distribution
+      const serverItems = await scheduleGenerateApi.generateWeekSchedule(
+        agreement.id,
+        supplier.code,
+        itemsWithDays,
+      )
+
+      // Merge server response back into local state so the table stays in sync
+      const mergedItems = items.map(it => {
+        const srv = serverItems.find(s => s.itemNo === it.itemNo)
+        return srv ? { ...it, ...srv, indicator: 'W' } : it
+      })
+      setItems(mergedItems)
+      saveSession({ supplier, agreement, items: mergedItems })
+
+      openScheduleLines(selArr, false, 'Schedule Lines — Week', 'WEEKLY', 'W', mergedItems)
+    } catch (err) {
+      console.error('weekSet error:', err)
+      alert(`Failed to generate week schedule: ${err.message}`)
+    } finally {
+      setBusy(false); setBusyLabel('')
+    }
   }
 
   const handleDayClick = () => { if (!dayDisabled) setShowDayPopup(true) }
-  const handleDayGenerate = dayCount => {
+
+  // ── Day — call daySet then navigate ──
+  const handleDayGenerate = async dayCount => {
     setShowDayPopup(false)
-    navigate('/purchasing/schedule-lines', {
-      state: {
-        selectedItemNos: selArr,
-        editable: false,
-        title: `Schedule Lines — Day (${dayCount})`,
-        mode: 'DAILY',
+    setBusy(true); setBusyLabel('Generating…')
+    try {
+      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
+
+      const itemsWithDays = selectedItemData.map(it => ({
+        ...it,
+        days: generateDays(it.totalQuantity, 'day', dayCount),
+        indicator: 'D',
+      }))
+
+      const serverItems = await scheduleGenerateApi.generateDaySchedule(
+        agreement.id,
+        supplier.code,
+        itemsWithDays,
         dayCount,
-        pendingIndicator: 'D',
-        agreementId:   agreement.id,
-        supplierCode:  supplier.code,
-        supplierName:  supplier.name,
-        plantName:     agreement.plantName,
-        companyCode:   agreement.companyCode,
-        agreementDate: agreement.date,
-        itemsData: items.filter(it => selArr.includes(it.itemNo)),
-      },
-    })
+      )
+
+      const mergedItems = items.map(it => {
+        const srv = serverItems.find(s => s.itemNo === it.itemNo)
+        return srv ? { ...it, ...srv, indicator: 'D' } : it
+      })
+      setItems(mergedItems)
+      saveSession({ supplier, agreement, items: mergedItems })
+
+      navigate('/purchasing/schedule-lines', {
+        state: {
+          selectedItemNos:  selArr,
+          editable:         false,
+          title:            `Schedule Lines — Day (${dayCount})`,
+          mode:             'DAILY',
+          dayCount,
+          pendingIndicator: 'D',
+          agreementId:      agreement.id,
+          supplierCode:     supplier.code,
+          supplierName:     supplier.name,
+          plantName:        agreement.plantName,
+          companyCode:      agreement.companyCode,
+          agreementDate:    agreement.date,
+          itemsData:        mergedItems.filter(it => selArr.includes(it.itemNo)),
+        },
+      })
+    } catch (err) {
+      console.error('daySet error:', err)
+      alert(`Failed to generate day schedule: ${err.message}`)
+    } finally {
+      setBusy(false); setBusyLabel('')
+    }
   }
 
   const handleEdit = () => {
@@ -338,12 +413,19 @@ export default function ScheduleGenerate() {
     )
   }
 
-  // ── Approve ──
+  // ── Approve — POST to approveSet ──
   const handleApprove = async () => {
-    if (selArr.length === 0) return
-    setSaving(true)
+    if (selArr.length === 0 || busy) return
+    setBusy(true); setBusyLabel('Saving…')
     try {
-      await scheduleGenerateApi.approveSchedule(agreement.id, selArr)
+      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
+
+      await scheduleGenerateApi.approveSchedule(
+        agreement.id,
+        supplier.code,          // lifnr
+        selectedItemData,
+      )
+
       setItems(prev => {
         const next = prev.map(it => {
           if (!selectedItems.has(it.itemNo)) return it
@@ -354,8 +436,12 @@ export default function ScheduleGenerate() {
         saveSession({ supplier, agreement, items: next })
         return next
       })
-    } catch (err) { console.error(err) }
-    finally { setSaving(false) }
+    } catch (err) {
+      console.error('approveSet error:', err)
+      alert(`Approval failed: ${err.message}`)
+    } finally {
+      setBusy(false); setBusyLabel('')
+    }
   }
 
   // ══════════════════════════════════════
@@ -375,16 +461,15 @@ export default function ScheduleGenerate() {
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
       `}</style>
 
-      {/* ── Supplier popup ── */}
       {showSupplierPopup && (
         <SupplierPopup
           onSubmit={handleSupplierSubmit}
           onCancel={() => setShowSupplierPopup(false)}
           canCancel={!!supplier}
+          disabled={userLoading}
         />
       )}
 
-      {/* ── Day count popup ── */}
       {showDayPopup && (
         <DayCountPopup
           onSubmit={handleDayGenerate}
@@ -392,7 +477,17 @@ export default function ScheduleGenerate() {
         />
       )}
 
-      {/* ── Empty state while no supplier loaded yet ── */}
+      {/* Global busy overlay (generate / approve in progress) */}
+      {busy && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
+          <div className="bg-white rounded-xl shadow-2xl px-8 py-6 flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-[#0a6ed1]/30 border-t-[#0a6ed1] rounded-full animate-spin" />
+            <span className="text-[14px] font-semibold text-[#32363a]">{busyLabel}</span>
+          </div>
+        </div>
+      )}
+
       {!supplier && (
         <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)] flex items-center justify-center">
           <div className="text-center text-[#6a6d70]">
@@ -405,7 +500,6 @@ export default function ScheduleGenerate() {
         </div>
       )}
 
-      {/* ── Main content ── */}
       {supplier && agreement && (
         <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
           <main className="bg-white" style={{ minHeight: 'calc(100vh - 220px)' }}>
@@ -421,7 +515,6 @@ export default function ScheduleGenerate() {
                     {agreement.id}
                   </h1>
                 </div>
-
                 <div className="flex items-center gap-2 flex-shrink-0 ml-3 flex-wrap justify-end">
                   <span className="text-[14px] font-semibold text-[#32363a] bg-white px-4 py-2 rounded-lg border border-[#e5e5e5] shadow-sm">
                     {agreement.date}
@@ -429,7 +522,6 @@ export default function ScheduleGenerate() {
                   <button
                     onClick={handleChangeSupplier}
                     className="h-9 px-3 text-[12px] font-semibold text-[#0a6ed1] border border-[#0a6ed1] rounded-lg hover:bg-[#ebf5ff] active:bg-[#d6ecff] transition-all flex items-center gap-1.5 shadow-sm"
-                    title="Load a different supplier"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -462,26 +554,16 @@ export default function ScheduleGenerate() {
                 <div className="flex flex-wrap items-center gap-2 flex-1">
                   <div className="flex items-center gap-2">
                     <label className="text-[11px] text-[#6a6d70] font-semibold uppercase whitespace-nowrap">Delivery From</label>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      onChange={e => setFromDate(e.target.value)}
-                      className="h-8 pl-2 pr-1 text-[12px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] transition-all"
-                    />
+                    <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                      className="h-8 pl-2 pr-1 text-[12px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] transition-all" />
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-[11px] text-[#6a6d70] font-semibold uppercase whitespace-nowrap">To</label>
-                    <input
-                      type="date"
-                      value={toDate}
-                      onChange={e => setToDate(e.target.value)}
-                      className="h-8 pl-2 pr-1 text-[12px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] transition-all"
-                    />
+                    <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                      className="h-8 pl-2 pr-1 text-[12px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] transition-all" />
                   </div>
-                  <button
-                    onClick={() => { setFromDate(''); setToDate('') }}
-                    className="h-8 px-3 text-[12px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all"
-                  >
+                  <button onClick={() => { setFromDate(''); setToDate('') }}
+                    className="h-8 px-3 text-[12px] font-semibold text-[#cc1c14] bg-[#fce8e6] rounded-lg hover:bg-[#fad6d3] transition-all">
                     Clear
                   </button>
                 </div>
@@ -528,10 +610,10 @@ export default function ScheduleGenerate() {
 
                   <button
                     onClick={handleApprove}
-                    disabled={selArr.length === 0 || saving}
+                    disabled={selArr.length === 0 || busy}
                     className="h-8 px-3 text-[12px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40"
                   >
-                    {saving ? 'Saving…' : 'Approve'}
+                    {busy && busyLabel === 'Saving…' ? 'Saving…' : 'Approve'}
                   </button>
                 </div>
               </div>
@@ -554,10 +636,8 @@ export default function ScheduleGenerate() {
                         </th>
                         {['Item No.', 'SAP Code', 'Description', 'HSN Code',
                           'Total Monthly Schedule', 'Unit Price', 'Indicator', 'Status'].map(h => (
-                          <th
-                            key={h}
-                            className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[10px] sm:text-[11px] last:border-r-0"
-                          >
+                          <th key={h}
+                            className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[10px] sm:text-[11px] last:border-r-0">
                             {h}
                           </th>
                         ))}
@@ -567,18 +647,14 @@ export default function ScheduleGenerate() {
                       {items.map(item => {
                         const checked = selectedItems.has(item.itemNo)
                         return (
-                          <tr
-                            key={item.itemNo}
-                            onClick={() => toggleItem(item.itemNo)}
-                            className={`border-b border-[#f0f0f0] transition-colors cursor-pointer ${checked ? 'bg-[#ebf5ff]' : 'hover:bg-[#ebf5ff]/40'}`}
-                          >
-                            <td className="py-3 px-3 text-center border-r border-[#f0f0f0]" onClick={e => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={checked}
+                          <tr key={item.itemNo} onClick={() => toggleItem(item.itemNo)}
+                            className={`border-b border-[#f0f0f0] transition-colors cursor-pointer
+                              ${checked ? 'bg-[#ebf5ff]' : 'hover:bg-[#ebf5ff]/40'}`}>
+                            <td className="py-3 px-3 text-center border-r border-[#f0f0f0]"
+                              onClick={e => e.stopPropagation()}>
+                              <input type="checkbox" checked={checked}
                                 onChange={() => toggleItem(item.itemNo)}
-                                className="accent-[#0a6ed1] w-4 h-4 cursor-pointer"
-                              />
+                                className="accent-[#0a6ed1] w-4 h-4 cursor-pointer" />
                             </td>
                             <td className="py-3 px-3 text-center font-semibold text-[#32363a] border-r border-[#f0f0f0]">{item.itemNo}</td>
                             <td className="py-3 px-3 text-center font-semibold text-[#0a6ed1] border-r border-[#f0f0f0]">{item.sapCode}</td>
@@ -613,7 +689,6 @@ export default function ScheduleGenerate() {
         </div>
       )}
 
-      {/* ── No agreements fallback ── */}
       {supplier && !agreement && (
         <div className="flex items-center justify-center h-64 text-[#6a6d70]">
           No agreements found for supplier <span className="font-semibold ml-1">{supplier.code}</span>.

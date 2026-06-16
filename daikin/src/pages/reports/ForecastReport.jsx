@@ -8,6 +8,7 @@ import {
 } from "../../services/ForecastReport.js";
 import { useUser } from "../../context/UserContext.jsx";
 
+
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -109,6 +110,9 @@ function Toggle({ value, onChange }) {
 }
 
 export default function ForecastReport() {
+  const { loginId, loginType, loading: userLoading } = useUser();
+  authConfig.loginId   = loginId;
+  authConfig.loginType = loginType;
   const [date, setDate] = useState(todayIso());
   const [partNo, setPartNo] = useState("");
   const [saNo, setSaNo] = useState("");
@@ -139,13 +143,13 @@ export default function ForecastReport() {
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
 
   const buildParams = useCallback(
-  () => ({
+  (mode) => ({
     inputDate: toSapDate(date),
     matnr: partNo,
     ebeln: saNo,
-    supplier: supplier,        
+    supplier: supplier,
     bukrs: "DSAL",
-    mdIndicator: viewMode === "Daily" ? "D" : "M",
+    mdIndicator: (mode ?? viewMode) === "Daily" ? "D" : "M",
   }),
   [date, partNo, saNo, supplier, viewMode],
 );
@@ -209,6 +213,8 @@ export default function ForecastReport() {
 
   // On mount: load default data
   useEffect(() => {
+    if (userLoading) return;
+    if (!loginId || !loginType) return;
     const defaultParams = {
       inputDate: toSapDate(todayIso()),
       matnr: "",
@@ -227,22 +233,20 @@ export default function ForecastReport() {
         skipRef.current = data.length;
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }, [userLoading, loginId, loginType]);
 
   // ✅ FIX: Scroll listener registered ONCE (empty deps).
   //         It calls loadMore which reads refs — never stale.
   useEffect(() => {
-    const el = tableBodyRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-      if (distanceFromBottom < 250) {
-        loadMore(); // loadMore itself guards via refs
-      }
-    };
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, []); // ✅ Empty deps — registered once, never stale
+  const el = tableBodyRef.current;
+  if (!el) return;
+  const handleScroll = () => {
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 250) loadMore();
+  };
+  el.addEventListener("scroll", handleScroll, { passive: true });
+  return () => el.removeEventListener("scroll", handleScroll);
+}, [hasSearched]); // ✅ Empty deps — registered once, never stale
 
   // ✅ FIX: Pass new mode directly to buildParams — state update is async
   //         so viewMode would still be old value if we called buildParams()
