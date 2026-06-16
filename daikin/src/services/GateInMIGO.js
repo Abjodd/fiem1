@@ -31,12 +31,6 @@ export const toSapDate = (isoDate) => {
 }
 
 // ── Row mapper — HeaderDataSet ────────────────────────────────
-// Missing fields: TR No., TO No., Short Qty → kept blank until backend adds
-// Doubts resolved:
-//   Material     → Matnr (code) + Maktx (name)
-//   Plant        → Werks (code) + Plantdesc (name)  — REMOVED FROM TABLE per spec
-//   Pkg Comment  → Remarks (same field, Remarks also maps to standalone Remarks col)
-//   HeaderText   → used as fallback for packagingComment if Remarks is used by remarks col
 function mapGrnRow(raw) {
   return {
     grnNumber:           str(raw.Mblnr),
@@ -56,19 +50,18 @@ function mapGrnRow(raw) {
     materialCode:        str(raw.Matnr),
     materialName:        str(raw.Maktx),
     vehicleNo:           str(raw.VehicleRegNumb),
-    // Plant removed from table — still mapped for internal use if needed
+    // Plant: filter-only in UI — still mapped internally
     plant:               str(raw.Werks),
     plantLoc:            str(raw.Plantdesc),
     asnCrBy:             str(raw.AsnCreater),
     grnBy:               str(raw.Usnam),
     stLoc:               str(raw.Lgort),
-    trNo:                str(raw.TrNo ?? ''),          // Missing in payload
-    toNo:                str(raw.ToNo ?? ''),          // Missing in payload
-    // packagingComment uses HeaderText; Remarks reserved for separate Remarks column
+    trNo:                str(raw.TrNo ?? ''),
+    toNo:                str(raw.ToNo ?? ''),
     packagingComment:    str(raw.HeaderText ?? ''),
     packingMaterialType: str(raw.PkgMatType),
     packingMaterialQty:  num(raw.PkgMatQty),
-    shortQty:            num(raw.ShortQty ?? 0),       // Missing in payload
+    shortQty:            num(raw.ShortQty ?? 0),
     remarks:             str(raw.Remarks),
   }
 }
@@ -83,22 +76,18 @@ function buildFilter(required = {}, optional = {}) {
   return encodeURIComponent(`(${parts.join(' and ')})`)
 }
 
-// ── Date-range filter used by most VH sets ────────────────────
-function dateRangeFilter(startDate, endDate, extra = {}) {
-  const sap = { Sdate: toSapDate(startDate), Edate: toSapDate(endDate) }
-  return buildFilter({ ...sap }, extra)
-}
-
 // ═══════════════════════════════════════════════════════════════
 // API
 // ═══════════════════════════════════════════════════════════════
 export const GateInMIGOApi = {
 
   // Go button — HeaderDataSet
+  // plant (Werks) added as optional filter — sent only when selected
   async fetchReport({
     postingStartDate = '', postingEndDate = '',
     asnNo = '', grnNo = '', material = '',
     shipmentNo = '', ibdNumber = '',
+    plant = '',          // ← NEW: Werks filter
     skip = 0, top = 200,
   } = {}) {
     const f = buildFilter(
@@ -111,6 +100,7 @@ export const GateInMIGOApi = {
         Matnr:      material,
         ShipmentNo: shipmentNo,
         Ibd:        ibdNumber,
+        Werks:      plant,       // ← NEW: only appended to filter if non-empty
       },
     )
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -129,17 +119,16 @@ export const GateInMIGOApi = {
   },
 
   // VH — GRN / Document: DocumentHelpSet
-  // Spec URL: Lifnr eq '' and AsnNum eq '' and (Sdate eq '...' and Edate eq '...')
   // Lifnr = '' per spec (empty, not loginId). Sdate/Edate always required.
   async fetchGrnHelp({ startDate = '', endDate = '', asnNo = '', skip = 0, top = 20 } = {}) {
     const f = buildFilter(
       {
-        Lifnr: '',                    // spec sends empty string
-        AsnNum: asnNo,                // empty when not selected — always include
+        Lifnr:  '',
+        AsnNum: asnNo,
         Sdate:  toSapDate(startDate),
         Edate:  toSapDate(endDate),
       },
-      {},                             // no optional params — all must be present per spec
+      {},
     )
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
     const data = await odata(`/DocumentHelpSet?$filter=${f}${pagination}`)
@@ -150,8 +139,8 @@ export const GateInMIGOApi = {
   },
 
   // VH — Plant: PlantHelpSet
-  // Spec URL: Lifnr eq '' and AsnNum eq '' and Mblnr eq '' and (Sdate eq '...' and Edate eq '...')
-  // Kept in API even though plant removed from UI — may be needed later
+  // Payload: Lifnr eq '' and AsnNum eq '' and Mblnr eq '' and (Sdate eq '...' and Edate eq '...')
+  // Returns: Werks (code) + Name1 (label e.g. "KRL")
   async fetchPlantHelp({ startDate = '', endDate = '', asnNo = '', grnNo = '', skip = 0, top = 20 } = {}) {
     const f = buildFilter(
       {
@@ -166,21 +155,20 @@ export const GateInMIGOApi = {
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
     const data = await odata(`/PlantHelpSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(r => ({
-      code:  str(r.Werks),
-      label: str(r.Name1),
+      code:  str(r.Werks),   // "1000"
+      label: str(r.Name1),   // "KRL"
     }))
   },
 
   // VH — Material: MaterialHelpSet
-  // Spec URL: Lifnr eq '' and AsnNum eq '' and Mblnr eq '' and Werks eq '' and (Sdate eq '...' and Edate eq '...')
-  // All 5 params always sent (empty string when not selected).
-  async fetchMaterialHelp({ startDate = '', endDate = '', asnNo = '', grnNo = '', skip = 0, top = 20 } = {}) {
+  // All 5 params always sent; Werks = plant if selected, '' otherwise
+  async fetchMaterialHelp({ startDate = '', endDate = '', asnNo = '', grnNo = '', plant = '', skip = 0, top = 20 } = {}) {
     const f = buildFilter(
       {
         Lifnr:  '',
         AsnNum: asnNo,
         Mblnr:  grnNo,
-        Werks:  '',       // plant removed from UI; always empty
+        Werks:  plant,        // ← now uses plant state if set
         Sdate:  toSapDate(startDate),
         Edate:  toSapDate(endDate),
       },

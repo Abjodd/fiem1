@@ -971,6 +971,7 @@ export default function CreateASN2({ agreement: propAgreement }) {
     const errors = []
     if (selectedItemNos.length === 0) errors.push('Select at least one item to create ASN.')
     if (!invoiceNumber) errors.push('Invoice Number is required.')
+    if (generalAttachments.length === 0) errors.push('At least one General Attachment is required.')
 
     const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
 
@@ -1156,16 +1157,22 @@ export default function CreateASN2({ agreement: propAgreement }) {
         <div className="bg-white px-8 pt-5 border-b border-[#e5e5e5]">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab('info')}
-              className={`flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'info' ? 'border-[#0a6ed1]' : 'border-transparent'}`}
-            >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all ${activeTab === 'info' ? 'bg-[#0a6ed1] shadow-md' : 'bg-white border-2 border-[#0a6ed1]'}`}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab === 'info' ? 'white' : '#0a6ed1'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4M12 8h.01" />
-                </svg>
-              </div>
-            </button>
+  onClick={() => setActiveTab('attachments')}
+  className={`relative flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'attachments' ? 'border-[#0a6ed1]' : 'border-transparent'}`}
+>
+  <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-all ${activeTab === 'attachments' ? 'bg-[#0a6ed1] shadow-md' : 'bg-white border-2 border-[#0a6ed1]'}`}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab === 'attachments' ? 'white' : '#0a6ed1'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.49" />
+    </svg>
+  </div>
+  {totalAttachments === 0 ? (
+    <span className="absolute -top-1 right-0 text-[#cc1c14] text-[14px] font-bold leading-none">*</span>
+  ) : (
+    <span className="absolute -top-1 right-1 min-w-[18px] h-[18px] bg-[#0a6ed1] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+      {totalAttachments}
+    </span>
+  )}
+</button>
             <button
               onClick={() => setActiveTab('attachments')}
               className={`relative flex flex-col items-center pb-3 border-b-2 transition-colors ${activeTab === 'attachments' ? 'border-[#0a6ed1]' : 'border-transparent'}`}

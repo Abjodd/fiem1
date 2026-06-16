@@ -25,22 +25,15 @@ const fmtDate = (val) => {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COMPUTE CHART DATA
+// CHART CONFIG
 // ═══════════════════════════════════════════════════════════════
-const computeChartData = (rows) => {
-  const shipment = {}
-  const delay    = {}
-  rows.forEach(r => {
-    const s = r.status || 'Unknown'
-    shipment[s] = (shipment[s] || 0) + 1
-    const d = r.timeDelay || 'Unknown'
-    delay[d] = (delay[d] || 0) + 1
-  })
-  return { shipment, delay }
-}
+// Bar chart: only these 3
+const BAR_STATUS_ORDER = ['In Transit', 'Reached Plant', 'Goods Received']
 
-const STATUS_ORDER = ['In Transit', 'Reached Plant', 'Unloading Started', 'Completed', 'Goods Received']
-const DELAY_ORDER  = ['Before Time', 'On Time', 'Delayed']
+// Pie chart: only these 4
+const PIE_STATUS_ORDER = ['In Transit', 'Reached Plant', 'Unloading Started', 'Completed']
+
+const DELAY_ORDER = ['Before Time', 'On Time', 'Delayed']
 
 const PIE_COLORS_STATUS = {
   'In Transit':        '#0a6ed1',
@@ -55,11 +48,92 @@ const PIE_COLORS_DELAY = {
   'Delayed':     '#cc1c14',
 }
 
+const computeChartData = (rows) => {
+  const shipment = {}
+  const delay    = {}
+  rows.forEach(r => {
+    const s = r.status || 'Unknown'
+    shipment[s] = (shipment[s] || 0) + 1
+    const d = r.timeDelay || 'Unknown'
+    delay[d] = (delay[d] || 0) + 1
+  })
+  return { shipment, delay }
+}
+
 // ═══════════════════════════════════════════════════════════════
-// VERTICAL BAR CHART (Shipment Status)
+// PIE CHART (4-status donut)
+// ═══════════════════════════════════════════════════════════════
+function PieChart({ title, data, colorMap, order }) {
+  const values  = order.map(l => data[l] || 0)
+  const total   = values.reduce((a, b) => a + b, 0)
+
+  const CX = 70, CY = 70, R = 52, INNER = 30
+  let slices = []
+  if (total === 0) {
+    // empty ring
+    slices = [{ label: 'empty', color: '#f0f0f0', path: describeArc(CX, CY, R, 0, 359.99), count: 0 }]
+  } else {
+    let angle = -90
+    order.forEach((label, i) => {
+      const val = values[i]
+      if (val === 0) return
+      const sweep = (val / total) * 360
+      slices.push({
+        label,
+        color: colorMap[label] || '#94a3b8',
+        path: describeArc(CX, CY, R, angle, angle + sweep),
+        count: val,
+        midAngle: angle + sweep / 2,
+      })
+      angle += sweep
+    })
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ fontSize:13, fontWeight:700, color:'#32363a', marginBottom:6, textAlign:'center' }}>{title}</div>
+      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:12, minHeight:0 }}>
+        {/* Donut */}
+        <svg viewBox="0 0 140 140" style={{ width:130, height:130, flexShrink:0 }}>
+          {slices.map((s, i) => (
+            <path key={i} d={s.path} fill={s.color} stroke="white" strokeWidth="2" />
+          ))}
+          {/* inner hole */}
+          <circle cx={CX} cy={CY} r={INNER} fill="white" />
+          {/* total label */}
+          <text x={CX} y={CY - 6} textAnchor="middle" fontSize="18" fontWeight="800" fill="#32363a">{total}</text>
+          <text x={CX} y={CY + 10} textAnchor="middle" fontSize="9" fill="#94a3b8">TOTAL</text>
+        </svg>
+        {/* Legend */}
+        <div style={{ display:'flex', flexDirection:'column', gap:5, minWidth:0 }}>
+          {order.map(label => (
+            <div key={label} style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ width:10, height:10, borderRadius:2, background: colorMap[label] || '#94a3b8', flexShrink:0 }} />
+              <span style={{ fontSize:11, color:'#6a6d70', whiteSpace:'nowrap' }}>{label}</span>
+              <span style={{ fontSize:11, fontWeight:700, color:'#32363a', marginLeft:2 }}>{data[label] || 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const toRad = (a) => (a * Math.PI) / 180
+  const x1 = cx + r * Math.cos(toRad(startAngle))
+  const y1 = cy + r * Math.sin(toRad(startAngle))
+  const x2 = cx + r * Math.cos(toRad(endAngle))
+  const y2 = cy + r * Math.sin(toRad(endAngle))
+  const large = endAngle - startAngle > 180 ? 1 : 0
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERTICAL BAR CHART (3 bars only)
 // ═══════════════════════════════════════════════════════════════
 function BarChart({ title, data, colorMap, order }) {
-  const labels = order.filter(l => data[l] !== undefined || true)
+  const labels = order   // always render all 3 even if 0
   const values = labels.map(l => data[l] || 0)
   const max    = Math.max(1, ...values)
   const niceMax = (() => {
@@ -73,17 +147,16 @@ function BarChart({ title, data, colorMap, order }) {
     else nice = 10
     return nice * pow
   })()
-  const steps = 3
+  const steps   = 3
   const gridVals = Array.from({ length: steps + 1 }, (_, i) => Math.round((niceMax / steps) * i))
-
-  const chartH = 150
-  const chartW = Math.max(280, labels.length * 90)
+  const chartH  = 120
+  const chartW  = 240
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
-      <div style={{ fontSize:13, fontWeight:700, color:'#32363a', marginBottom:8, textAlign:'center' }}>{title}</div>
-      <div style={{ flex:1, display:'flex', overflowX:'auto', minHeight:0 }}>
-        <svg viewBox={`0 0 ${chartW + 50} ${chartH + 40}`} preserveAspectRatio="xMidYMid meet" style={{ width:'100%', height:'100%', minWidth: chartW }}>
+      <div style={{ fontSize:13, fontWeight:700, color:'#32363a', marginBottom:6, textAlign:'center' }}>{title}</div>
+      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', minHeight:0 }}>
+        <svg viewBox={`0 0 ${chartW + 50} ${chartH + 44}`} preserveAspectRatio="xMidYMid meet" style={{ width:'100%', height:'100%' }}>
           {gridVals.map((g, i) => {
             const y = chartH - (g / niceMax) * (chartH - 20) - 5
             return (
@@ -94,30 +167,32 @@ function BarChart({ title, data, colorMap, order }) {
             )
           })}
           {labels.map((label, i) => {
-            const val = values[i]
-            const barW = 46
-            const slotW = chartW / labels.length
-            const x = 40 + i * slotW + (slotW - barW) / 2
-            const barH = niceMax === 0 ? 0 : (val / niceMax) * (chartH - 20)
-            const y = chartH - barH - 5
+            const val    = values[i]
+            const barW   = 44
+            const slotW  = chartW / labels.length
+            const x      = 40 + i * slotW + (slotW - barW) / 2
+            const barH   = niceMax === 0 ? 0 : (val / niceMax) * (chartH - 20)
+            const y      = chartH - barH - 5
+            const words  = label.split(' ')
             return (
               <g key={label}>
-                <rect x={x} y={y} width={barW} height={barH} fill={colorMap[label] || '#94a3b8'} rx="2" />
+                <rect x={x} y={y} width={barW} height={Math.max(barH, 0)} fill={colorMap[label] || '#94a3b8'} rx="2" />
                 {val > 0 && (
-                  <text x={x + barW/2} y={y - 6} textAnchor="middle" fontSize="12" fontWeight="700" fill="#32363a">{val}</text>
+                  <text x={x + barW/2} y={y - 5} textAnchor="middle" fontSize="12" fontWeight="700" fill="#32363a">{val}</text>
                 )}
-                <text x={x + barW/2} y={chartH + 18} textAnchor="middle" fontSize="10.5" fill="#6a6d70">
-                  {label.length > 12 ? label.split(' ').map((w, wi) => (
-                    <tspan key={wi} x={x + barW/2} dy={wi === 0 ? 0 : 11}>{w}</tspan>
-                  )) : label}
-                </text>
+                {val === 0 && (
+                  <text x={x + barW/2} y={chartH - 7} textAnchor="middle" fontSize="11" fill="#94a3b8">0</text>
+                )}
+                {/* multi-line label */}
+                {words.map((w, wi) => (
+                  <text key={wi} x={x + barW/2} y={chartH + 14 + wi * 12} textAnchor="middle" fontSize="10.5" fill="#6a6d70">{w}</text>
+                ))}
               </g>
             )
           })}
           <line x1="40" y1={chartH - 5} x2={chartW + 40} y2={chartH - 5} stroke="#d9d9d9" strokeWidth="1" />
         </svg>
       </div>
-      <div style={{ textAlign:'center', fontSize:10.5, color:'#94a3b8', marginTop:4 }}>Count</div>
     </div>
   )
 }
@@ -126,12 +201,12 @@ function BarChart({ title, data, colorMap, order }) {
 // HORIZONTAL BAR CHART (Delay Status)
 // ═══════════════════════════════════════════════════════════════
 function HorizontalBarChart({ title, data, colorMap, order }) {
-  const labels = order
-  const values = labels.map(l => data[l] || 0)
-  const max    = Math.max(1, ...values)
-  const niceMax = (() => {
+  const labels   = order
+  const values   = labels.map(l => data[l] || 0)
+  const max      = Math.max(1, ...values)
+  const niceMax  = (() => {
     if (max <= 5) return 5
-    const pow = Math.pow(10, Math.floor(Math.log10(max)))
+    const pow  = Math.pow(10, Math.floor(Math.log10(max)))
     const norm = max / pow
     let nice
     if (norm <= 1) nice = 1
@@ -140,21 +215,20 @@ function HorizontalBarChart({ title, data, colorMap, order }) {
     else nice = 10
     return nice * pow
   })()
-  const steps = 3
+  const steps    = 3
   const gridVals = Array.from({ length: steps + 1 }, (_, i) => Math.round((niceMax / steps) * i))
-
-  const rowH   = 36
-  const chartW = 320
-  const plotW  = chartW - 110
-  const chartH = labels.length * rowH + 30
+  const rowH     = 36
+  const chartW   = 280
+  const plotW    = chartW - 100
+  const chartH   = labels.length * rowH + 30
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
-      <div style={{ fontSize:13, fontWeight:700, color:'#32363a', marginBottom:8, textAlign:'center' }}>{title}</div>
+      <div style={{ fontSize:13, fontWeight:700, color:'#32363a', marginBottom:6, textAlign:'center' }}>{title}</div>
       <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', minHeight:0 }}>
         <svg viewBox={`0 0 ${chartW} ${chartH}`} preserveAspectRatio="xMidYMid meet" style={{ width:'100%', height:'100%', maxHeight: chartH + 10 }}>
           {gridVals.map((g, i) => {
-            const x = 100 + (g / niceMax) * plotW
+            const x = 90 + (g / niceMax) * plotW
             return (
               <g key={i}>
                 <line x1={x} y1="0" x2={x} y2={labels.length * rowH} stroke="#eef0f2" strokeWidth="1" />
@@ -163,27 +237,70 @@ function HorizontalBarChart({ title, data, colorMap, order }) {
             )
           })}
           {labels.map((label, i) => {
-            const val = values[i]
+            const val  = values[i]
             const barH = 18
-            const y = i * rowH + (rowH - barH) / 2
+            const y    = i * rowH + (rowH - barH) / 2
             const barW = niceMax === 0 ? 0 : (val / niceMax) * plotW
             return (
               <g key={label}>
-                <text x="96" y={y + barH/2 + 4} textAnchor="end" fontSize="11.5" fill="#6a6d70">{label}</text>
-                <rect x="100" y={y} width={Math.max(barW, val > 0 ? 2 : 0)} height={barH} fill={colorMap[label] || '#94a3b8'} rx="2" />
+                <text x="86" y={y + barH/2 + 4} textAnchor="end" fontSize="11.5" fill="#6a6d70">{label}</text>
+                <rect x="90" y={y} width={Math.max(barW, val > 0 ? 2 : 0)} height={barH} fill={colorMap[label] || '#94a3b8'} rx="2" />
                 {val > 0 && (
-                  <text x={100 + barW + 6} y={y + barH/2 + 4} fontSize="11.5" fontWeight="700" fill="#32363a">{val}</text>
+                  <text x={90 + barW + 6} y={y + barH/2 + 4} fontSize="11.5" fontWeight="700" fill="#32363a">{val}</text>
                 )}
                 {val === 0 && (
-                  <text x="106" y={y + barH/2 + 4} fontSize="11.5" fill="#94a3b8">0</text>
+                  <text x="96" y={y + barH/2 + 4} fontSize="11.5" fill="#94a3b8">0</text>
                 )}
               </g>
             )
           })}
-          <line x1="100" y1="0" x2="100" y2={labels.length * rowH} stroke="#d9d9d9" strokeWidth="1" />
+          <line x1="90" y1="0" x2="90" y2={labels.length * rowH} stroke="#d9d9d9" strokeWidth="1" />
         </svg>
       </div>
-      <div style={{ textAlign:'center', fontSize:10.5, color:'#94a3b8', marginTop:4 }}>Count</div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHART ROW — always visible, 3 charts horizontal
+// ═══════════════════════════════════════════════════════════════
+function ChartRow({ chartData, loading, label }) {
+  return (
+    <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade">
+      {label && (
+        <div className="text-[12px] text-[#6a6d70] font-semibold mb-2">{label}</div>
+      )}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+        {/* Shipment Status — Bar (3 bars) */}
+        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
+          {loading
+            ? <Spinner />
+            : <BarChart title="Shipment Status" data={chartData.shipment} colorMap={PIE_COLORS_STATUS} order={BAR_STATUS_ORDER} />
+          }
+        </div>
+        {/* Status Breakdown — Pie (4 statuses) */}
+        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
+          {loading
+            ? <Spinner />
+            : <PieChart title="Status Breakdown" data={chartData.shipment} colorMap={PIE_COLORS_STATUS} order={PIE_STATUS_ORDER} />
+          }
+        </div>
+        {/* Delay Status — Horizontal bar */}
+        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
+          {loading
+            ? <Spinner />
+            : <HorizontalBarChart title="Delay Status" data={chartData.delay} colorMap={PIE_COLORS_DELAY} order={DELAY_ORDER} />
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Spinner() {
+  return (
+    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div className="w-6 h-6 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin" />
     </div>
   )
 }
@@ -207,12 +324,8 @@ function StatusBadge({ status }) {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TIME DELAY LABEL
-// ═══════════════════════════════════════════════════════════════
 function TimeDelayLabel({ value }) {
-  let color = '#32363a'
-  let weight = 500
+  let color = '#32363a', weight = 500
   if (value === 'On Time')     { color = '#107e3e'; weight = 700 }
   else if (value === 'Delayed')     { color = '#cc1c14'; weight = 700 }
   else if (value === 'Before Time') { color = '#0a6ed1'; weight = 700 }
@@ -272,9 +385,6 @@ function ValueHelpModal({ title, options, onSelect, onCancel }) {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-// VALUE HELP INPUT
-// ═══════════════════════════════════════════════════════════════
 function ValueHelpInput({ placeholder, value, onOpen }) {
   return (
     <div className="flex h-10 w-full border border-[#d9d9d9] rounded-lg overflow-hidden bg-white focus-within:border-[#0a6ed1] focus-within:ring-2 focus-within:ring-[#0a6ed1]/20 transition-all">
@@ -301,8 +411,7 @@ function DetailView({ trackingNo, trackYear, onBack }) {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     DeliveryScheduleApi.fetchDetail(trackingNo, trackYear)
       .then(d => { setDetail(d); setLoading(false) })
       .catch(err => { setError(err.message); setLoading(false) })
@@ -319,7 +428,6 @@ function DetailView({ trackingNo, trackYear, onBack }) {
         </button>
         <span className="text-[14px] text-[#6a6d70] font-medium">Tracking No. — <strong className="text-[#32363a]">{displayTrackingNo}</strong></span>
       </div>
-
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 text-[#6a6d70]">
@@ -339,10 +447,7 @@ function DetailView({ trackingNo, trackYear, onBack }) {
           <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-5 mb-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div style={{
-                  fontSize:22, fontWeight:800, color:'#b45309', fontFamily:'monospace', letterSpacing:0.5,
-                  background:'#fce8e6', display:'inline-block', borderRadius:6, padding:'2px 10px'
-                }}>{displayTrackingNo}</div>
+                <div style={{ fontSize:22, fontWeight:800, color:'#b45309', fontFamily:'monospace', letterSpacing:0.5, background:'#fce8e6', display:'inline-block', borderRadius:6, padding:'2px 10px' }}>{displayTrackingNo}</div>
                 {detail.supplier && <div className="text-[13px] text-[#6a6d70] mt-1.5">Supplier: <span className="font-medium text-[#32363a]">{detail.supplier}</span></div>}
               </div>
               <div className="text-right">
@@ -352,7 +457,6 @@ function DetailView({ trackingNo, trackYear, onBack }) {
               </div>
             </div>
           </div>
-
           {detail.items && detail.items.length > 0 ? (
             <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
               <div className="overflow-auto">
@@ -403,35 +507,33 @@ function DetailView({ trackingNo, trackYear, onBack }) {
 // ═══════════════════════════════════════════════════════════════
 const STATUS_OPTIONS = ['', 'In Transit', 'Reached Plant', 'Unloading Started', 'Goods Received', 'Completed']
 
-// ── Client-side filter applied on top of fetched rows ────────
 function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, trackSearch }) {
   return rows.filter(row => {
-    if (status      && row.status !== status)                                      return false
-    if (supplier    && row.supplier !== supplier)                                  return false
-    if (material    && !String(row.material  || '').toLowerCase().includes(material.toLowerCase()))   return false
-    if (asn         && !String(row.asn       || '').toLowerCase().includes(asn.toLowerCase()))        return false
-    if (invoiceNo   && !String(row.invoiceNo || '').toLowerCase().includes(invoiceNo.toLowerCase()))  return false
+    if (status    && row.status !== status)                                                          return false
+    if (supplier  && row.supplier !== supplier)                                                      return false
+    if (material  && !String(row.material  || '').toLowerCase().includes(material.toLowerCase()))   return false
+    if (asn       && !String(row.asn       || '').toLowerCase().includes(asn.toLowerCase()))        return false
+    if (invoiceNo && !String(row.invoiceNo || '').toLowerCase().includes(invoiceNo.toLowerCase()))  return false
     if (trackSearch) {
       const q = trackSearch.toLowerCase()
-      const hit =
-        String(row.trackingNo || '').toLowerCase().includes(q) ||
-        String(row.plant      || '').toLowerCase().includes(q) ||
-        String(row.city       || '').toLowerCase().includes(q)
+      const hit = String(row.trackingNo || '').toLowerCase().includes(q) ||
+                  String(row.plant      || '').toLowerCase().includes(q) ||
+                  String(row.city       || '').toLowerCase().includes(q)
       if (!hit) return false
     }
     return true
   })
 }
 
+const EMPTY_CHART = { shipment: {}, delay: {} }
+
 export default function DeliverySchedule() {
   const companyCode = '1000 (Comstar India)'
 
-  // ── View ──
   const [view,             setView]             = useState('list')
   const [selectedTracking, setSelectedTracking] = useState(null)
   const [selectedYear,     setSelectedYear]     = useState(null)
 
-  // ── Filters ──
   const [startDate,   setStartDate]   = useState(offsetDateIso(-30))
   const [endDate,     setEndDate]     = useState(todayIso())
   const [status,      setStatus]      = useState('')
@@ -443,33 +545,30 @@ export default function DeliverySchedule() {
 
   const [filterBarVisible, setFilterBarVisible] = useState(true)
 
-  // ── Value help ──
   const [vhModal,   setVhModal]   = useState(null)
   const [vhOptions, setVhOptions] = useState([])
 
-  // ── Raw data from API (full result set) ──
   const [rawRows,     setRawRows]     = useState([])
   const [loading,     setLoading]     = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [error,       setError]       = useState(null)
 
-  // ── Today's data (auto-fetched on mount for charts) ──
   const [todayRows,    setTodayRows]    = useState([])
   const [todayLoading, setTodayLoading] = useState(true)
   const [todayFetched, setTodayFetched] = useState(false)
 
-  // ── Apply client-side filters to raw rows ──────────────────
-  // This re-runs instantly whenever any filter value changes —
-  // no need to re-hit the API for status / supplier / etc.
   const rows = useMemo(() =>
     applyClientFilters(rawRows, { status, supplier, material, asn, invoiceNo, trackSearch }),
     [rawRows, status, supplier, material, asn, invoiceNo, trackSearch]
   )
 
-  const chartData      = useMemo(() => computeChartData(rows),      [rows])
-  const todayChartData = useMemo(() => computeChartData(todayRows),  [todayRows])
+  const chartData      = useMemo(() => computeChartData(rows),     [rows])
+  const todayChartData = useMemo(() => computeChartData(todayRows), [todayRows])
 
-  // Auto-fetch today's deliveries on mount for charts
+  // Active chart data for the chart row
+  const activeChartData = hasSearched ? chartData : (todayFetched ? todayChartData : EMPTY_CHART)
+  const activeChartLoading = hasSearched ? loading : todayLoading
+
   useEffect(() => {
     const today = todayIso()
     setTodayLoading(true)
@@ -479,10 +578,8 @@ export default function DeliverySchedule() {
       .finally(() => setTodayLoading(false))
   }, [])
 
-  // ── Open VH ──
   const openVh = async (field) => {
-    setVhModal(field)
-    setVhOptions([])
+    setVhModal(field); setVhOptions([])
     try {
       let opts = []
       if      (field === 'supplier') opts = await DeliveryScheduleApi.fetchSupplierOptions()
@@ -501,14 +598,11 @@ export default function DeliverySchedule() {
     setVhModal(null)
   }
 
-  // Go — only fetches by date range; client filters handle the rest
   const handleGo = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const data = await DeliveryScheduleApi.fetchDeliveries({ startDate, endDate })
-      setRawRows(data)
-      setHasSearched(true)
+      setRawRows(data); setHasSearched(true)
     } catch (err) {
       setError(err.message || 'Failed to fetch')
     } finally {
@@ -524,15 +618,9 @@ export default function DeliverySchedule() {
   }
 
   const handleRowClick = (trackingNo, trackYear) => {
-    setSelectedTracking(trackingNo)
-    setSelectedYear(trackYear)
-    setView('detail')
+    setSelectedTracking(trackingNo); setSelectedYear(trackYear); setView('detail')
   }
   const handleBack = () => { setView('list'); setSelectedTracking(null); setSelectedYear(null) }
-
-  const showSearchCharts = hasSearched && rows.length > 0
-  const showTodayCharts  = !hasSearched && todayFetched && todayRows.length > 0
-  const showNoToday      = !hasSearched && todayFetched && !todayLoading && todayRows.length === 0
 
   return (
     <PageLayout>
@@ -554,21 +642,9 @@ export default function DeliverySchedule() {
         .row-stagger > *:nth-child(9)  { animation-delay:0.26s; }
         .row-stagger > *:nth-child(10) { animation-delay:0.29s; }
         .tracking-row:hover .tracking-link { color:#085caf !important; text-decoration:underline; }
-
-        /* ── Filter bar grid ── */
-        .filter-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-          gap: 16px;
-          align-items: end;
-        }
-        /* Track no field spans wider when there's room */
-        .filter-field-track {
-          grid-column: span 2;
-        }
-        @media (max-width: 639px) {
-          .filter-field-track { grid-column: span 1; }
-        }
+        .filter-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:16px; align-items:end; }
+        .filter-field-track { grid-column:span 2; }
+        @media (max-width:639px) { .filter-field-track { grid-column:span 1; } }
       `}</style>
 
       {vhModal && (
@@ -592,7 +668,7 @@ export default function DeliverySchedule() {
             <DetailView trackingNo={selectedTracking} trackYear={selectedYear} onBack={handleBack} />
           ) : (
             <>
-              {/* ── Header row ── */}
+              {/* Header row */}
               <div className="px-4 sm:px-6 lg:px-10 pt-4 pb-3 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
                 <h2 className="text-[15px] sm:text-[16px] font-bold text-[#32363a] tracking-tight">
                   {hasSearched ? 'Search Results' : 'Schedule for Today'}
@@ -614,95 +690,33 @@ export default function DeliverySchedule() {
                 </div>
               </div>
 
-              {/* ── Today charts ── */}
-              {!hasSearched && (
-                <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade">
-                  {todayLoading ? (
-                    <div className="flex items-center gap-2 text-[13px] text-[#6a6d70] py-6">
-                      <div className="w-4 h-4 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin" />
-                      Loading today's data…
-                    </div>
-                  ) : showNoToday ? (
-                    <div className="flex flex-col items-center gap-4 py-6">
-                      <span className="bg-[#fce8e6] text-[#cc1c14] text-[14px] font-semibold rounded-md px-4 py-1.5">
-                        No Schedule for Today
-                      </span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:230 }}>
-                          <BarChart title="Shipment Status" data={{}} colorMap={PIE_COLORS_STATUS} order={['In Transit','Reached Plant','Goods Received']} />
-                        </div>
-                        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:230 }}>
-                          <HorizontalBarChart title="Delay Status" data={{}} colorMap={PIE_COLORS_DELAY} order={DELAY_ORDER} />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:230 }}>
-                        <BarChart title="Shipment Status" data={todayChartData.shipment} colorMap={PIE_COLORS_STATUS}
-                          order={STATUS_ORDER.filter(s => todayChartData.shipment[s] !== undefined).length
-                            ? STATUS_ORDER.filter(s => todayChartData.shipment[s] !== undefined)
-                            : ['In Transit','Reached Plant','Goods Received']} />
-                      </div>
-                      <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:230 }}>
-                        <HorizontalBarChart title="Delay Status" data={todayChartData.delay} colorMap={PIE_COLORS_DELAY} order={DELAY_ORDER} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* ── Charts — ALWAYS visible, 3 horizontal ── */}
+              <ChartRow
+                chartData={activeChartData}
+                loading={activeChartLoading}
+                label={hasSearched ? null : 'Today\'s Overview'}
+              />
 
-              {/* ── Search result charts ── */}
-              {showSearchCharts && (
-                <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:230 }}>
-                      <BarChart title="Shipment Status" data={chartData.shipment} colorMap={PIE_COLORS_STATUS}
-                        order={STATUS_ORDER.filter(s => chartData.shipment[s] !== undefined).length
-                          ? STATUS_ORDER.filter(s => chartData.shipment[s] !== undefined)
-                          : STATUS_ORDER} />
-                    </div>
-                    <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:230 }}>
-                      <HorizontalBarChart title="Delay Status" data={chartData.delay} colorMap={PIE_COLORS_DELAY} order={DELAY_ORDER} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Filter bar ── */}
+              {/* Filter bar */}
               {filterBarVisible && (
                 <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade border-t border-[#e5e5e5] pt-4">
                   <div className="filter-grid">
-
-                    {/* Start Date */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] text-[#6a6d70] font-semibold">
-                        Start Date<span className="text-[#cc1c14]">*</span>
-                      </label>
+                      <label className="text-[13px] text-[#6a6d70] font-semibold">Start Date<span className="text-[#cc1c14]">*</span></label>
                       <div className="relative">
                         <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
                           className="h-10 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full" />
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none">
-                          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                        </svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                       </div>
                     </div>
-
-                    {/* End Date */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] text-[#6a6d70] font-semibold">
-                        End Date<span className="text-[#cc1c14]">*</span>
-                      </label>
+                      <label className="text-[13px] text-[#6a6d70] font-semibold">End Date<span className="text-[#cc1c14]">*</span></label>
                       <div className="relative">
                         <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                           className="h-10 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full" />
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none">
-                          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                        </svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                       </div>
                     </div>
-
-                    {/* Status */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Status</label>
                       <div className="relative">
@@ -713,32 +727,22 @@ export default function DeliverySchedule() {
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><path d="M6 9l6 6 6-6"/></svg>
                       </div>
                     </div>
-
-                    {/* Supplier */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Supplier</label>
                       <ValueHelpInput placeholder="Select Supplier" value={supplier} onOpen={() => openVh('supplier')} />
                     </div>
-
-                    {/* Material */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Material</label>
                       <ValueHelpInput placeholder="Select Material" value={material} onOpen={() => openVh('material')} />
                     </div>
-
-                    {/* ASN */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">ASN</label>
                       <ValueHelpInput placeholder="Select ASN" value={asn} onOpen={() => openVh('asn')} />
                     </div>
-
-                    {/* Invoice No. */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Invoice No.</label>
                       <ValueHelpInput placeholder="Select Invoice No." value={invoiceNo} onOpen={() => openVh('invoice')} />
                     </div>
-
-                    {/* Track / Plant / City — spans 2 columns */}
                     <div className="flex flex-col gap-1.5 filter-field-track">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Track no / Plant / City</label>
                       <div className="relative">
@@ -751,12 +755,11 @@ export default function DeliverySchedule() {
                         </svg>
                       </div>
                     </div>
-
                   </div>
                 </div>
               )}
 
-              {/* ── Table ── */}
+              {/* Table */}
               <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 lg:px-10 pb-6 pt-2 border-t border-[#e5e5e5]">
                 {!hasSearched && !loading ? (
                   <div className="flex-1 flex items-center justify-center anim-fade py-10">
@@ -796,16 +799,11 @@ export default function DeliverySchedule() {
                     <div className="overflow-auto flex-1 min-h-0">
                       <table className="text-[13px] border-collapse w-full" style={{ minWidth:800 }}>
                         <colgroup>
-                          <col style={{ width:'160px' }} />
-                          <col style={{ width:'70px' }} />
-                          <col style={{ width:'110px' }} />
-                          <col style={{ width:'110px' }} />
-                          <col style={{ width:'110px' }} />
-                          <col style={{ width:'130px' }} />
-                          <col style={{ width:'100px' }} />
-                          <col style={{ width:'90px' }} />
-                          <col style={{ width:'150px' }} />
-                          <col style={{ width:'36px' }} />
+                          <col style={{ width:'160px' }} /><col style={{ width:'70px' }} />
+                          <col style={{ width:'110px' }} /><col style={{ width:'110px' }} />
+                          <col style={{ width:'110px' }} /><col style={{ width:'130px' }} />
+                          <col style={{ width:'100px' }} /><col style={{ width:'90px' }} />
+                          <col style={{ width:'150px' }} /><col style={{ width:'36px' }} />
                         </colgroup>
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-[#f5f6f7] text-[#6a6d70]">
@@ -831,9 +829,7 @@ export default function DeliverySchedule() {
                               <td className="py-3 px-3 text-center text-[#32363a] border-r border-[#f0f0f0] whitespace-nowrap">{fmtDate(row.eta)}</td>
                               <td className="py-3 px-3 text-center text-[#32363a] border-r border-[#f0f0f0] whitespace-nowrap">{fmtDate(row.ata)}</td>
                               <td className="py-3 px-3 text-center border-r border-[#f0f0f0]"><StatusBadge status={row.status} /></td>
-                              <td className="py-3 px-3 text-center border-r border-[#f0f0f0]">
-                                <TimeDelayLabel value={row.timeDelay} />
-                              </td>
+                              <td className="py-3 px-3 text-center border-r border-[#f0f0f0]"><TimeDelayLabel value={row.timeDelay} /></td>
                               <td className="py-3 px-3 text-center text-[#32363a] border-r border-[#f0f0f0]">{row.city}</td>
                               <td className="py-3 px-3 text-center text-[#6a6d70] border-r border-[#f0f0f0] truncate max-w-[150px]">{row.supplier}</td>
                               <td className="py-3 px-2 text-[#94a3b8] text-center">

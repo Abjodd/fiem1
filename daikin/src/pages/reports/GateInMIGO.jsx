@@ -157,7 +157,7 @@ function DateInput({ label, value, onChange, required }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COLUMN DEFINITIONS — plant removed per spec
+// COLUMN DEFINITIONS — plant not in table (filter-only)
 // ═══════════════════════════════════════════════════════════════
 const COLUMNS = [
   { key: 'grnNumber',          label: 'GRN Number',              width: 110, align: 'left'   },
@@ -174,7 +174,6 @@ const COLUMNS = [
   { key: 'grQty',              label: 'GR Quantity',             width: 105, align: 'right'  },
   { key: 'material',           label: 'Material',                width: 190, align: 'left'   },
   { key: 'vehicleNo',          label: 'Vehicle No.',             width: 100, align: 'left'   },
-  // plant column REMOVED
   { key: 'asnCrBy',            label: 'Asn Cr. By',             width: 140, align: 'left'   },
   { key: 'grnBy',              label: 'GRN By',                  width: 180, align: 'left'   },
   { key: 'stLoc',              label: 'St. Loc.',                width: 75,  align: 'center' },
@@ -201,7 +200,7 @@ export default function GateInMIGO() {
   const [material,         setMaterial]         = useState('')
   const [shipmentNo,       setShipmentNo]       = useState('')
   const [ibdNumber,        setIbdNumber]        = useState('')
-  // plant REMOVED from filter state
+  const [plant,            setPlant]            = useState('')   // ← NEW: filter-only, not in table
 
   const [filterBarVisible, setFilterBarVisible] = useState(true)
 
@@ -227,6 +226,7 @@ export default function GateInMIGO() {
     material: 'Material',
     shipment: 'Shipment Number',
     ibd:      'IBD Number',
+    plant:    'Plant',           // ← NEW
   }
 
   // ── Open VH — routes to correct API ──
@@ -237,11 +237,12 @@ export default function GateInMIGO() {
       const dateArgs = { startDate: postingStartDate, endDate: postingEndDate }
       let opts = []
       switch (field) {
-        case 'asn':      opts = await GateInMIGOApi.fetchAsnHelp();                                        break
-        case 'grn':      opts = await GateInMIGOApi.fetchGrnHelp({ ...dateArgs, asnNo });                  break
-        case 'material': opts = await GateInMIGOApi.fetchMaterialHelp({ ...dateArgs, asnNo, grnNo });      break
-        case 'shipment': opts = await GateInMIGOApi.fetchShipmentHelp();                                   break
-        case 'ibd':      opts = await GateInMIGOApi.fetchIbdHelp();                                        break
+        case 'asn':      opts = await GateInMIGOApi.fetchAsnHelp();                                                      break
+        case 'grn':      opts = await GateInMIGOApi.fetchGrnHelp({ ...dateArgs, asnNo });                                break
+        case 'material': opts = await GateInMIGOApi.fetchMaterialHelp({ ...dateArgs, asnNo, grnNo, plant });             break
+        case 'shipment': opts = await GateInMIGOApi.fetchShipmentHelp();                                                 break
+        case 'ibd':      opts = await GateInMIGOApi.fetchIbdHelp();                                                      break
+        case 'plant':    opts = await GateInMIGOApi.fetchPlantHelp({ ...dateArgs, asnNo, grnNo });                       break  // ← NEW
         default:         opts = []
       }
       setVhOptions(opts)
@@ -253,7 +254,8 @@ export default function GateInMIGO() {
   const handleVhSelect = (opt) => {
     const setters = {
       asn: setAsnNo, grn: setGrnNo,
-      material: setMaterial, shipment: setShipmentNo, ibd: setIbdNumber,
+      material: setMaterial, shipment: setShipmentNo,
+      ibd: setIbdNumber, plant: setPlant,              // ← NEW
     }
     setters[vhModal]?.(opt.code)
     setVhModal(null)
@@ -267,6 +269,7 @@ export default function GateInMIGO() {
       const data = await GateInMIGOApi.fetchReport({
         postingStartDate, postingEndDate,
         asnNo, grnNo, material, shipmentNo, ibdNumber,
+        plant,   // ← NEW: passed as Werks filter
       })
       setRows(data)
       setHasSearched(true)
@@ -281,6 +284,7 @@ export default function GateInMIGO() {
     setPostingStartDate(thirtyDaysAgoIso())
     setPostingEndDate(todayIso())
     setAsnNo(''); setGrnNo(''); setMaterial(''); setShipmentNo(''); setIbdNumber('')
+    setPlant('')   // ← NEW
     setRows([]); setHasSearched(false); setError(null)
   }
 
@@ -395,7 +399,7 @@ export default function GateInMIGO() {
             </div>
           </div>
 
-          {/* Filter bar — plant REMOVED */}
+          {/* Filter bar */}
           {filterBarVisible && (
             <div className="px-4 sm:px-6 lg:px-10 py-3 border-b border-[#e5e5e5] flex-shrink-0 anim-fade bg-[#fafbfc]">
               {/* Row 1: dates + ASN + GRN + Material */}
@@ -406,10 +410,11 @@ export default function GateInMIGO() {
                 <ValueHelpInput label="GRN No.:"        placeholder="Select Document"     value={grnNo}      onOpen={() => openVh('grn')}      />
                 <ValueHelpInput label="Material:"       placeholder="Select Material"     value={material}   onOpen={() => openVh('material')} />
               </div>
-              {/* Row 2: Shipment + IBD */}
+              {/* Row 2: Shipment + IBD + Plant */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <ValueHelpInput label="Shipment Number:" placeholder="Select Shipment No." value={shipmentNo} onOpen={() => openVh('shipment')} />
                 <ValueHelpInput label="IBD Number:"      placeholder="Select IBD No."      value={ibdNumber}  onOpen={() => openVh('ibd')}      />
+                <ValueHelpInput label="Plant:"           placeholder="Select Plant"         value={plant}      onOpen={() => openVh('plant')}    />  {/* ← NEW */}
               </div>
             </div>
           )}
