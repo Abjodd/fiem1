@@ -25,7 +25,6 @@ const GOVT_HOLIDAYS_MD = new Set(['01-26', '08-15', '10-02'])
 // DATE HELPERS
 // ═══════════════════════════════════════════════════════════════
 function isBlocked(date) {
-  if (date.getDay() === 0) return true   // Sunday
   const mm = String(date.getMonth() + 1).padStart(2, '0')
   const dd = String(date.getDate()).padStart(2, '0')
   return GOVT_HOLIDAYS_MD.has(`${mm}-${dd}`)
@@ -41,7 +40,7 @@ function isHoliday(date) {
 function nextValidDayInMonth(date) {
   const d = new Date(date)
   const month = d.getMonth()
-  while (isBlocked(d) && d.getMonth() === month) {
+  while ((isSunday(d) || isBlocked(d)) && d.getMonth() === month) {
     d.setDate(d.getDate() + 1)
   }
   return d.getMonth() === month ? d : null
@@ -71,6 +70,7 @@ function buildCalendarDays() {
       isSunday:   isSunday(date),
       isHoliday:  isHoliday(date),
       blocked:    isBlocked(date),
+      blockedSunday: isSunday(date),
       isPast,
     })
   }
@@ -86,7 +86,7 @@ function allocateByDay(totalQty, dayCount, calDays) {
   // Only allocate to future, non-blocked days
   const validIndices = []
   for (let i = 0; i < calDays.length && validIndices.length < dayCount; i++) {
-    if (!calDays[i].blocked && !calDays[i].isPast) validIndices.push(i)
+    if (!calDays[i].blocked && !calDays[i].blockedSunday && !calDays[i].isPast) validIndices.push(i)
   }
   const slots  = validIndices.length
   if (slots === 0) return Array(calDays.length).fill(0)
@@ -163,7 +163,8 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
   const handleCellChange = (li, di, val) => {
     if (!onChange) return
     // Only hard-block Sundays and government holidays from editing
-    if (calDays[di]?.blocked) return
+    const isCellBlocked = calDays[di]?.blocked || (calDays[di]?.blockedSunday && !editable)
+    if (isCellBlocked) return
     onChange(prev => prev.map((l, i) => {
       if (i !== li) return l
       const days = [...l.days]
@@ -296,12 +297,14 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                 const val = (line.days || [])[di] ?? 0
 
                 // Hard-blocked: Sunday or government holiday — no input, no value
-                if (cd.blocked) {
+                const isCellBlocked = cd.blocked || (cd.blockedSunday && !editable)
+
+                if (isCellBlocked) {
                   return (
                     <td
                       key={di}
                       className="border-r border-[#f0f0f0] p-0 text-center"
-                      style={{ background: cd.isSunday ? '#fff1f0' : '#fff7e6' }}
+                      style={{ background: cd.blockedSunday ? '#fff1f0' : '#fff7e6' }}
                     >
                       <span className="block text-[10px] text-[#e0d0d0] py-2">—</span>
                     </td>
@@ -316,10 +319,16 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                   >
                     {editable ? (
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         min="0"
                         value={val}
-                        onChange={e => handleCellChange(li, di, e.target.value)}
+                        onChange={e => {
+                          const v = e.target.value.replace(/[^0-9]/g, '')  // strip non-numeric
+                          handleCellChange(li, di, v === '' ? 0 : v)
+                        }}
+                        onFocus={e => e.target.select()}
                         className="cell-input"
                       />
                     ) : (

@@ -4,7 +4,7 @@
 // Toggle USE_MOCK = false to switch from mock → live OData
 // ═══════════════════════════════════════════════════════════════
 
-const USE_MOCK = false
+const USE_MOCK = true
 
 const SRV = 'sap/opu/odata/shiv/ZSCHEDULE_GENERATE_SRV'
 export const authConfig = { loginId: '', loginType: '' }
