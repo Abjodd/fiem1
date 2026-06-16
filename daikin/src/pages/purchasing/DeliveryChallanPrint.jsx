@@ -1,11 +1,3 @@
-// DeliveryChallanPrint.jsx
-// Drop this file next to ReturnPOMatdoc.jsx
-// Usage: import DeliveryChallanPrint from './DeliveryChallanPrint'
-//        then render <DeliveryChallanPrint doc={selectedDoc} /> anywhere in the tree
-//
-// The component renders ONLY in print media (hidden on screen via CSS).
-// It uses a dedicated <style> block with @media print rules so it takes
-// over the page cleanly when window.print() fires.
 
 export default function DeliveryChallanPrint({ doc }) {
   if (!doc) return null
