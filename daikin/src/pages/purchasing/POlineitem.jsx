@@ -102,7 +102,11 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
 
   const totalDelivery  = lines.reduce((s, l) => s + (Number(l.deliverySchedule) || 0), 0)
   const totalConfirmed = lines.reduce((s, l) => s + (Number(l.confirmedQty)     || 0), 0)
-  const isFullyConfirmed = totalConfirmed > 0 && totalConfirmed >= totalDelivery
+  const isFullyConfirmed =
+  item.status === 'Confirmed' ||
+  item.status === 'Completed' ||
+  (totalConfirmed > 0 && totalConfirmed >= totalDelivery) ||
+  (Number(item.confirmQty) > 0 && Number(item.confirmQty) >= Number(item.poQty))
 
   return (
     <div className="w-full overflow-x-auto">
@@ -229,6 +233,7 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
             {/* Date cells */}
             {calCols.map((cd) => {
               const line         = colMap[cd.key]
+
               const confirmedQty = line ? (Number(line.confirmedQty)     || 0) : 0
               const deliveryQty  = line ? (Number(line.deliverySchedule) || 0) : 0
               const unit         = line ? (line.unit || item.deliveryUnit || '') : ''
@@ -238,7 +243,7 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
               let cellBg, cellText, cellBorder
               if (!hasData) {
                 cellBg = 'transparent'; cellText = '#d9d9d9'; cellBorder = 'none'
-              } else if (confirmedQty > 0) {
+              } else if (isFullyConfirmed) {
                 cellBg = '#e8f5e9'; cellText = '#2e7d32'; cellBorder = '1.5px solid #a5d6a7'
               } else {
                 cellBg = '#fce8e6'; cellText = '#cc1c14'; cellBorder = '1.5px solid #ef9a9a'
@@ -270,7 +275,7 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
                         )}
                       </span>
                       {/* Icon */}
-                      {confirmedQty > 0 ? (
+                      {isFullyConfirmed? (
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={cellText} strokeWidth="3" strokeLinecap="round">
                           <path d="M5 13l4 4L19 7"/>
                         </svg>
