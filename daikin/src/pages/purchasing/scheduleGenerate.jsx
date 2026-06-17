@@ -1,42 +1,153 @@
-// src/pages/purchasing/ScheduleGenerate.jsx
-// OData integration: ZSCHEDULE_GENERATE_SRV
-//
-// Changes vs mock version:
-//  • handleWeek / handleDayGenerate now call the real API (weekSet / daySet)
-//    before navigating to ScheduleLines so the server-computed distribution
-//    is available immediately.
-//  • handleApprove passes the full item objects (needed for approveSet payload).
-//  • supplier.code is forwarded as `lifnr` to every API call that needs it.
-//  • days array is 31-element to match day1…day31 on all entity sets.
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { scheduleGenerateApi, generateDays, authConfig } from '../../services/ScheduleGenerate.js'
 import { useUser } from '../../context/UserContext.jsx'
 
-const SS_KEY = 'scheduleGenerate_state'
+// const SS_KEY = 'scheduleGenerate_state'
 
-function loadSession() {
-  try {
-    const raw = sessionStorage.getItem(SS_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
-}
-function saveSession(data) {
-  try { sessionStorage.setItem(SS_KEY, JSON.stringify(data)) } catch {}
-}
-function clearSession() {
-  try { sessionStorage.removeItem(SS_KEY) } catch {}
+// function loadSession() {
+//   try {
+//     const raw = sessionStorage.getItem(SS_KEY)
+//     return raw ? JSON.parse(raw) : null
+//   } catch { return null }
+// }
+// function saveSession(data) {
+//   try { sessionStorage.setItem(SS_KEY, JSON.stringify(data)) } catch {}
+// }
+// function clearSession() {
+//   try { sessionStorage.removeItem(SS_KEY) } catch {}
+// }
+
+// ═══════════════════════════════════════════════════════════════
+// F4 SUPPLIER PICKER  (value help modal)
+// ═══════════════════════════════════════════════════════════════
+function F4SupplierPicker({ onSelect, onClose }) {
+  const [suppliers, setSuppliers] = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState('')
+  const [search,    setSearch]    = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    scheduleGenerateApi.fetchAllSuppliers()
+      .then(list => { if (!cancelled) { setSuppliers(list); setLoading(false) } })
+      .catch(err  => { if (!cancelled) { setError(err.message || 'Failed to load suppliers'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [])
+
+  const filtered = suppliers.filter(s => {
+    const q = search.toLowerCase()
+    return s.lifnr.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+  })
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center px-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] overflow-hidden flex flex-col"
+        style={{ maxHeight: '75vh', animation: 'modalIn .2s ease-out both' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-5 py-4 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h3 className="text-[15px] font-bold text-white">Select Supplier</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Search bar */}
+        <div className="px-4 py-3 border-b border-[#e5e5e5] flex-shrink-0 bg-[#fafbfc]">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9e9e]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by code or name…"
+              className="w-full h-9 pl-9 pr-3 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/15 transition-all"
+            />
+          </div>
+        </div>
+
+        {/* Table header */}
+        <div className="flex items-center px-4 py-2 bg-[#f5f6f7] border-b border-[#e5e5e5] flex-shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] w-[110px]">Supplier Code</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] flex-1">Supplier Name</span>
+        </div>
+
+        {/* Rows */}
+        <div className="overflow-y-auto flex-1">
+          {loading && (
+            <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#6a6d70]">
+              <div className="w-4 h-4 border-2 border-[#0a6ed1]/30 border-t-[#0a6ed1] rounded-full animate-spin" />
+              Loading suppliers…
+            </div>
+          )}
+          {!loading && error && (
+            <div className="flex items-center justify-center py-10 text-[13px] text-[#cc1c14]">{error}</div>
+          )}
+          {!loading && !error && filtered.length === 0 && (
+            <div className="flex items-center justify-center py-10 text-[13px] text-[#9e9e9e]">No suppliers found</div>
+          )}
+          {!loading && !error && filtered.map((s, idx) => (
+            <button
+              key={s.lifnr}
+              onClick={() => onSelect(s.lifnr)}
+              className={`w-full flex items-center px-4 py-3 text-left transition-colors hover:bg-[#ebf5ff] active:bg-[#d6ecff]
+                ${idx !== 0 ? 'border-t border-[#f0f0f0]' : ''}`}
+            >
+              {/* Code pill */}
+              <span className="w-[110px] flex-shrink-0">
+                <span className="inline-block px-2 py-0.5 rounded-md bg-[#ebf5ff] text-[#0a6ed1] text-[12px] font-bold tracking-wider">
+                  {s.lifnr}
+                </span>
+              </span>
+              {/* Name */}
+              <span className="flex-1 text-[13px] text-[#32363a] font-medium truncate">{s.name}</span>
+              {/* Arrow */}
+              <svg className="ml-2 flex-shrink-0 text-[#c0c2c4]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </button>
+          ))}
+        </div>
+
+        {/* Footer count */}
+        {!loading && !error && (
+          <div className="px-4 py-2.5 border-t border-[#e5e5e5] bg-[#fafbfc] flex-shrink-0">
+            <span className="text-[11px] text-[#9e9e9e]">
+              {filtered.length} of {suppliers.length} supplier{suppliers.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUPPLIER CODE POPUP
+// SUPPLIER CODE POPUP  (with F4 icon)
 // ═══════════════════════════════════════════════════════════════
 function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
-  const [code, setCode] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [code,       setCode]       = useState('')
+  const [error,      setError]      = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [showF4,     setShowF4]     = useState(false)
 
   const handleSubmit = async () => {
     if (!code.trim()) { setError('Please enter a supplier code.'); return }
@@ -48,70 +159,123 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
     } catch (err) { setError(err.message || 'Failed to load supplier'); setLoading(false) }
   }
 
+  // User picks from F4 picker → set code then auto-submit
+  const handleF4Select = async (lifnr) => {
+    setShowF4(false)
+    setCode(lifnr)
+    setError('')
+    setLoading(true)
+    try {
+      const supp = await scheduleGenerateApi.fetchSupplier(lifnr)
+      if (!supp) { setError(`Supplier "${lifnr}" not found.`); setLoading(false); return }
+      onSubmit(supp)
+    } catch (err) { setError(err.message || 'Failed to load supplier'); setLoading(false) }
+  }
+
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center px-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-      onClick={canCancel ? onCancel : undefined}
-    >
+    <>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
-        style={{ animation: 'modalIn .22s ease-out both' }}
-        onClick={e => e.stopPropagation()}
+        className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+        style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        onClick={canCancel ? onCancel : undefined}
       >
-        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
-          <div>
-            <h2 className="text-[18px] font-bold text-white">Schedule Generate</h2>
-            <p className="text-[13px] text-white/80 mt-1">Enter the supplier code to load Schedule Agreements</p>
-          </div>
-          {canCancel && (
-            <button
-              onClick={onCancel}
-              className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0"
-              title="Cancel"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        <div className="px-6 py-6">
-          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
-            Supplier Code <span className="text-[#cc1c14]">*</span>
-          </label>
-          <input
-            autoFocus
-            type="text"
-            value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
-            placeholder="e.g. FS859"
-            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
-          />
-          {error && (
-            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-              </svg>
-              {error}
+        <div
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
+          style={{ animation: 'modalIn .22s ease-out both' }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal header */}
+          <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
+            <div>
+              <h2 className="text-[18px] font-bold text-white">Schedule Generate</h2>
+              <p className="text-[13px] text-white/80 mt-1">Enter or select a supplier code to load Schedule Agreements</p>
             </div>
-          )}
-        </div>
+            {canCancel && (
+              <button
+                onClick={onCancel}
+                className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0"
+                title="Cancel"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            )}
+          </div>
 
-        <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end">
-          <button
-            onClick={handleSubmit}
-            disabled={loading || disabled}
-            className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-60"
-          >
-            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-            {loading ? 'Loading…' : 'Load Agreements'}
-          </button>
+          <div className="px-6 py-6">
+            <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
+              Supplier Code <span className="text-[#cc1c14]">*</span>
+            </label>
+
+            {/* Input row with F4 button */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  autoFocus
+                  type="text"
+                  value={code}
+                  onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+                  placeholder="e.g. FS859"
+                  className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase pr-3"
+                />
+              </div>
+
+              {/* F4 value help button */}
+              <button
+                type="button"
+                onClick={() => setShowF4(true)}
+                disabled={loading || disabled}
+                title="Open supplier value help (F4)"
+                className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-lg border border-[#0a6ed1] bg-white text-[#0a6ed1] hover:bg-[#ebf5ff] active:bg-[#d6ecff] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {/* Copy/value-help icon */}
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* F4 hint text */}
+            <p className="mt-1.5 text-[11px] text-[#9e9e9e]">
+              Type a code manually or click <span className="font-semibold text-[#0a6ed1]">⧉</span> to browse all suppliers
+            </p>
+
+            {error && (
+              <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                </svg>
+                {error}
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
+            {/* Keyboard shortcut hint */}
+            <span className="text-[11px] text-[#9e9e9e] hidden sm:inline">Press Enter to load</span>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || disabled}
+              className="flex items-center gap-2 px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all shadow-md disabled:opacity-60"
+            >
+              {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+              {loading ? 'Loading…' : 'Load Agreements'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* F4 picker rendered on top (z-300 > z-200) */}
+      {showF4 && (
+        <F4SupplierPicker
+          onSelect={handleF4Select}
+          onClose={() => setShowF4(false)}
+        />
+      )}
+    </>
   )
 }
 
@@ -187,36 +351,36 @@ const getStatusDot   = s => STATUS_DOT[s]   || '#b45309'
 export default function ScheduleGenerate() {
   const navigate = useNavigate()
   const location = useLocation()
-  const session = loadSession()
+  // const session = loadSession()
 
-  const [supplier,          setSupplier]          = useState(session?.supplier  ?? null)
-  const [agreement,         setAgreement]         = useState(session?.agreement ?? null)
-  const [items,             setItems]             = useState(session?.items     ?? [])
+  // const [supplier,          setSupplier]          = useState(session?.supplier  ?? null)
+  // const [agreement,         setAgreement]         = useState(session?.agreement ?? null)
+  // const [items,             setItems]             = useState(session?.items     ?? [])
+  const [supplier, setSupplier] = useState(null)
+  const [agreement, setAgreement] = useState(null)
+  const [items, setItems] = useState([])
   const [fromDate,          setFromDate]          = useState('')
   const [toDate,            setToDate]            = useState('')
   const [selectedItems,     setSelectedItems]     = useState(new Set())
   const [showDayPopup,      setShowDayPopup]      = useState(false)
-  const [showSupplierPopup, setShowSupplierPopup] = useState(!session?.supplier)
-  // Shared loading/saving state covers both generate (API call) and approve
+  // const [showSupplierPopup, setShowSupplierPopup] = useState(!session?.supplier)
+  const [showSupplierPopup, setShowSupplierPopup] = useState(true)
   const [busy,              setBusy]              = useState(false)
   const [busyLabel,         setBusyLabel]         = useState('')
 
+  const { loginId, loginType, loading: userLoading } = useUser()
 
-  const { loginId, loginType, loading: userLoading } = useUser();
-
-useEffect(() => {
-  if (userLoading) return;
-  if (!loginId || !loginType) return;
-  authConfig.loginId   = loginId;
-  authConfig.loginType = loginType;
-}, [userLoading, loginId, loginType]);
-
-  // ── Persist state to sessionStorage ──
   useEffect(() => {
-    if (supplier) saveSession({ supplier, agreement, items })
-  }, [supplier, agreement, items])
+    if (userLoading) return
+    if (!loginId || !loginType) return
+    authConfig.loginId   = loginId
+    authConfig.loginType = loginType
+  }, [userLoading, loginId, loginType])
 
-  // ── Pick up savedLines when returning from ScheduleLines ──
+  // useEffect(() => {
+  //   if (supplier) saveSession({ supplier, agreement, items })
+  // }, [supplier, agreement, items])
+
   useEffect(() => {
     const ret = location.state?.returnData
     if (!ret) return
@@ -233,7 +397,7 @@ useEffect(() => {
           ...(pendingIndicator ? { indicator: pendingIndicator } : {}),
         }
       })
-      saveSession({ supplier, agreement, items: next })
+      // saveSession({ supplier, agreement, items: next })
       return next
     })
     navigate(location.pathname, { replace: true, state: {} })
@@ -245,7 +409,6 @@ useEffect(() => {
     }
   }, [location.state?.preserveSupplier]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Supplier submit ──
   const handleSupplierSubmit = supp => {
     setShowSupplierPopup(false)
     setSupplier(supp)
@@ -255,12 +418,12 @@ useEffect(() => {
       const newItems = ag.items.map(it => ({ ...it }))
       setItems(newItems)
       setSelectedItems(new Set())
-      saveSession({ supplier: supp, agreement: ag, items: newItems })
+      // saveSession({ supplier: supp, agreement: ag, items: newItems })
     }
   }
 
   const handleChangeSupplier = () => {
-    clearSession()
+    // clearSession()
     setSupplier(null)
     setAgreement(null)
     setItems([])
@@ -268,7 +431,6 @@ useEffect(() => {
     setShowSupplierPopup(true)
   }
 
-  // ── Selection ──
   const toggleItem = itemNo => setSelectedItems(prev => {
     const n = new Set(prev); n.has(itemNo) ? n.delete(itemNo) : n.add(itemNo); return n
   })
@@ -277,7 +439,6 @@ useEffect(() => {
       ? new Set()
       : new Set(items.map(i => i.itemNo)))
 
-  // ── Derived button states ──
   const selArr     = Array.from(selectedItems)
   const allHaveW   = selArr.length > 0 && selArr.every(no => items.find(i => i.itemNo === no)?.indicator === 'W')
   const allHaveD   = selArr.length > 0 && selArr.every(no => items.find(i => i.itemNo === no)?.indicator === 'D')
@@ -289,7 +450,6 @@ useEffect(() => {
   const dayDisabled  = selArr.length === 0 || anyHaveW || busy
   const editDisabled = selArr.length === 0 || !anyHaveInd || busy
 
-  // ── Navigate to ScheduleLines ──
   const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
     const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
     navigate('/purchasing/schedule-lines', {
@@ -300,7 +460,7 @@ useEffect(() => {
         mode,
         pendingIndicator,
         agreementId:   agreement.id,
-        supplierCode:  supplier.code,   // = lifnr
+        supplierCode:  supplier.code,
         supplierName:  supplier.name,
         plantName:     agreement.plantName,
         companyCode:   agreement.companyCode,
@@ -310,35 +470,25 @@ useEffect(() => {
     })
   }
 
-  // ── Week — call weekSet then navigate ──
   const handleWeek = async () => {
     if (weekDisabled) return
     setBusy(true); setBusyLabel('Generating…')
     try {
       const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-
-      // Pre-compute local distribution (used in mock; server may override in live)
       const itemsWithDays = selectedItemData.map(it => ({
         ...it,
         days: generateDays(it.totalQuantity, 'week', null),
         indicator: 'W',
       }))
-
-      // POST to weekSet — in live mode the server returns the authoritative distribution
       const serverItems = await scheduleGenerateApi.generateWeekSchedule(
-        agreement.id,
-        supplier.code,
-        itemsWithDays,
+        agreement.id, supplier.code, itemsWithDays,
       )
-
-      // Merge server response back into local state so the table stays in sync
       const mergedItems = items.map(it => {
         const srv = serverItems.find(s => s.itemNo === it.itemNo)
         return srv ? { ...it, ...srv, indicator: 'W' } : it
       })
       setItems(mergedItems)
-      saveSession({ supplier, agreement, items: mergedItems })
-
+      // saveSession({ supplier, agreement, items: mergedItems })
       openScheduleLines(selArr, false, 'Schedule Lines — Week', 'WEEKLY', 'W', mergedItems)
     } catch (err) {
       console.error('weekSet error:', err)
@@ -350,33 +500,25 @@ useEffect(() => {
 
   const handleDayClick = () => { if (!dayDisabled) setShowDayPopup(true) }
 
-  // ── Day — call daySet then navigate ──
   const handleDayGenerate = async dayCount => {
     setShowDayPopup(false)
     setBusy(true); setBusyLabel('Generating…')
     try {
       const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-
       const itemsWithDays = selectedItemData.map(it => ({
         ...it,
         days: generateDays(it.totalQuantity, 'day', dayCount),
         indicator: 'D',
       }))
-
       const serverItems = await scheduleGenerateApi.generateDaySchedule(
-        agreement.id,
-        supplier.code,
-        itemsWithDays,
-        dayCount,
+        agreement.id, supplier.code, itemsWithDays, dayCount,
       )
-
       const mergedItems = items.map(it => {
         const srv = serverItems.find(s => s.itemNo === it.itemNo)
         return srv ? { ...it, ...srv, indicator: 'D' } : it
       })
       setItems(mergedItems)
-      saveSession({ supplier, agreement, items: mergedItems })
-
+      // saveSession({ supplier, agreement, items: mergedItems })
       navigate('/purchasing/schedule-lines', {
         state: {
           selectedItemNos:  selArr,
@@ -406,26 +548,16 @@ useEffect(() => {
     if (editDisabled) return
     openScheduleLines(
       selArr.filter(no => items.find(i => i.itemNo === no)?.indicator),
-      true,
-      'Edit Schedule Lines',
-      '',
-      undefined,
+      true, 'Edit Schedule Lines', '', undefined,
     )
   }
 
-  // ── Approve — POST to approveSet ──
   const handleApprove = async () => {
     if (selArr.length === 0 || busy) return
     setBusy(true); setBusyLabel('Saving…')
     try {
       const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-
-      await scheduleGenerateApi.approveSchedule(
-        agreement.id,
-        supplier.code,          // lifnr
-        selectedItemData,
-      )
-
+      await scheduleGenerateApi.approveSchedule(agreement.id, supplier.code, selectedItemData)
       setItems(prev => {
         const next = prev.map(it => {
           if (!selectedItems.has(it.itemNo)) return it
@@ -433,7 +565,7 @@ useEffect(() => {
           if (it.status === 'In Approval') return { ...it, status: 'Generated' }
           return it
         })
-        saveSession({ supplier, agreement, items: next })
+        // saveSession({ supplier, agreement, items: next })
         return next
       })
     } catch (err) {
@@ -477,7 +609,6 @@ useEffect(() => {
         />
       )}
 
-      {/* Global busy overlay (generate / approve in progress) */}
       {busy && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center"
           style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
