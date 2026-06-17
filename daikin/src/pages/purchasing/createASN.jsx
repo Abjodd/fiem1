@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { createAsnService, authConfig } from '../../services/CreateAsn.js'
 import { postCreateAsn } from '../../services/CreateAsnPost.js'
+import { uploadAllAttachments } from '../../services/UploadAttachment.js'
 import { useUser } from '../../context/UserContext.jsx'
 
 // ═══════════════════════════════════════════════════════════════
@@ -17,16 +18,6 @@ const ALLOWED_MIME_TYPES = [
 const isAllowedFile = (file) => {
   const ext = file.name.split('.').pop()?.toLowerCase()
   return ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_MIME_TYPES.includes(file.type)
-}
-
-async function uploadAttachment(asnDraftId, file, kind = 'general') {
-  await new Promise(r => setTimeout(r, 100))
-  return {
-    id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-    name: file.name,
-    size: file.size,
-    kind,
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -65,36 +56,27 @@ function ReadonlyVal({ value, accent }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TAX MISMATCH TOGGLE
+// TAX MISMATCH TOGGLE (switch style)
 // ═══════════════════════════════════════════════════════════════
 function TaxMismatchToggle({ value, onChange, compact = false }) {
   return (
-    <div
-      className={`flex rounded-lg overflow-hidden border border-[#d9d9d9] ${compact ? 'h-8' : ''}`}
-      style={{ minWidth: compact ? 72 : 88 }}
-    >
+    <div className={`flex items-center gap-2 ${compact ? 'h-8' : ''}`}>
       <button
         type="button"
-        onClick={() => onChange(true)}
-        className={`flex-1 text-[11px] font-bold transition-all px-3 ${
-          value
-            ? 'bg-[#107e3e] text-white'
-            : 'bg-white text-[#9ca3af] hover:bg-[#f0f0f0]'
+        onClick={() => onChange(!value)}
+        className={`relative rounded-full transition-colors flex-shrink-0 ${compact ? 'w-10 h-5' : 'w-11 h-6'} ${
+          value ? 'bg-[#107e3e]' : 'bg-[#d9d9d9]'
         }`}
       >
-        YES
+        <span
+          className={`absolute top-0.5 bg-white rounded-full shadow-sm transition-transform ${compact ? 'w-4 h-4' : 'w-5 h-5'} ${
+            value ? (compact ? 'translate-x-5' : 'translate-x-5') : 'translate-x-0.5'
+          }`}
+        />
       </button>
-      <button
-        type="button"
-        onClick={() => onChange(false)}
-        className={`flex-1 text-[11px] font-bold border-l border-[#d9d9d9] transition-all px-3 ${
-          !value
-            ? 'bg-[#cc1c14] text-white'
-            : 'bg-white text-[#9ca3af] hover:bg-[#f0f0f0]'
-        }`}
-      >
-        NO
-      </button>
+      <span className={`text-[11px] font-bold ${value ? 'text-[#107e3e]' : 'text-[#9ca3af]'}`}>
+        {value ? 'YES' : 'NO'}
+      </span>
     </div>
   )
 }
@@ -269,6 +251,7 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
     success: { ring: '#107e3e', soft: '#e8f5ec', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg> },
     error:   { ring: '#cc1c14', soft: '#fce8e6', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg> },
     confirm: { ring: '#0a6ed1', soft: '#ebf5ff', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg> },
+    warning: { ring: '#b45309', soft: '#fef7e6', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> },
   }[kind] || { ring: '#0a6ed1', soft: '#ebf5ff', icon: null }
 
   return (
@@ -568,29 +551,52 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
 function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
   const inputRef = useRef(null)
 
-  const handleSelect = async (e) => {
+  const handleSelect = (e) => {
     const files = Array.from(e.target.files)
     for (const file of files) {
-      if (!isAllowedFile(file)) { onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`); continue }
-      try { const att = await uploadAttachment('draft', file, kind); onUpload(att) } catch (err) { console.error(err) }
+      if (!isAllowedFile(file)) {
+        onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`)
+        continue
+      }
+      // Store the real File object in _file so we can upload it after ASN creation
+      onUpload({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        name: file.name,
+        size: file.size,
+        kind,
+        _file: file, // ← raw File reference kept for real upload later
+      })
     }
     e.target.value = ''
   }
 
-  const handleDrop = async (e) => {
+  const handleDrop = (e) => {
     e.preventDefault()
     const files = Array.from(e.dataTransfer.files)
     for (const file of files) {
-      if (!isAllowedFile(file)) { onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`); continue }
-      const att = await uploadAttachment('draft', file, kind)
-      onUpload(att)
+      if (!isAllowedFile(file)) {
+        onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`)
+        continue
+      }
+      onUpload({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        name: file.name,
+        size: file.size,
+        kind,
+        _file: file,
+      })
     }
   }
 
   return (
     <div className="bg-white border border-[#e5e5e5] rounded-xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
-        <h3 className="text-[18px] font-bold text-[#32363a]">{kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})</h3>
+        <div>
+          <h3 className="text-[18px] font-bold text-[#32363a]">
+            {kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})
+          </h3>
+          <p className="text-[12px] text-[#6a6d70] mt-0.5">Files will be uploaded to SAP after ASN is created</p>
+        </div>
         <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-4 h-9 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98] transition-all">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Add
@@ -601,8 +607,8 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
       {items.length === 0 ? (
         <div onDragOver={e => e.preventDefault()} onDrop={handleDrop} className="py-20 flex flex-col items-center text-center">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" className="mb-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
-          <h4 className="text-[18px] font-semibold text-[#32363a] mb-1">No files found.</h4>
-          <p className="text-[13px] text-[#6a6d70]">Drop files or use the "+" button for pending upload</p>
+          <h4 className="text-[18px] font-semibold text-[#32363a] mb-1">No files added yet.</h4>
+          <p className="text-[13px] text-[#6a6d70]">Drop files here or click Add. They will be uploaded when you create the ASN.</p>
         </div>
       ) : (
         <div className="divide-y divide-[#f0f0f0]">
@@ -614,7 +620,7 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
                 </div>
                 <div>
                   <div className="text-[14px] font-semibold text-[#32363a]">{att.name}</div>
-                  <div className="text-[12px] text-[#6a6d70]">{(att.size / 1024).toFixed(1)} KB</div>
+                  <div className="text-[12px] text-[#6a6d70]">{(att.size / 1024).toFixed(1)} KB · Pending upload</div>
                 </div>
               </div>
               <button onClick={() => onRemove(att.id)} className="w-8 h-8 flex items-center justify-center text-[#cc1c14] hover:bg-[#fce8e6] rounded transition-colors">
@@ -662,6 +668,7 @@ export default function CreateASN({ agreement: propAgreement }) {
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(null)
 
+  // Attachments — each object has { id, name, size, kind, _file }
   const [generalAttachments, setGeneralAttachments] = useState([])
   const [pdirAttachments, setPdirAttachments] = useState([])
 
@@ -743,6 +750,7 @@ export default function CreateASN({ agreement: propAgreement }) {
       return
     }
     const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
+    const totalAttachments = generalAttachments.length + pdirAttachments.length
     setModal({
       kind: 'confirm', title: 'Create ASN?', message: 'Please review the details below before submitting.',
       details: (
@@ -753,31 +761,79 @@ export default function CreateASN({ agreement: propAgreement }) {
           <div className="flex justify-between"><span className="text-[#6a6d70]">Items selected</span><strong>{selectedItems.length}</strong></div>
           <div className="flex justify-between"><span className="text-[#6a6d70]">PDIR attachments</span><strong>{pdirAttachments.length}</strong></div>
           <div className="flex justify-between"><span className="text-[#6a6d70]">General attachments</span><strong>{generalAttachments.length}</strong></div>
+          {totalAttachments > 0 && (
+            <div className="pt-1 border-t border-[#e5e5e5] text-[#6a6d70] text-[12px]">
+              {totalAttachments} file{totalAttachments > 1 ? 's' : ''} will be uploaded to SAP after ASN creation.
+            </div>
+          )}
         </div>
       ),
       primaryLabel: 'Yes, Create', secondaryLabel: 'Cancel', onPrimary: doCreate, onSecondary: () => setModal(null),
     })
   }
 
+  // ─── CORE SUBMIT: create ASN then upload attachments ───────────
   const doCreate = async () => {
     setSubmitting(true)
     setModal(null)
     try {
       const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
+
+      // Step 1 — Create the ASN header + items
       const result = await postCreateAsn({
         poNo,
         invoice: { number: invoiceNumber, date: invoiceDate, amount: calcInvoiceValue(), totalPacking },
         selectedItems,
         header: header || {},
       })
+
+      const asnNum = result.AsnNum
+      const fisYear = result.FisYear || String(new Date().getFullYear())
+
+      // Step 2 — Upload attachments now that we have the real AsnNum
+      const totalFiles = generalAttachments.length + pdirAttachments.length
+      let uploadResult = { uploaded: 0, failed: [] }
+
+      if (totalFiles > 0) {
+        uploadResult = await uploadAllAttachments({
+          asnNum,
+          fisYear,
+          generalAttachments,
+          pdirAttachments,
+        })
+      }
+
+      // Step 3 — Show result
+      const someUploadsFailed = uploadResult.failed.length > 0
+
       setModal({
-        kind: 'success', title: 'ASN created successfully', message: 'Your ASN has been submitted and is now available in the system.',
+        kind: someUploadsFailed ? 'warning' : 'success',
+        title: someUploadsFailed ? 'ASN created — some attachments failed' : 'ASN created successfully',
+        message: someUploadsFailed
+          ? `ASN ${asnNum} was created but ${uploadResult.failed.length} file(s) could not be uploaded. You may need to attach them manually.`
+          : 'Your ASN has been submitted and all attachments uploaded successfully.',
         details: (
           <div className="space-y-1.5">
-            <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.AsnNum}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{asnNum}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">PO Number</span><strong>{result.Po_No}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">Invoice No.</span><strong>{result.InvoiceNum}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{selectedItems.length}</strong></div>
+            {totalFiles > 0 && (
+              <div className="flex justify-between">
+                <span className="text-[#6a6d70]">Attachments uploaded</span>
+                <strong className={uploadResult.failed.length > 0 ? 'text-[#b45309]' : 'text-[#107e3e]'}>
+                  {uploadResult.uploaded} / {totalFiles}
+                </strong>
+              </div>
+            )}
+            {uploadResult.failed.length > 0 && (
+              <div className="pt-1 border-t border-[#e5e5e5]">
+                <div className="text-[11px] text-[#cc1c14] font-semibold mb-1">Failed uploads:</div>
+                {uploadResult.failed.map((f, i) => (
+                  <div key={i} className="text-[11px] text-[#cc1c14]">• {f.name}: {f.error}</div>
+                ))}
+              </div>
+            )}
           </div>
         ),
         primaryLabel: 'Done', onPrimary: () => { setModal(null); navigate(-1) },
