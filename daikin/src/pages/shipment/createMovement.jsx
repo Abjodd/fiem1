@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { createMovementApi } from '../../services/CreateMovement.js'
+import { createMovementApi, authConfig } from '../../services/CreateMovement.js'
+import { useUser } from '../../context/UserContext.jsx'
 import {
   ChevronLeft,
   ExternalLink,
@@ -173,6 +174,9 @@ const SuccessPopup = ({ trackingId, onOk }) => (
 //                to open GoodsMovement detail with the new tracking ID
 // ═══════════════════════════════════════════════════════════════
 export default function CreateMovement({ editData = null, onBack = null, onNavigateToTracking = null }) {
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
   const isEditMode = !!editData
 
   const navigate = (() => {
@@ -219,6 +223,8 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
 
   // Load ASN lookup list
   useEffect(() => {
+    if (userLoading) return
+    if (!loginId || !loginType) return
     if (!asnLookupOpen) return
     let cancelled = false
     setAsnLookupLoading(true)
@@ -226,7 +232,7 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
       .then((data) => { if (!cancelled) { setAsnLookupResults(data); setAsnLookupLoading(false) } })
       .catch((err) => { console.error(err); if (!cancelled) setAsnLookupLoading(false) })
     return () => { cancelled = true }
-  }, [asnLookupOpen, asnLookupSearch])
+  }, [userLoading, loginId, loginType, asnLookupOpen, asnLookupSearch])
 
   // Close dialog on Escape
   useEffect(() => {
