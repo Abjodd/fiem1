@@ -27,13 +27,9 @@ const fmtDate = (val) => {
 // ═══════════════════════════════════════════════════════════════
 // CHART CONFIG
 // ═══════════════════════════════════════════════════════════════
-// Bar chart: only these 3
-const BAR_STATUS_ORDER = ['In Transit', 'Reached Plant', 'Goods Received']
-
-// Pie chart: only these 4
-const PIE_STATUS_ORDER = ['In Transit', 'Reached Plant', 'Unloading Started', 'Completed']
-
-const DELAY_ORDER = ['Before Time', 'On Time', 'Delayed']
+const BAR_STATUS_ORDER  = ['In Transit', 'Reached Plant', 'Goods Received']
+const PIE_STATUS_ORDER  = ['In Transit', 'Reached Plant', 'Unloading Started', 'Completed']
+const DELAY_ORDER       = ['Before Time', 'On Time', 'Delayed']
 
 const PIE_COLORS_STATUS = {
   'In Transit':        '#0a6ed1',
@@ -64,13 +60,12 @@ const computeChartData = (rows) => {
 // PIE CHART (4-status donut)
 // ═══════════════════════════════════════════════════════════════
 function PieChart({ title, data, colorMap, order }) {
-  const values  = order.map(l => data[l] || 0)
-  const total   = values.reduce((a, b) => a + b, 0)
+  const values = order.map(l => data[l] || 0)
+  const total  = values.reduce((a, b) => a + b, 0)
 
   const CX = 70, CY = 70, R = 52, INNER = 30
   let slices = []
   if (total === 0) {
-    // empty ring
     slices = [{ label: 'empty', color: '#f0f0f0', path: describeArc(CX, CY, R, 0, 359.99), count: 0 }]
   } else {
     let angle = -90
@@ -93,18 +88,14 @@ function PieChart({ title, data, colorMap, order }) {
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
       <div style={{ fontSize:13, fontWeight:700, color:'#32363a', marginBottom:6, textAlign:'center' }}>{title}</div>
       <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:12, minHeight:0 }}>
-        {/* Donut */}
         <svg viewBox="0 0 140 140" style={{ width:130, height:130, flexShrink:0 }}>
           {slices.map((s, i) => (
             <path key={i} d={s.path} fill={s.color} stroke="white" strokeWidth="2" />
           ))}
-          {/* inner hole */}
           <circle cx={CX} cy={CY} r={INNER} fill="white" />
-          {/* total label */}
           <text x={CX} y={CY - 6} textAnchor="middle" fontSize="18" fontWeight="800" fill="#32363a">{total}</text>
           <text x={CX} y={CY + 10} textAnchor="middle" fontSize="9" fill="#94a3b8">TOTAL</text>
         </svg>
-        {/* Legend */}
         <div style={{ display:'flex', flexDirection:'column', gap:5, minWidth:0 }}>
           {order.map(label => (
             <div key={label} style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -133,12 +124,12 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 // VERTICAL BAR CHART (3 bars only)
 // ═══════════════════════════════════════════════════════════════
 function BarChart({ title, data, colorMap, order }) {
-  const labels = order   // always render all 3 even if 0
+  const labels = order
   const values = labels.map(l => data[l] || 0)
   const max    = Math.max(1, ...values)
   const niceMax = (() => {
     if (max <= 1) return 1
-    const pow = Math.pow(10, Math.floor(Math.log10(max)))
+    const pow  = Math.pow(10, Math.floor(Math.log10(max)))
     const norm = max / pow
     let nice
     if (norm <= 1) nice = 1
@@ -147,10 +138,10 @@ function BarChart({ title, data, colorMap, order }) {
     else nice = 10
     return nice * pow
   })()
-  const steps   = 3
+  const steps    = 3
   const gridVals = Array.from({ length: steps + 1 }, (_, i) => Math.round((niceMax / steps) * i))
-  const chartH  = 120
-  const chartW  = 240
+  const chartH   = 120
+  const chartW   = 240
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
@@ -167,13 +158,13 @@ function BarChart({ title, data, colorMap, order }) {
             )
           })}
           {labels.map((label, i) => {
-            const val    = values[i]
-            const barW   = 44
-            const slotW  = chartW / labels.length
-            const x      = 40 + i * slotW + (slotW - barW) / 2
-            const barH   = niceMax === 0 ? 0 : (val / niceMax) * (chartH - 20)
-            const y      = chartH - barH - 5
-            const words  = label.split(' ')
+            const val   = values[i]
+            const barW  = 44
+            const slotW = chartW / labels.length
+            const x     = 40 + i * slotW + (slotW - barW) / 2
+            const barH  = niceMax === 0 ? 0 : (val / niceMax) * (chartH - 20)
+            const y     = chartH - barH - 5
+            const words = label.split(' ')
             return (
               <g key={label}>
                 <rect x={x} y={y} width={barW} height={Math.max(barH, 0)} fill={colorMap[label] || '#94a3b8'} rx="2" />
@@ -183,7 +174,6 @@ function BarChart({ title, data, colorMap, order }) {
                 {val === 0 && (
                   <text x={x + barW/2} y={chartH - 7} textAnchor="middle" fontSize="11" fill="#94a3b8">0</text>
                 )}
-                {/* multi-line label */}
                 {words.map((w, wi) => (
                   <text key={wi} x={x + barW/2} y={chartH + 14 + wi * 12} textAnchor="middle" fontSize="10.5" fill="#6a6d70">{w}</text>
                 ))}
@@ -262,36 +252,63 @@ function HorizontalBarChart({ title, data, colorMap, order }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CHART ROW — always visible, 3 charts horizontal
+// CHART ROW
+// FIX #3 — Order: Pie (today only) | Bar | Horizontal Bar
+//           Pie is only shown for today's overview (not after search)
+//           If today has no rows, show "No schedule for today" in pie slot
 // ═══════════════════════════════════════════════════════════════
-function ChartRow({ chartData, loading, label }) {
+function ChartRow({ chartData, loading, showTodayPie, todayHasData, todayLoading }) {
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade">
-      {label && (
-        <div className="text-[12px] text-[#6a6d70] font-semibold mb-2">{label}</div>
-      )}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-        {/* Shipment Status — Bar (3 bars) */}
+
+        {/* SLOT 1 — Pie: today overview only */}
+        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
+          {showTodayPie ? (
+            todayLoading ? (
+              <Spinner />
+            ) : todayHasData ? (
+              <PieChart
+                title="Today's Status"
+                data={chartData.shipment}
+                colorMap={PIE_COLORS_STATUS}
+                order={PIE_STATUS_ORDER}
+              />
+            ) : (
+              /* No schedules today */
+              <div style={{ height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d9d9d9" strokeWidth="1.5">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <path d="M16 2v4M8 2v4M3 10h18"/>
+                </svg>
+                <div style={{ fontSize:13, fontWeight:700, color:'#6a6d70', textAlign:'center' }}>No Schedule for Today</div>
+                <div style={{ fontSize:11, color:'#94a3b8', textAlign:'center' }}>No deliveries are scheduled for today</div>
+              </div>
+            )
+          ) : (
+            /* After search — hide pie, show neutral message */
+            <div style={{ height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <div style={{ fontSize:12, color:'#94a3b8', textAlign:'center' }}>Today's pie shown<br/>before search</div>
+            </div>
+          )}
+        </div>
+
+        {/* SLOT 2 — Shipment Status Bar */}
         <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
           {loading
             ? <Spinner />
             : <BarChart title="Shipment Status" data={chartData.shipment} colorMap={PIE_COLORS_STATUS} order={BAR_STATUS_ORDER} />
           }
         </div>
-        {/* Status Breakdown — Pie (4 statuses) */}
-        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
-          {loading
-            ? <Spinner />
-            : <PieChart title="Status Breakdown" data={chartData.shipment} colorMap={PIE_COLORS_STATUS} order={PIE_STATUS_ORDER} />
-          }
-        </div>
-        {/* Delay Status — Horizontal bar */}
+
+        {/* SLOT 3 — Delay Status Horizontal Bar */}
         <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
           {loading
             ? <Spinner />
             : <HorizontalBarChart title="Delay Status" data={chartData.delay} colorMap={PIE_COLORS_DELAY} order={DELAY_ORDER} />
           }
         </div>
+
       </div>
     </div>
   )
@@ -404,6 +421,7 @@ function ValueHelpInput({ placeholder, value, onOpen }) {
 
 // ═══════════════════════════════════════════════════════════════
 // DETAIL VIEW
+// FIX #4 — Left: Tracking No + Supplier  |  Right: Status (bold big) + Shipment Date + ETA
 // ═══════════════════════════════════════════════════════════════
 function DetailView({ trackingNo, trackYear, onBack }) {
   const [detail,  setDetail]  = useState(null)
@@ -421,13 +439,17 @@ function DetailView({ trackingNo, trackYear, onBack }) {
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
+      {/* Back bar */}
       <div className="px-4 sm:px-6 lg:px-10 pt-4 pb-3 flex items-center gap-3 border-b border-[#e5e5e5] flex-shrink-0 anim-fade">
         <button onClick={onBack}
           className="w-8 h-8 flex items-center justify-center rounded border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all flex-shrink-0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <span className="text-[14px] text-[#6a6d70] font-medium">Tracking No. — <strong className="text-[#32363a]">{displayTrackingNo}</strong></span>
+        <span className="text-[14px] text-[#6a6d70] font-medium">
+          Tracking No. — <strong className="text-[#32363a]">{displayTrackingNo}</strong>
+        </span>
       </div>
+
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 text-[#6a6d70]">
@@ -444,19 +466,51 @@ function DetailView({ trackingNo, trackYear, onBack }) {
         </div>
       ) : detail ? (
         <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-10 py-6 anim-slide-up">
+
+          {/* ── Header card ── */}
           <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-5 mb-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div style={{ fontSize:22, fontWeight:800, color:'#b45309', fontFamily:'monospace', letterSpacing:0.5, background:'#fce8e6', display:'inline-block', borderRadius:6, padding:'2px 10px' }}>{displayTrackingNo}</div>
-                {detail.supplier && <div className="text-[13px] text-[#6a6d70] mt-1.5">Supplier: <span className="font-medium text-[#32363a]">{detail.supplier}</span></div>}
+
+              {/* LEFT — Tracking No + Supplier */}
+              <div className="flex flex-col gap-2">
+                <div style={{
+                  fontSize: 22, fontWeight: 800, color: '#b45309',
+                  fontFamily: 'monospace', letterSpacing: 0.5,
+                  background: '#fce8e6', display: 'inline-block',
+                  borderRadius: 6, padding: '2px 10px'
+                }}>
+                  {displayTrackingNo}
+                </div>
+                {detail.supplier && (
+                  <div className="text-[13px] text-[#6a6d70]">
+                    Supplier: <span className="font-semibold text-[#32363a]">{detail.supplier}</span>
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                {detail.status && <div style={{ color:'#107e3e', fontWeight:700, fontSize:18 }}>{detail.status}</div>}
-                {detail.shipmentDate && <div className="text-[12px] text-[#6a6d70] mt-1">Shipment Date: <span className="font-medium text-[#32363a]">{fmtDate(detail.shipmentDate)}</span></div>}
-                {detail.eta && <div className="text-[12px] text-[#6a6d70]">ETA: <span className="font-medium text-[#32363a]">{fmtDate(detail.eta)}</span></div>}
+
+              {/* RIGHT — Status (big bold) → Shipment Date → ETA */}
+              <div className="flex flex-col items-end gap-1.5">
+                {detail.status && (
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#107e3e', lineHeight: 1.2 }}>
+                    {detail.status}
+                  </div>
+                )}
+                {detail.shipmentDate && (
+                  <div className="text-[12px] text-[#6a6d70]">
+                    Shipment Date:&nbsp;<span className="font-semibold text-[#32363a]">{fmtDate(detail.shipmentDate)}</span>
+                  </div>
+                )}
+                {detail.eta && (
+                  <div className="text-[12px] text-[#6a6d70]">
+                    ETA:&nbsp;<span className="font-semibold text-[#32363a]">{fmtDate(detail.eta)}</span>
+                  </div>
+                )}
               </div>
+
             </div>
           </div>
+
+          {/* ── Line items table ── */}
           {detail.items && detail.items.length > 0 ? (
             <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
               <div className="overflow-auto">
@@ -543,6 +597,9 @@ export default function DeliverySchedule() {
   const [invoiceNo,   setInvoiceNo]   = useState('')
   const [trackSearch, setTrackSearch] = useState('')
 
+  // FIX #2 — date validation error message
+  const [dateError, setDateError] = useState('')
+
   const [filterBarVisible, setFilterBarVisible] = useState(true)
 
   const [vhModal,   setVhModal]   = useState(null)
@@ -565,9 +622,8 @@ export default function DeliverySchedule() {
   const chartData      = useMemo(() => computeChartData(rows),     [rows])
   const todayChartData = useMemo(() => computeChartData(todayRows), [todayRows])
 
-  // Active chart data for the chart row
-  const activeChartData = hasSearched ? chartData : (todayFetched ? todayChartData : EMPTY_CHART)
-  const activeChartLoading = hasSearched ? loading : todayLoading
+  // After search: bar & horizontal bar use search results; pie always uses today
+  const activeBarChartData = hasSearched ? chartData : todayChartData
 
   useEffect(() => {
     const today = todayIso()
@@ -598,10 +654,26 @@ export default function DeliverySchedule() {
     setVhModal(null)
   }
 
+  // FIX #1 — pass ALL filters to API  |  FIX #2 — date validation
   const handleGo = async () => {
+    // Date validation
+    if (startDate && endDate && startDate > endDate) {
+      setDateError('Start date must be on or before end date.')
+      return
+    }
+    setDateError('')
     setLoading(true); setError(null)
     try {
-      const data = await DeliveryScheduleApi.fetchDeliveries({ startDate, endDate })
+      const data = await DeliveryScheduleApi.fetchDeliveries({
+        startDate,
+        endDate,
+        status,
+        supplier,
+        material,
+        asn,
+        invoiceNo,
+        trackSearch,
+      })
       setRawRows(data); setHasSearched(true)
     } catch (err) {
       setError(err.message || 'Failed to fetch')
@@ -614,7 +686,7 @@ export default function DeliverySchedule() {
     setStartDate(offsetDateIso(-30)); setEndDate(todayIso())
     setStatus(''); setSupplier(''); setMaterial('')
     setAsn(''); setInvoiceNo(''); setTrackSearch('')
-    setRawRows([]); setHasSearched(false); setError(null)
+    setRawRows([]); setHasSearched(false); setError(null); setDateError('')
   }
 
   const handleRowClick = (trackingNo, trackYear) => {
@@ -690,32 +762,50 @@ export default function DeliverySchedule() {
                 </div>
               </div>
 
-              {/* ── Charts — ALWAYS visible, 3 horizontal ── */}
+              {/* FIX #3 — Charts with corrected order and today-only pie */}
               <ChartRow
-                chartData={activeChartData}
-                loading={activeChartLoading}
-                label={hasSearched ? null : 'Today\'s Overview'}
+                chartData={activeBarChartData}
+                loading={hasSearched ? loading : todayLoading}
+                showTodayPie={!hasSearched}
+                todayHasData={todayRows.length > 0}
+                todayLoading={todayLoading}
               />
 
               {/* Filter bar */}
               {filterBarVisible && (
                 <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade border-t border-[#e5e5e5] pt-4">
+
+                  {/* FIX #2 — Date error message */}
+                  {dateError && (
+                    <div className="mb-3 flex items-center gap-2 px-4 py-2.5 bg-[#fce8e6] text-[#cc1c14] rounded-lg text-[13px] font-medium">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                      {dateError}
+                    </div>
+                  )}
+
                   <div className="filter-grid">
+                    {/* FIX #3 — Removed SVG calendar icons; native date input has its own picker */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] text-[#6a6d70] font-semibold">Start Date<span className="text-[#cc1c14]">*</span></label>
-                      <div className="relative">
-                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                          className="h-10 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full" />
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                      </div>
+                      <label className="text-[13px] text-[#6a6d70] font-semibold">
+                        Start Date<span className="text-[#cc1c14]">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={e => { setStartDate(e.target.value); setDateError('') }}
+                        className="h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full"
+                      />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] text-[#6a6d70] font-semibold">End Date<span className="text-[#cc1c14]">*</span></label>
-                      <div className="relative">
-                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                          className="h-10 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full" />
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                      </div>
+                      <label className="text-[13px] text-[#6a6d70] font-semibold">
+                        End Date<span className="text-[#cc1c14]">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={e => { setEndDate(e.target.value); setDateError('') }}
+                        className="h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full"
+                      />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Status</label>

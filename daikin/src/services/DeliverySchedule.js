@@ -47,8 +47,8 @@ function mapDeliveryRow(raw) {
 
 // ── Detail mapper — AsnDetailsSet ────────────────────────────
 function mapDetailItem(raw) {
-  const qty   = str(raw.Menge ?? '')
-  const unit  = str(raw.Meins ?? '')
+  const qty  = str(raw.Menge ?? '')
+  const unit = str(raw.Meins ?? '')
   return {
     asn:           str(raw.Asn ?? ''),
     asnYear:       str(raw.AsnYear ?? ''),
@@ -63,30 +63,13 @@ function mapDetailItem(raw) {
   }
 }
 
-// ── Filter builder ────────────────────────────────────────────
-// required = always included even when ''
-// optional = only when non-empty
-function buildFilter(required = {}, optional = {}) {
-  const parts = []
-  Object.entries(required).forEach(([k, v]) => parts.push(`${k} eq '${v}'`))
-  Object.entries(optional).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && String(v).trim() !== '') parts.push(`${k} eq '${v}'`)
-  })
-  return encodeURIComponent(parts.join(' and '))
-}
-
-// ── Range filter helper ───────────────────────────────────────
-function buildRangeFilter(field, from, to) {
-  return `${encodeURIComponent(field)}%20ge%20%27${from}%27%20and%20${encodeURIComponent(field)}%20le%20%27${to}%27`
-}
-
 // ═══════════════════════════════════════════════════════════════
 // API
 // ═══════════════════════════════════════════════════════════════
 export const DeliveryScheduleApi = {
 
   // Go button — GoodsMvtHeaderSet
-  // Spec: ?$filter=Eta ge '20260429' and Eta le '20260529' and Bukrs eq '1000'
+  // Spec: ?$filter=Eta ge '20260429' and Eta le '20260529'
   async fetchDeliveries({
     startDate = '', endDate = '',
     status = '', supplier = '', material = '',
@@ -96,37 +79,34 @@ export const DeliveryScheduleApi = {
     const sapFrom = toSapDate(startDate)
     const sapTo   = toSapDate(endDate)
 
-    // Build filter parts — Bukrs not filterable on GoodsMvtHeader, removed
     const parts = []
-    if (sapFrom) parts.push(`Eta ge '${sapFrom}'`)
-    if (sapTo)   parts.push(`Eta le '${sapTo}'`)
-    if (status)    parts.push(`StatusText eq '${status}'`)
-    if (supplier)  parts.push(`Name eq '${supplier}'`)
-    if (material)  parts.push(`Material eq '${material}'`)
-    if (asn)       parts.push(`AsnNum eq '${asn}'`)
-    if (invoiceNo) parts.push(`InvNo eq '${invoiceNo}'`)
+    if (sapFrom)     parts.push(`Eta ge '${sapFrom}'`)
+    if (sapTo)       parts.push(`Eta le '${sapTo}'`)
+    if (status)      parts.push(`StatusText eq '${status}'`)
+    if (supplier)    parts.push(`Name eq '${supplier}'`)
+    if (material)    parts.push(`Material eq '${material}'`)
+    if (asn)         parts.push(`AsnNum eq '${asn}'`)
+    if (invoiceNo)   parts.push(`InvNo eq '${invoiceNo}'`)
     if (trackSearch) parts.push(`TrackNo eq '${trackSearch}'`)
 
-    const f = encodeURIComponent(parts.join(' and '))
+    const f          = encodeURIComponent(parts.join(' and '))
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
-    const data = await odata(`/GoodsMvtHeaderSet?$filter=${f}${pagination}`)
+    const data       = await odata(`/GoodsMvtHeaderSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(mapDeliveryRow)
   },
 
-  // Detail — AsnDetailsSet (clicked row)
-  // Spec: ?$filter=TrackNo eq '3000000635' and Year eq '2026'
+  // Detail — AsnDetailsSet
   async fetchDetail(trackingNo, trackYear) {
     try {
       const parts = [`TrackNo eq '${trackingNo}'`]
       if (trackYear) parts.push(`Year eq '${trackYear}'`)
-      const f = encodeURIComponent(parts.join(' and '))
+      const f    = encodeURIComponent(parts.join(' and '))
       const data = await odata(`/AsnDetailsSet?$filter=${f}`)
       const results = data.d?.results || []
       return {
         trackingNo,
         trackYear,
-        items: results.map(mapDetailItem),
-        // header fields from first result if available
+        items:        results.map(mapDetailItem),
         status:       str(results[0]?.StatusText ?? ''),
         supplier:     str(results[0]?.Name ?? ''),
         shipmentDate: str(results[0]?.ShipDate ?? ''),
@@ -137,44 +117,32 @@ export const DeliveryScheduleApi = {
     }
   },
 
-  // VH — Supplier: VendorHelpSet
+  // VH — Supplier
   async fetchSupplierOptions({ skip = 0, top = 10 } = {}) {
     const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
     const data = await odata(`/VendorHelpSet?${pagination}`)
-    return (data.d?.results || []).map(r => ({
-      code:  str(r.Vendor),
-      label: str(r.Name),
-    }))
+    return (data.d?.results || []).map(r => ({ code: str(r.Vendor), label: str(r.Name) }))
   },
 
-  // VH — Material: MaterialHelpSet
+  // VH — Material
   async fetchMaterialOptions({ skip = 0, top = 10 } = {}) {
     const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
     const data = await odata(`/MaterialHelpSet?${pagination}`)
-    return (data.d?.results || []).map(r => ({
-      code:  str(r.Material),
-      label: str(r.Desc),
-    }))
+    return (data.d?.results || []).map(r => ({ code: str(r.Material), label: str(r.Desc) }))
   },
 
-  // VH — ASN: AsnHelpSet
+  // VH — ASN
   async fetchAsnOptions({ skip = 0, top = 20 } = {}) {
     const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
     const data = await odata(`/AsnHelpSet?${pagination}`)
-    return (data.d?.results || []).map(r => ({
-      code:  str(r.AsnNum),
-      label: str(r.FisYear),
-    }))
+    return (data.d?.results || []).map(r => ({ code: str(r.AsnNum), label: str(r.FisYear) }))
   },
 
-  // VH — Invoice: InvHelpSet
+  // VH — Invoice
   async fetchInvoiceOptions({ skip = 0, top = 20 } = {}) {
     const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
     const data = await odata(`/InvHelpSet?${pagination}`)
-    return (data.d?.results || []).map(r => ({
-      code:  str(r.InvNo),
-      label: '',
-    }))
+    return (data.d?.results || []).map(r => ({ code: str(r.InvNo), label: '' }))
   },
 }
 

@@ -1,21 +1,16 @@
-// ═══════════════════════════════════════════════════════════════
-// ScheduleGenerate.js — Schedule Generate API
-// Service: ZSCHEDULE_GENERATE_SRV
-// Toggle USE_MOCK = false to switch from mock → live OData
-// ═══════════════════════════════════════════════════════════════
+const USE_MOCK = false
 
-const USE_MOCK = true
-
-const SRV = 'sap/opu/odata/shiv/ZSCHEDULE_GENERATE_SRV'
+const SRV = '/sap/opu/odata/sap/ZSCHEDULE_GENERATE_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
 // ── OData helpers ─────────────────────────────────────────────
 
-/** Fetch a CSRF token required for every mutating OData call (POST/PATCH/DELETE). */
 async function fetchCsrfToken() {
   const res = await fetch(`${SRV}/`, {
     method: 'GET',
-    headers: { 'X-CSRF-Token': 'Fetch', Accept: 'application/json' ,
+    headers: {
+      'X-CSRF-Token': 'Fetch',
+      Accept: 'application/json',
       Loginid: authConfig.loginId,
       Logintype: authConfig.loginType,
     },
@@ -26,11 +21,13 @@ async function fetchCsrfToken() {
   return token
 }
 
-/** Generic OData GET — returns parsed d.results array or d object. */
 async function odataGet(path) {
   const res = await fetch(`${SRV}${path}`, {
-    headers: { Accept: 'application/json',Loginid: authConfig.loginId,
-      Logintype: authConfig.loginType, },
+    headers: {
+      Accept: 'application/json',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
+    },
     credentials: 'include',
   })
   if (!res.ok) throw new Error(`OData GET failed: ${res.status} ${res.statusText}`)
@@ -38,7 +35,6 @@ async function odataGet(path) {
   return json.d
 }
 
-/** Generic OData POST — returns parsed d object. */
 async function odataPost(path, body) {
   const token = await fetchCsrfToken()
   const res = await fetch(`${SRV}${path}`, {
@@ -59,21 +55,17 @@ async function odataPost(path, body) {
 }
 
 // ── Field-name mappers ────────────────────────────────────────
-// OData field names (lowercase/abbreviated) → internal app names
 
-/** Map one sg_headerSet record to the agreement header shape the UI expects. */
 function mapHeader(d) {
   return {
     id:          d.agreement,
     date:        d.date,
     companyCode: d.compcode,
     plant:       d.plant,
-    // plantName not in sg_headerSet; carry it from a separate lookup or leave as plant
     plantName:   d.plant,
   }
 }
 
-/** Map one sg_itemSet record to the item shape the UI expects. */
 function mapItem(d) {
   return {
     itemNo:        d.itemno,
@@ -85,22 +77,16 @@ function mapItem(d) {
     indicator:     d.indicator || '',
     status:        d.status   || 'Not Generated',
     date:          d.date     || '',
-    // days array is not on sg_itemSet; initialise empty — filled by week/daySet calls
     days:          new Array(31).fill(0),
     frozenDays:    [],
   }
 }
 
-/**
- * Map a weekSet or daySet record into the days[] array the UI uses.
- * The entity has day1…day31 + fn1/fn2/fn3 (frozen-day flags).
- */
 function mapDayRecord(d) {
   const days = []
   for (let i = 1; i <= 31; i++) {
     days.push(Number(d[`day${i}`]) || 0)
   }
-  // fn1/fn2/fn3 are frozen-day indicators (could be day indices or flags)
   const frozenDays = [d.fn1, d.fn2, d.fn3]
     .filter(Boolean)
     .map(Number)
@@ -117,10 +103,6 @@ function mapDayRecord(d) {
   }
 }
 
-/**
- * Convert the internal days[] array back to the day1…day31 payload
- * shape required by weekSet / daySet / editSet POST bodies.
- */
 function buildDayPayload(agreementId, lifnr, item, extraFields = {}) {
   const payload = {
     agreement: agreementId,
@@ -189,13 +171,46 @@ const MOCK_SUPPLIERS = {
       ],
     }],
   },
+  'FS901': {
+    code: 'FS901',
+    name: 'Kumar Auto Parts Pvt Ltd',
+    agreements: [{
+      id: '5501000412',
+      date: '10.08.2026',
+      companyCode: 'DSAL',
+      plant: 'NM01',
+      plantName: 'FIEM-NMR (NMR)',
+      items: [
+        { itemNo: '10', sapCode: '3P8801', description: 'Bracket assembly LH', hsnCode: '87089900', totalQuantity: 1500, unitPrice: 1.20, indicator: '', status: 'Not Generated', days: new Array(31).fill(0), frozenDays: [] },
+      ],
+    }],
+  },
+  'FS744': {
+    code: 'FS744',
+    name: 'Bharat Forge Components',
+    agreements: [{
+      id: '5501000398',
+      date: '22.07.2026',
+      companyCode: 'DSAL',
+      plant: 'SR01',
+      plantName: 'Sri City FG',
+      items: [
+        { itemNo: '10', sapCode: '3P5510', description: 'Forged shaft pin', hsnCode: '73269099', totalQuantity: 3000, unitPrice: 0.55, indicator: '', status: 'Not Generated', days: new Array(31).fill(0), frozenDays: [] },
+      ],
+    }],
+  },
 }
+
+// Mock f4 supplier list (lifnr + name only)
+const MOCK_F4_SUPPLIERS = Object.values(MOCK_SUPPLIERS).map(s => ({
+  lifnr: s.code,
+  name:  s.name,
+}))
 
 // ── Schedule generation helpers ───────────────────────────────
 export function generateDays(totalQty, mode, dayCount) {
   const days = new Array(31).fill(0)
   if (mode === 'week') {
-    // Spread equally across 4 weekly slots: day 1, 8, 15, 22 (index 0, 7, 14, 21)
     const slots = [0, 7, 14, 21]
     const per = Math.floor(totalQty / 4)
     const rem = totalQty - per * 4
@@ -213,31 +228,39 @@ export function generateDays(totalQty, mode, dayCount) {
 export const scheduleGenerateApi = {
 
   // ────────────────────────────────────────────────────────────
+  // fetchAllSuppliers  (NEW — for F4 value help)
+  // GET f4supplierSet → [{lifnr, name}]
+  // ────────────────────────────────────────────────────────────
+  async fetchAllSuppliers() {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      return MOCK_F4_SUPPLIERS.map(s => ({ ...s }))
+    }
+
+    const data = await odataGet('/f4supplierSet?$format=json')
+    const results = data.results ?? []
+    return results.map(d => ({ lifnr: d.lifnr, name: d.name }))
+  },
+
+  // ────────────────────────────────────────────────────────────
   // fetchSupplier
-  // Reads:  f4supplierSet  → supplier name
-  //         sg_headerSet   → agreement header
-  //         sg_itemSet     → line items
-  // Returns the same shape the UI already expects.
   // ────────────────────────────────────────────────────────────
   async fetchSupplier(code) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 200))
       const s = MOCK_SUPPLIERS[code.toUpperCase()]
       if (!s) return null
-      return JSON.parse(JSON.stringify(s))   // deep-clone so UI mutations don't corrupt mock
+      return JSON.parse(JSON.stringify(s))
     }
 
-    // 1. Validate supplier code and get name from f4supplierSet
     const supplierRaw = await odataGet(`/f4supplierSet('${encodeURIComponent(code)}')`)
     if (!supplierRaw) return null
 
-    // 2. Fetch all agreements for this supplier from sg_headerSet
     const headersRaw = await odataGet(
       `/sg_headerSet?$filter=lifnr eq '${encodeURIComponent(code)}'&$format=json`
     )
     const headers = (headersRaw.results ?? []).map(mapHeader)
 
-    // 3. For each agreement, fetch its items from sg_itemSet
     const agreements = await Promise.all(
       headers.map(async header => {
         const itemsRaw = await odataGet(
@@ -257,13 +280,10 @@ export const scheduleGenerateApi = {
 
   // ────────────────────────────────────────────────────────────
   // generateWeekSchedule
-  // POST to weekSet — backend calculates & returns the week distribution.
-  // itemsData: array of item objects with days[] already set by generateDays().
   // ────────────────────────────────────────────────────────────
   async generateWeekSchedule(agreementId, lifnr, itemsData) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 250))
-      // In mock mode the caller already computed days via generateDays(); just return as-is.
       return itemsData.map(it => ({ ...it }))
     }
 
@@ -272,7 +292,6 @@ export const scheduleGenerateApi = {
         odataPost('/weekSet', buildDayPayload(agreementId, lifnr, item))
       )
     )
-    // Merge back the server-returned distribution into itemsData shape
     return results.map((res, i) => ({
       ...itemsData[i],
       ...mapDayRecord(res),
@@ -281,7 +300,6 @@ export const scheduleGenerateApi = {
 
   // ────────────────────────────────────────────────────────────
   // generateDaySchedule
-  // POST to daySet — backend distributes qty across N working days.
   // ────────────────────────────────────────────────────────────
   async generateDaySchedule(agreementId, lifnr, itemsData, dayCount) {
     if (USE_MOCK) {
@@ -292,8 +310,6 @@ export const scheduleGenerateApi = {
     const results = await Promise.all(
       itemsData.map(item =>
         odataPost('/daySet', buildDayPayload(agreementId, lifnr, item, {
-          // Pass dayCount in fn1 or a dedicated field if the backend expects it
-          // Adjust the field name to whatever ZSCHEDULE_GENERATE_SRV actually uses:
           fn1: String(dayCount),
         }))
       )
@@ -306,8 +322,6 @@ export const scheduleGenerateApi = {
 
   // ────────────────────────────────────────────────────────────
   // saveScheduleLines (editSet)
-  // Called when the user hits Save inside ScheduleLines.
-  // Sends the edited days[] back via editSet POST.
   // ────────────────────────────────────────────────────────────
   async saveScheduleLines(agreementId, lifnr, itemsData) {
     if (USE_MOCK) {
@@ -326,8 +340,6 @@ export const scheduleGenerateApi = {
 
   // ────────────────────────────────────────────────────────────
   // approveSchedule (approveSet)
-  // POST to approveSet for each selected item.
-  // The approveSet entity also carries the full item fields + appflag.
   // ────────────────────────────────────────────────────────────
   async approveSchedule(agreementId, lifnr, itemsData) {
     if (USE_MOCK) {
@@ -350,7 +362,7 @@ export const scheduleGenerateApi = {
           indicator: item.indicator,
           status:    item.status,
           date:      item.date || '',
-          appflag:   'X',           // 'X' = approve; adjust per backend contract
+          appflag:   'X',
         })
       )
     )
