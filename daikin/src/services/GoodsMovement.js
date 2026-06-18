@@ -40,28 +40,26 @@ const formatTimestamp = (sapDate, sapTime) => {
 }
 
 // ── Status mapping ─────────────────────────────────────────────
-// SAP Status codes → UI labels + colors
-const STATUS_MAP = {
-  '01': { label: 'Created',        color: 'gray'  },
-  '02': { label: 'In Transit',     color: 'blue'  },
-  '03': { label: 'Shipped',        color: 'blue'  },
-  '04': { label: 'Gate Reporting', color: 'orange'},
-  '05': { label: 'Gate Entry',     color: 'orange'},
-  '06': { label: 'Goods Received', color: 'green' },
-  '07': { label: 'Completed',      color: 'green' },
+// SAP Status codes → UI colors only (label comes from StatusText)
+const STATUS_COLOR_MAP = {
+  '01': 'gray',
+  '02': 'blue',
+  '03': 'blue',
+  '04': 'orange',
+  '05': 'orange',
+  '06': 'green',
+  '07': 'green',
 }
 
-const resolveStatus = (statusCode, statusText) => {
-  if (STATUS_MAP[statusCode]) return STATUS_MAP[statusCode]
-  // Fallback: derive from StatusText
+const resolveStatusColor = (statusCode, statusText) => {
+  if (STATUS_COLOR_MAP[statusCode]) return STATUS_COLOR_MAP[statusCode]
   const t = (statusText || '').toLowerCase()
-  if (t.includes('received'))  return { label: 'Goods Received', color: 'green'  }
-  if (t.includes('transit'))   return { label: 'In Transit',     color: 'blue'   }
-  if (t.includes('shipped'))   return { label: 'Shipped',        color: 'blue'   }
-  if (t.includes('gate'))      return { label: statusText,       color: 'orange' }
-  if (t.includes('created'))   return { label: 'Created',        color: 'gray'   }
-  if (t.includes('completed')) return { label: 'Completed',      color: 'green'  }
-  return { label: statusText || 'Unknown', color: 'gray' }
+  if (t.includes('received'))  return 'green'
+  if (t.includes('transit'))   return 'blue'
+  if (t.includes('shipped'))   return 'blue'
+  if (t.includes('gate'))      return 'orange'
+  if (t.includes('completed')) return 'green'
+  return 'gray'
 }
 
 // ── Transport Mode ─────────────────────────────────────────────
@@ -69,7 +67,6 @@ const TRANS_MODE_MAP = { '01': 'By Road', '02': 'By Air', '03': 'By Rail', '04':
 const resolveTransMode = (code) => TRANS_MODE_MAP[code] || code || ''
 
 // ── Timeline builder ───────────────────────────────────────────
-// Timeline step is completed when its SAP date field is not '00000000'
 const buildTimeline = (d) => [
   {
     key: 'created',
@@ -125,9 +122,11 @@ const mapAsn = (raw) => ({
 
 // ── Header mapper ─────────────────────────────────────────────
 const mapHeader = (d, year) => {
-  const status = resolveStatus(d.Status, d.StatusText)
-  const transMode = resolveTransMode(d.Mode)
-  const trackId = `${d.TrackNo}/${year || d.Year || ''}`
+  // Use StatusText directly from SAP — no label override
+  const statusText  = d.StatusText || ''
+  const statusColor = resolveStatusColor(d.Status, statusText)
+  const transMode   = resolveTransMode(d.Mode)
+  const trackId     = `${d.TrackNo}/${year || d.Year || ''}`
 
   return {
     // IDs
@@ -141,10 +140,10 @@ const mapHeader = (d, year) => {
     plant:          d.Plant || (d.HeaderAsnNav?.results?.[0]?.Plant || ''),
     plantName:      d.PlantText || '',
 
-    // Status
-    status:      status.label,
+    // Status — use exact StatusText from SAP
+    status:      statusText,
     statusCode:  d.Status,
-    statusColor: status.color,
+    statusColor,
 
     // Transporter / driver
     transporter: d.Transporter || '',
@@ -181,7 +180,8 @@ const mapHeader = (d, year) => {
 
 // ── List item mapper (for sidebar list — no expand) ───────────
 const mapHeaderListItem = (d) => {
-  const status = resolveStatus(d.Status, d.StatusText)
+  const statusText  = d.StatusText || ''
+  const statusColor = resolveStatusColor(d.Status, statusText)
   const year = d.Year || ''
   return {
     id:           `${d.TrackNo}/${year}`,
@@ -191,9 +191,10 @@ const mapHeaderListItem = (d) => {
     date:          fromSapDateDisplay(d.CreateDate),
     plant:         d.Plant || '',
     plantName:     d.PlantText || '',
-    status:        status.label,
+    // Use exact StatusText from SAP for sidebar display
+    status:        statusText,
     statusCode:    d.Status,
-    statusColor:   status.color,
+    statusColor,
   }
 }
 
@@ -208,9 +209,11 @@ const mapAsnDropdown = (raw) => ({
 // ── Generic OData fetch ───────────────────────────────────────
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
-    headers: { Accept: 'application/json',       
-          Loginid: authConfig.loginId,
-          Logintype: authConfig.loginType, },
+    headers: {
+      Accept: 'application/json',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
+    },
     credentials: 'include',
   })
   if (!res.ok) {
@@ -220,17 +223,22 @@ async function odata(path) {
   return res.json()
 }
 
-// ── CSRF token fetch (needed for POST/PATCH) ──────────────────
+// ── CSRF token fetch (needed for POST/PUT/PATCH) ──────────────
 async function fetchCsrfToken() {
   const res = await fetch(`${SRV}/`, {
     method: 'GET',
-    headers: { 'X-CSRF-Token': 'Fetch', Accept: 'application/json' },
+    headers: {
+      'X-CSRF-Token': 'Fetch',
+      Accept: 'application/json',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
+    },
     credentials: 'include',
   })
-  return res.headers.get('X-CSRF-Token') || ''
+  return res.headers.get('X-CSRF-Token') || res.headers.get('x-csrf-token') || ''
 }
 
-// ── Generic OData write (POST/PATCH) ─────────────────────────
+// ── Generic OData write ───────────────────────────────────────
 async function odataWrite(path, payload, method = 'POST') {
   const csrf = await fetchCsrfToken()
   const res = await fetch(`${SRV}${path}`, {
@@ -239,6 +247,8 @@ async function odataWrite(path, payload, method = 'POST') {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-CSRF-Token': csrf,
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
     },
     credentials: 'include',
     body: JSON.stringify(payload),
@@ -247,7 +257,6 @@ async function odataWrite(path, payload, method = 'POST') {
     const text = await res.text().catch(() => '')
     throw new Error(`OData ${method} ${res.status}: ${text.slice(0, 200)}`)
   }
-  // 204 No Content → return empty
   if (res.status === 204) return {}
   return res.json()
 }
@@ -258,25 +267,18 @@ async function odataWrite(path, payload, method = 'POST') {
 export const goodsMovementApi = {
 
   // ── List all headers (sidebar) ──────────────────────────────
-  // GET GoodsMvtHeaderSet (no expand for performance)
   async listTrackings({ search = '' } = {}) {
     const filters = []
-
-    // Vendor filter injected by backend session — no explicit Lifnr needed
-    // Add search filter if provided (filter on TrackNo)
     if (search.trim()) {
       filters.push(`substringof('${search.trim()}',TrackNo)`)
     }
-
     const qs = filters.length ? `?$filter=${filters.map(encodeURIComponent).join('%20and%20')}` : ''
     const data = await odata(`/GoodsMvtHeaderSet${qs}`)
     return (data.d?.results || []).map(mapHeaderListItem)
   },
 
   // ── Get single header + ASN expand ─────────────────────────
-  // GET GoodsMvtHeaderSet(TrackNo='...',Year='...')?$expand=HeaderAsnNav,...
   async getTracking(id) {
-    // id format: 'TRACKNUMBER/YEAR'
     const [trackNo, year] = id.split('/')
     const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
     const expand = '$expand=HeaderAsnNav,HeaderRpmInNav,HeaderRpmOutNav'
@@ -285,10 +287,9 @@ export const goodsMovementApi = {
   },
 
   // ── Create new tracking ─────────────────────────────────────
-  // POST GoodsMvtHeaderSet
   async createTracking(payload) {
     const body = {
-      TrackNo:       '',                           // SAP assigns
+      TrackNo:       '',
       Year:          String(new Date().getFullYear()),
       RegNum:        payload.vehicleRegNo || '',
       Transporter:   payload.transporter || '',
@@ -301,7 +302,6 @@ export const goodsMovementApi = {
       PollCertApp:   payload.pollutionCertificateApplicable === 'Yes',
       SafetyEquip:   payload.safetyEquipments === 'Yes',
       SafetyGauMat:  payload.safetyGuardForMaterial === 'Yes',
-      // ASNs passed as nav property if API supports deep insert
       HeaderAsnNav:  { results: (payload.asns || []).map(a => ({
         Asn:   a.asnId,
         InvNo: a.invoiceNumber,
@@ -311,42 +311,88 @@ export const goodsMovementApi = {
     return mapHeader(data.d || {})
   },
 
-  // ── Update shipment (vehicle/ASN/invoice) ───────────────────
-  // PATCH GoodsMvtHeaderSet(TrackNo='...',Year='...')
-  async updateShipment(id, payload) {
-    const [trackNo, year] = id.split('/')
-    const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
+  // ── Update shipment in-transit (Invoice_Transporter_editSet) ─
+  // Called from "Edit" in Update Shipment tab (In Transit status)
+  // GET asndropdownSet to get ASN → PUT Invoice_Transporter_editSet(ASN='...',TRACK='...')
+  async updateInTransitShipment(trackNo, asnId, payload) {
+    // payload: { vehicleNumber, invoiceNumber }
+    const key = `ASN='${encodeURIComponent(asnId)}',TRACK='${encodeURIComponent(trackNo)}'`
     const body = {
-      RegNum:     payload.vehicleNumber || '',
-      InvoiceNum: payload.invoiceNumber || '',
-      // ASN update handled via AsnDetailsSet if needed separately
-    }
-    return odataWrite(`/GoodsMvtHeaderSet(${key})`, body, 'PATCH')
+  ASN:       asnId,
+  TRACK:     trackNo,
+  INVNO:     payload.invoiceNumber || '',
+  TRANSPORT: payload.vehicleNumber || '',
+}
+    return odataWrite(`/Invoice_Transporter_editSet(${key})`, body, 'PUT')
   },
 
-  // ── Start shipment (sets ShipDate/ShipTime + Status → Shipped) ─
-  // PATCH GoodsMvtHeaderSet(...)
+  // ── ASN dropdown for Update Shipment dialog (in-transit) ───
+  // GET asndropdownSet?$filter=Track eq 'TRACKNO'
+  async searchAsns({ trackNo = '', search = '' } = {}) {
+    const filters = []
+    if (trackNo) filters.push(`Track eq '${trackNo}'`)
+    const qs = filters.length ? `?$filter=${filters.map(encodeURIComponent).join('%20and%20')}` : ''
+    const data = await odata(`/asndropdownSet${qs}`)
+    let results = (data.d?.results || []).map(mapAsnDropdown)
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      results = results.filter(a =>
+        a.asnId.toLowerCase().includes(q) ||
+        a.invoiceNumber.toLowerCase().includes(q)
+      )
+    }
+    return results
+  },
+
+  // ── Start shipment ──────────────────────────────────────────
+  // PUT GoodsMvtHeaderSet(TrackNo='...',Year='...')
+  // Payload: { ShipDate, ShipTime, Year, TrackNo, Eta }
   async startShipment(id, payload) {
     const [trackNo, year] = id.split('/')
     const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
+
+    // Convert time: '12:34:56 PM' or HH:MM:SS → HHMMSS (24h)
+    let timeStr = (payload.time || '').replace(/[:\s]/g, '')
+    // Handle AM/PM if present
+    const rawTime = (payload.time || '').trim()
+    const ampmMatch = rawTime.match(/^(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)$/i)
+    if (ampmMatch) {
+      let h = parseInt(ampmMatch[1], 10)
+      const m = ampmMatch[2]
+      const s = ampmMatch[3]
+      const period = ampmMatch[4].toUpperCase()
+      if (period === 'PM' && h !== 12) h += 12
+      if (period === 'AM' && h === 12) h = 0
+      timeStr = `${String(h).padStart(2, '0')}${m}${s}`
+    } else {
+      timeStr = rawTime.replace(/:/g, '').slice(0, 6)
+    }
+
     const body = {
       ShipDate: toSapDate(payload.date) || '',
-      ShipTime: (payload.time || '').replace(/[:\s]/g, '').slice(0, 6), // 'HH:MM:SS AM' → 'HHMMSS' approx
+      ShipTime: timeStr,
+      Year:     year,
+      TrackNo:  trackNo,
       Eta:      toSapDate(payload.etaDate) || '',
     }
-    return odataWrite(`/GoodsMvtHeaderSet(${key})`, body, 'PATCH')
+    // SAP uses PUT for start shipment
+    return odataWrite(`/GoodsMvtHeaderSet(${key})`, body, 'PUT')
   },
 
   // ── Cancel tracking ─────────────────────────────────────────
-  // DELETE GoodsMvtHeaderSet(...)  — or PATCH with cancel status, depending on backend
   async cancelTracking(id) {
     const [trackNo, year] = id.split('/')
     const key = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
-    // Try DELETE; if backend uses status-based cancel change to PATCH with Status='99'
     const csrf = await fetchCsrfToken()
     const res = await fetch(`${SRV}/GoodsMvtHeaderSet(${key})`, {
       method: 'DELETE',
-      headers: { 'X-CSRF-Token': csrf, Accept: 'application/json' },
+      headers: {
+        'X-CSRF-Token': csrf,
+        Accept: 'application/json',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
+      },
       credentials: 'include',
     })
     if (!res.ok && res.status !== 204) {
@@ -356,8 +402,7 @@ export const goodsMovementApi = {
     return { success: true }
   },
 
-  // ── Print (trigger SAP smartform / spool) ──────────────────
-  // POST — actual endpoint TBD; placeholder uses function import pattern
+  // ── Print ───────────────────────────────────────────────────
   async printTracking(id) {
     const [trackNo, year] = id.split('/')
     return odataWrite(
@@ -365,26 +410,6 @@ export const goodsMovementApi = {
       { TrackNo: trackNo, Year: year },
       'POST'
     )
-  },
-
-  // ── ASN dropdown for Update Shipment dialog ─────────────────
-  // GET asndropdownSet?$filter=Track eq 'TRACKNO'
-  async searchAsns({ trackNo = '', search = '' } = {}) {
-    const filters = []
-    if (trackNo) filters.push(`Track eq '${trackNo}'`)
-    const qs = filters.length ? `?$filter=${filters.map(encodeURIComponent).join('%20and%20')}` : ''
-    const data = await odata(`/asndropdownSet${qs}`)
-    let results = (data.d?.results || []).map(mapAsnDropdown)
-
-    // Client-side search filter (ASN ID or invoice number)
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      results = results.filter(a =>
-        a.asnId.toLowerCase().includes(q) ||
-        a.invoiceNumber.toLowerCase().includes(q)
-      )
-    }
-    return results
   },
 }
 
