@@ -359,10 +359,14 @@ function TimeDelayLabel({ value }) {
 // ═══════════════════════════════════════════════════════════════
 function ValueHelpModal({ title, options, onSelect, onCancel }) {
   const [search, setSearch] = useState('')
+
   const filtered = useMemo(() => {
-    if (!search) return options
-    const q = search.toLowerCase()
-    return options.filter(o => o.code.toLowerCase().includes(q) || (o.label && o.label.toLowerCase().includes(q)))
+    if (!search.trim()) return options
+    const q = search.trim().toLowerCase()
+    return options.filter(o =>
+      o.code.toLowerCase().includes(q) ||
+      (o.label && o.label.toLowerCase().includes(q))
+    )
   }, [options, search])
 
   useEffect(() => {
@@ -380,18 +384,37 @@ function ValueHelpModal({ title, options, onSelect, onCancel }) {
         </div>
         <div className="px-4 py-3 border-b border-[#e5e5e5]">
           <div className="relative">
-            <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search"
-              className="w-full h-9 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-2.5 text-[#6a6d70]">
-              <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
-            </svg>
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search"
+              className="w-full h-9 pl-3 pr-9 text-[14px] border border-[#d9d9d9] rounded-lg focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-2 text-[#6a6d70] hover:text-[#cc1c14] transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            )}
+            {!search && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-2.5 text-[#6a6d70] pointer-events-none">
+                <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+            )}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto min-h-0">
           {filtered.length === 0
             ? <div className="py-10 text-center text-[13px] text-[#6a6d70]">No results found</div>
-            : filtered.map(opt => (
-              <button key={opt.code} onClick={() => onSelect(opt)}
+            : filtered.map((opt, idx) => (
+              // Use idx in key to handle duplicate codes
+              <button key={`${opt.code}-${idx}`} onClick={() => onSelect(opt)}
                 className="w-full text-left px-5 py-3 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#ebf5ff] transition-colors">
                 <div className="text-[14px] font-semibold text-[#0a6ed1]">{opt.code}</div>
                 {opt.label && <div className="text-[12px] text-[#6a6d70] mt-0.5">{opt.label}</div>}
@@ -618,13 +641,23 @@ const STATUS_OPTIONS = ['', 'In Transit', 'Reached Plant', 'Unloading Started', 
 // This guarantees filtering works even if SAP ignores certain OData filter params.
 function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, trackSearch, startDate, endDate }) {
   return rows.filter(row => {
-    if (status   && row.status   !== status)   return false
-    if (supplier && row.supplier !== supplier) return false
+    // Status — exact match on StatusText
+    if (status && row.status !== status) return false
 
+    // Supplier — match on name OR vendor code (VH returns code, row.supplier is name)
+    if (supplier) {
+      const nameMatch = row.supplier    && row.supplier.toLowerCase().includes(supplier.toLowerCase())
+      const codeMatch = row.vendorCode  && row.vendorCode.toLowerCase().includes(supplier.toLowerCase())
+      if (!nameMatch && !codeMatch) return false
+    }
+
+    // Material / ASN / Invoice — only filter if the row has the field
+    // (GoodsMvtHeaderSet may not return these; if empty, skip — SAP already filtered server-side)
     if (material  && row.material  && !row.material.toLowerCase().includes(material.toLowerCase()))   return false
     if (asn       && row.asn       && !row.asn.toLowerCase().includes(asn.toLowerCase()))             return false
     if (invoiceNo && row.invoiceNo && !row.invoiceNo.toLowerCase().includes(invoiceNo.toLowerCase())) return false
 
+    // Track search — across trackingNo, plant, city
     if (trackSearch) {
       const q   = trackSearch.toLowerCase()
       const hit = String(row.trackingNo || '').toLowerCase().includes(q) ||
@@ -633,7 +666,7 @@ function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, 
       if (!hit) return false
     }
 
-    // Client-side date filter on shipmentDate (YYYYMMDD from SAP)
+    // Date filter on shipmentDate (YYYYMMDD from SAP)
     if (startDate || endDate) {
       const shipYmd = String(row.shipmentDate || '').replace(/-/g, '').slice(0, 8)
       if (shipYmd && shipYmd !== '00000000') {

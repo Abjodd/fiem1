@@ -42,6 +42,7 @@ function mapDeliveryRow(raw) {
     timeDelay:    str(raw.DelayInd),
     city:         str(raw.City),
     supplier:     str(raw.Name),
+    vendorCode:   str(raw.Vendor ?? raw.Lifnr ?? ''),
     // These fields enable client-side filtering as a safety net
     // in case the SAP server does not filter them correctly.
     // If GoodsMvtHeaderSet does not return these fields,
