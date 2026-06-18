@@ -616,20 +616,15 @@ const STATUS_OPTIONS = ['', 'In Transit', 'Reached Plant', 'Unloading Started', 
 // Client-side filter acts as a safety net after the API returns rows.
 // All fields now exist on the row object (see mapDeliveryRow).
 // This guarantees filtering works even if SAP ignores certain OData filter params.
-function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, trackSearch }) {
+function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, trackSearch, startDate, endDate }) {
   return rows.filter(row => {
-    // Exact match filters — must equal exactly
     if (status   && row.status   !== status)   return false
     if (supplier && row.supplier !== supplier) return false
 
-    // Partial match filters — contains check (case-insensitive)
-    // If the field is empty on the row (SAP didn't return it), skip the check
-    // so we don't incorrectly hide rows that the server already filtered correctly
-    if (material && row.material && !row.material.toLowerCase().includes(material.toLowerCase())) return false
-    if (asn      && row.asn      && !row.asn.toLowerCase().includes(asn.toLowerCase()))           return false
+    if (material  && row.material  && !row.material.toLowerCase().includes(material.toLowerCase()))   return false
+    if (asn       && row.asn       && !row.asn.toLowerCase().includes(asn.toLowerCase()))             return false
     if (invoiceNo && row.invoiceNo && !row.invoiceNo.toLowerCase().includes(invoiceNo.toLowerCase())) return false
 
-    // Multi-field search across trackingNo, plant, city
     if (trackSearch) {
       const q   = trackSearch.toLowerCase()
       const hit = String(row.trackingNo || '').toLowerCase().includes(q) ||
@@ -637,6 +632,16 @@ function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, 
                   String(row.city       || '').toLowerCase().includes(q)
       if (!hit) return false
     }
+
+    // Client-side date filter on shipmentDate (YYYYMMDD from SAP)
+    if (startDate || endDate) {
+      const shipYmd = String(row.shipmentDate || '').replace(/-/g, '').slice(0, 8)
+      if (shipYmd && shipYmd !== '00000000') {
+        if (startDate && shipYmd < startDate.replace(/-/g, '')) return false
+        if (endDate   && shipYmd > endDate.replace(/-/g, ''))   return false
+      }
+    }
+
     return true
   })
 }
@@ -680,8 +685,8 @@ export default function DeliverySchedule() {
   const [todayFetched, setTodayFetched] = useState(false)
 
 const rows = useMemo(() =>
-  applyClientFilters(rawRows, { status, supplier, material, asn, invoiceNo, trackSearch }),
-  [rawRows, status, supplier, material, asn, invoiceNo, trackSearch]
+  applyClientFilters(rawRows, { status, supplier, material, asn, invoiceNo, trackSearch, startDate, endDate }),
+  [rawRows, status, supplier, material, asn, invoiceNo, trackSearch, startDate, endDate]
 )
 
   const chartData      = useMemo(() => computeChartData(rows),     [rows])

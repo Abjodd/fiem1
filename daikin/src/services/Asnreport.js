@@ -29,6 +29,13 @@ export const toSapDate = (isoDate) => {
   return isoDate.replace(/-/g, '')
 }
 
+const formatDate = (v) => {
+  const s = str(v)
+  if (s.length !== 8) return s
+  return `${s.slice(6, 8)}-${s.slice(4, 6)}-${s.slice(0, 4)}`
+}
+
+
 // ── Row mapper — AsnSet ───────────────────────────────────────
 // Missing fields (Gate Entry No., ETA, Gate Entry/Exit DT, Invoice/PDIR)
 // not in OData payload → kept blank until backend provides them.
@@ -40,7 +47,7 @@ function mapAsnRow(raw) {
 
     // Invoice
     invoiceNumber:     str(raw.VendorInvoice),
-    invoiceDate:       str(raw.InvDate),
+    invoiceDate:       formatDate(raw.InvDate),
 
     // IBD / Gate
     ibdNo:             str(raw.Ibd),
@@ -49,8 +56,8 @@ function mapAsnRow(raw) {
     // ASN / Shipment
     asnNumber:         str(raw.AsnNumber),
     shipmentNo:        str(raw.Shipment),
-    createdOn:         str(raw.CreatedOn),
-    shipmentDate:      str(raw.ShipmentDate),
+    createdOn:     formatDate(raw.CreatedOn),
+    shipmentDate:  formatDate(raw.ShipmentDate),
 
     // Base document
     baseDocument:      str(raw.BaseDocument),
@@ -74,15 +81,15 @@ function mapAsnRow(raw) {
 
     // Eway bill
     ewayBillNo:        str(raw.Eway),
-    ewayBillDate:      str(raw.EwayDate),
+    ewayBillDate:  formatDate(raw.EwayDate),
 
     // Dates
-    reachedPlantDate:  str(raw.RchPlantDt),
-    etaDate:           str(raw.EtaDate ?? ''),          // Missing in payload
+    reachedPlantDate:  formatDate(raw.RchPlantDt),
+    ewayBillDate:      formatDate(raw.EwayDate),        // Missing in payload
     etaTime:           str(raw.EtaTime ?? ''),          // Missing in payload
-    gateEntryDate:     str(raw.GateEntryDate ?? ''),    // Missing in payload
+    gateEntryDate:     formatDate(raw.GateEntryDate ?? ''),    // Missing in payload
     gateEntryTime:     str(raw.GateEntryTime ?? ''),    // Missing in payload
-    gateExitDate:      str(raw.GateExitDate ?? ''),     // Missing in payload
+    gateExitDate:      formatDate(raw.GateExitDate ?? ''),     // Missing in payload
     gateExitTime:      str(raw.GateExitTime ?? ''),     // Missing in payload
 
     // Material (used in detail page)

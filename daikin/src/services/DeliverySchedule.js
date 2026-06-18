@@ -87,8 +87,8 @@ export const DeliveryScheduleApi = {
   const sapTo   = toSapDate(endDate)
 
   const parts = []
-  if (sapFrom)     parts.push(`Eta ge '${sapFrom}'`)
-  if (sapTo)       parts.push(`Eta le '${sapTo}'`)
+  if (sapFrom) parts.push(`ShipDate ge '${sapFrom}'`)
+if (sapTo)   parts.push(`ShipDate le '${sapTo}'`)
   if (status)      parts.push(`StatusText eq '${status}'`)
   if (supplier)    parts.push(`Vendor eq '${supplier}'`)
   if (material)    parts.push(`Material eq '${material}'`)
