@@ -202,7 +202,7 @@ export const VendorLedgerApi = {
     belnr       = '',
     postFrom    = '',
     postTo      = '',
-    bukrs       = 'DSAL',
+    bukrs       = '',
   } = {}) {
     const filters = []
 
@@ -225,7 +225,8 @@ export const VendorLedgerApi = {
     if (postFrom)     filters.push(`BUDAT_LOW eq '${toSapDate(postFrom)}'`)
     if (postTo)       filters.push(`BUDAT_HIGH eq '${toSapDate(postTo)}'`)
 
-    filters.push(`Bukrs eq '${bukrs}'`)
+    // filters.push(`Bukrs eq '${bukrs}'`)
+      if (bukrs) filters.push(`Bukrs eq '${bukrs}'`)
 
     const filterStr = filters.map(f => encodeURIComponent(f)).join('%20and%20')
     const data = await odata(`/VendorDeailsSet?$filter=${filterStr}`)
@@ -238,7 +239,7 @@ export const VendorLedgerApi = {
   async fetchOpenCloseBal({
     lifnr      = '',
     childLifnr = '',
-    bukrs      = 'DSAL',
+    bukrs      = '',
     fromDat    = '',
     toDat      = '',
   } = {}) {

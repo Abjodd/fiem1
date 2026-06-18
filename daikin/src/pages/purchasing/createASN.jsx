@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { createAsnService, authConfig } from '../../services/CreateAsn.js'
+import { createAsnService } from '../../services/CreateAsn.js'
+import { authConfig } from '../../services/authConfig.js'
 import { postCreateAsn } from '../../services/CreateAsnPost.js'
 import { uploadAllAttachments } from '../../services/UploadAttachment.js'
 import { useUser } from '../../context/UserContext.jsx'
@@ -644,6 +645,7 @@ export default function CreateASN({ agreement: propAgreement }) {
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
 
+
   const agreementFromState = location.state?.agreement || propAgreement
   const poNo = agreementFromState?.poNo || agreementFromState?.id || ''
 
@@ -680,6 +682,7 @@ export default function CreateASN({ agreement: propAgreement }) {
     if (userLoading) return
     if (!loginId || !loginType) return
     if (!poNo) return
+
     let cancelled = false
     setLoading(true)
     setLoadError(null)
