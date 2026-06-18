@@ -15,16 +15,17 @@ import { useUser } from '../../context/UserContext.jsx'
 
 // ═══════════════════════════════════════════════════════════════
 // STATUS CHECK HELPERS
+// Uses exact StatusText from SAP (case-insensitive)
 // ═══════════════════════════════════════════════════════════════
 const isUpdatableStatus = (status) => {
   if (!status) return false
   const s = status.toLowerCase()
   return s === 'shipped' || s === 'in transit'
 }
-const isCreatedStatus = (status) => {
+const isYetToShipStatus = (status) => {
   if (!status) return false
   const s = status.toLowerCase()
-  return s === 'created' || s === 'yet to ship'
+  return s === 'yet to ship' || s === 'created'
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -58,8 +59,7 @@ const statusStyle = (c) => ({ green:'text-[#107e3e] bg-[#e8f5ec]', blue:'text-[#
 const statusDotColor = (c) => ({ green:'#107e3e', blue:'#0a6ed1', orange:'#e76500', red:'#cc1c14', gray:'#6a6d70' }[c] || '#6a6d70')
 
 // ═══════════════════════════════════════════════════════════════
-// SIDEBAR CONTENT — extracted OUTSIDE main component to fix
-// search-input-losing-focus bug (stable component identity)
+// SIDEBAR CONTENT
 // ═══════════════════════════════════════════════════════════════
 function SidebarContent({
   trackings, totalCount, selectedId, searchQuery, sidebarCollapsed,
@@ -131,7 +131,12 @@ function SidebarContent({
                   <div className="flex items-center justify-between text-[13px] text-[#6a6d70]"><span>{t.date}</span></div>
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
-                    {t.status && <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>{t.status}</span>}
+                    {/* status = exact StatusText from SAP */}
+                    {t.status && (
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
+                        {t.status}
+                      </span>
+                    )}
                   </div>
                 </button>
               )
@@ -175,8 +180,9 @@ export default function GoodsMovement() {
   const [showCreateMovement, setShowCreateMovement] = useState(false)
   const [editTrackingData, setEditTrackingData] = useState(null)
 
+  // Update modal (In Transit / Shipped)
   const [updateModalOpen, setUpdateModalOpen] = useState(false)
-  const [updateForm, setUpdateForm] = useState({ asn: '', vehicleNumber: '', invoiceNumber: '' })
+  const [updateForm, setUpdateForm] = useState({ asn: '', asnId: '', vehicleNumber: '', invoiceNumber: '' })
   const [updateSaving, setUpdateSaving] = useState(false)
   const [updateError, setUpdateError] = useState('')
 
@@ -190,35 +196,36 @@ export default function GoodsMovement() {
   const [shipmentDetailsSubmitting, setShipmentDetailsSubmitting] = useState(false)
   const [shipmentDetailsError, setShipmentDetailsError] = useState('')
 
+  // Success popup after start shipment
+  const [shipSuccessMsg, setShipSuccessMsg] = useState('')
+
   const [totalCount, setTotalCount] = useState(0)
   const [printLoading, setPrintLoading] = useState(false)
 
-  // top of component, after state declarations
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search)
-  const trackParam = params.get('track')
-  if (trackParam) {setSelectedId(trackParam) 
-    setSearchQuery(trackParam)}
-}, [])
+  // Read ?track= param on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const trackParam = params.get('track')
+    if (trackParam) { setSelectedId(trackParam); setSearchQuery(trackParam) }
+  }, [])
 
   // ── Load tracking list ──────────────────────────────────────
+  useEffect(() => {
+    if (userLoading) return
+    if (!loginId || !loginType) return
 
-useEffect(() => {
-  if (userLoading) return
-  if (!loginId || !loginType) return
-
-  let cancelled = false
-  goodsMovementApi.listTrackings({ search: searchQuery })
-    .then(data => {
-      if (!cancelled) {
-        setTrackings(data)
-        setTotalCount(prev => searchQuery ? prev : data.length)
-        if (data.length && !selectedId) setSelectedId(data[0].id)
-      }
-    })
-    .catch(err => console.error(err))
-  return () => { cancelled = true }
-}, [userLoading, loginId, loginType, searchQuery])
+    let cancelled = false
+    goodsMovementApi.listTrackings({ search: searchQuery })
+      .then(data => {
+        if (!cancelled) {
+          setTrackings(data)
+          setTotalCount(prev => searchQuery ? prev : data.length)
+          if (data.length && !selectedId) setSelectedId(data[0].id)
+        }
+      })
+      .catch(err => console.error(err))
+    return () => { cancelled = true }
+  }, [userLoading, loginId, loginType, searchQuery])
 
   // ── Load detail on selection ────────────────────────────────
   useEffect(() => {
@@ -240,7 +247,7 @@ useEffect(() => {
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileSidebarOpen])
 
-  // ── ASN lookup ──────────────────────────────────────────────
+  // ── ASN lookup (for In Transit update modal) ────────────────
   useEffect(() => {
     if (!asnLookupOpen || !tracking) return
     let cancelled = false
@@ -282,6 +289,8 @@ useEffect(() => {
 
   const handleSelectTracking = (id) => { setSelectedId(id); setMobileSidebarOpen(false); setTimelinePage(0) }
   const handleCreateMovement = () => { setEditTrackingData(null); setShowCreateMovement(true) }
+
+  // Edit for "Yet to Ship" — opens CreateMovement with pre-filled data
   const handleEditMovement = () => { if (!tracking) return; setEditTrackingData(tracking); setShowCreateMovement(true) }
 
   const handleCancelMovement = async () => {
@@ -289,7 +298,7 @@ useEffect(() => {
     try { await goodsMovementApi.cancelTracking(tracking.id) } catch (err) { console.error(err) }
   }
 
-  // ── PRINT — generates PDF Shipment Note in new tab ─────────
+  // ── PRINT ──────────────────────────────────────────────────
   const handlePrint = async () => {
     if (!tracking || printLoading) return
     setPrintLoading(true)
@@ -315,19 +324,32 @@ useEffect(() => {
     try {
       await goodsMovementApi.startShipment(tracking.id, shipmentDetailsForm)
       setShipmentDetailsOpen(false)
-      setTracking(prev => prev ? {
-        ...prev, status: 'Shipped', statusColor: 'blue',
-        timeline: prev.timeline.map(t => t.key === 'shipped' ? { ...t, completed: true, timestamp: new Date().toLocaleString() } : t),
-      } : prev)
+      // Show success popup
+      setShipSuccessMsg(`Tracking number ${tracking.id} has been shipped successfully`)
+      // Refresh tracking detail
+      goodsMovementApi.getTracking(tracking.id)
+        .then(data => setTracking(data))
+        .catch(err => console.error(err))
+      // Refresh list
+      goodsMovementApi.listTrackings({ search: searchQuery })
+        .then(data => setTrackings(data))
+        .catch(err => console.error(err))
     } catch (err) {
       console.error(err); setShipmentDetailsError('Failed to start shipment. Please try again.')
     } finally { setShipmentDetailsSubmitting(false) }
   }
 
-  // ── Update modal ───────────────────────────────────────────
+  // ── In-Transit Update modal ────────────────────────────────
+  // Opens from "Edit Details" button inside Update Shipment tab
   const openUpdateModal = () => {
     if (!tracking) return
-    setUpdateForm({ asn: tracking.asns?.[0]?.asnId || '', vehicleNumber: tracking.vehicleRegNo || '', invoiceNumber: tracking.asns?.[0]?.invoiceNumber || '' })
+    const firstAsn = tracking.asns?.[0]
+    setUpdateForm({
+      asn:           firstAsn?.asnId || '',
+      asnId:         firstAsn?.asnId || '',         // track which ASN to PUT against
+      vehicleNumber: tracking.vehicleRegNo || '',
+      invoiceNumber: firstAsn?.invoiceNumber || '',
+    })
     setUpdateError(''); setUpdateModalOpen(true)
   }
   const closeUpdateModal = () => { setUpdateModalOpen(false); setUpdateError('') }
@@ -339,18 +361,30 @@ useEffect(() => {
     }
     setUpdateSaving(true); setUpdateError('')
     try {
-      await goodsMovementApi.updateShipment(tracking.id, updateForm)
-      setTracking(prev => prev ? {
-        ...prev, vehicleRegNo: updateForm.vehicleNumber,
-        asns: prev.asns?.length ? prev.asns.map((a, i) => i === 0 ? { ...a, asnId: updateForm.asn, invoiceNumber: updateForm.invoiceNumber } : a) : prev.asns,
-      } : prev)
+      // PUT Invoice_Transporter_editSet(ASN='...',TRACK='...')
+      await goodsMovementApi.updateInTransitShipment(
+        tracking.trackingNo,
+        updateForm.asnId || updateForm.asn,
+        { vehicleNumber: updateForm.vehicleNumber, invoiceNumber: updateForm.invoiceNumber }
+      )
+      // Refresh tracking detail from server
+      const updated = await goodsMovementApi.getTracking(tracking.id)
+      setTracking(updated)
       setUpdateModalOpen(false)
-    } catch (err) { console.error(err); setUpdateError('Failed to save. Please try again.') }
-    finally { setUpdateSaving(false) }
+    } catch (err) {
+      console.error(err); setUpdateError('Failed to save. Please try again.')
+    } finally { setUpdateSaving(false) }
   }
 
+  // When user picks ASN from lookup in update modal
   const handlePickAsn = (row) => {
-    setUpdateForm(f => ({ ...f, asn: row.asnId, invoiceNumber: f.invoiceNumber || row.invoiceNumber }))
+    setUpdateForm(f => ({
+      ...f,
+      asn:          row.asnId,
+      asnId:        row.asnId,
+      invoiceNumber: f.invoiceNumber || row.invoiceNumber,
+      vehicleNumber: f.vehicleNumber || row.transporter,
+    }))
     setAsnLookupOpen(false); setAsnLookupSearch('')
   }
 
@@ -358,14 +392,13 @@ useEffect(() => {
     if (!tracking) return BASE_TABS
     return isUpdatableStatus(tracking.status) ? [...BASE_TABS, UPDATE_TAB] : BASE_TABS
   }, [tracking])
-  
+
   const filteredTrackings = useMemo(() =>
     searchQuery
       ? trackings.filter(t => t.id.toLowerCase().includes(searchQuery.toLowerCase()) || t.trackingNo.toLowerCase().includes(searchQuery.toLowerCase()))
       : trackings
   , [trackings, searchQuery])
 
-  // ── Sidebar props (stable object for extracted component) ──
   const sidebarProps = {
     trackings: filteredTrackings, totalCount, selectedId, searchQuery, sidebarCollapsed,
     onSelectTracking: handleSelectTracking,
@@ -435,13 +468,13 @@ useEffect(() => {
               {tracking.asns.map((asn, idx) => (
                 <tr key={idx} className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors duration-200">
                   <td className="py-4 px-4">
-  <span
-    className="text-[#0a6ed1] font-semibold hover:underline cursor-pointer"
-    onClick={() => navigate(`/shipment/advance-shipping-note?asn=${asn.asnId}`)}
-  >
-    {asn.asnId}
-  </span>
-</td>
+                    <span
+                      className="text-[#0a6ed1] font-semibold hover:underline cursor-pointer"
+                      onClick={() => navigate(`/shipment/advance-shipping-note?asn=${asn.asnId}`)}
+                    >
+                      {asn.asnId}
+                    </span>
+                  </td>
                   <td className="py-4 px-4 text-[#32363a]">{asn.totalLineItems}</td>
                   <td className="py-4 px-4 text-[#32363a] font-medium">{asn.ibdNumber}</td>
                   <td className="py-4 px-4"><span className="text-[#32363a] font-semibold">{asn.plant}</span></td>
@@ -458,7 +491,7 @@ useEffect(() => {
     )
   }
 
-  // ── Update tab ─────────────────────────────────────────────
+  // ── Update Shipment tab (In Transit / Shipped) ─────────────
   const renderUpdate = () => {
     if (!tracking) return null
     return (
@@ -559,6 +592,7 @@ useEffect(() => {
                       <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Tracking Number — {tracking.id}</div>
                       <div className="flex items-baseline gap-4 flex-wrap">
                         <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight">{tracking.id}</h2>
+                        {/* status = exact StatusText from SAP */}
                         <span className={`text-[14px] font-bold px-3 py-1 rounded-full ${statusStyle(tracking.statusColor)}`}>
                           <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: statusDotColor(tracking.statusColor) }} />
                           {tracking.status}
@@ -637,7 +671,8 @@ useEffect(() => {
           <FilePlus size={15} /> Create
         </button>
 
-        {tracking && isCreatedStatus(tracking.status) && (
+        {/* Yet to Ship buttons: Start Shipment + Edit + Cancel */}
+        {tracking && isYetToShipStatus(tracking.status) && (
           <>
             <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>
             <button onClick={handleEditMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><Edit3 size={15} /> Edit</button>
@@ -646,7 +681,25 @@ useEffect(() => {
         )}
       </div>
 
-      {/* Update Shipment Modal */}
+      {/* Ship Success Popup */}
+      {shipSuccessMsg && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShipSuccessMsg('')} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[400px] p-8 flex flex-col items-center gap-4 anim-modal">
+            <div className="w-16 h-16 rounded-full bg-[#e8f5e9] flex items-center justify-center">
+              <Truck size={32} className="text-[#107e3e]" strokeWidth={1.8} />
+            </div>
+            <h4 className="text-[16px] font-bold text-[#32363a] text-center">Shipment Started</h4>
+            <p className="text-[14px] text-[#6a6d70] text-center leading-relaxed">{shipSuccessMsg}</p>
+            <button onClick={() => setShipSuccessMsg('')}
+              className="mt-2 px-8 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Update Shipment Modal (In Transit) */}
       {updateModalOpen && tracking && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={closeUpdateModal} />
@@ -659,14 +712,14 @@ useEffect(() => {
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">ASN <span className="text-[#cc1c14]">*</span></label>
                 <div className="relative">
-                  <input type="text" value={updateForm.asn} onChange={(e) => setUpdateForm(f => ({ ...f, asn: e.target.value }))} placeholder="Enter or pick an ASN"
+                  <input type="text" value={updateForm.asn} onChange={(e) => setUpdateForm(f => ({ ...f, asn: e.target.value, asnId: e.target.value }))} placeholder="Enter or pick an ASN"
                     className="w-full h-11 pl-3.5 pr-11 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
                   <button type="button" onClick={() => setAsnLookupOpen(true)} title="Pick ASN"
                     className="absolute right-1.5 top-1.5 w-8 h-8 flex items-center justify-center rounded-md text-[#0a6ed1] hover:bg-[#ebf5ff] transition-all"><ExternalLink size={15} /></button>
                 </div>
               </div>
               <div>
-                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Vehicle Number <span className="text-[#cc1c14]">*</span></label>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Vehicle Number / Transporter <span className="text-[#cc1c14]">*</span></label>
                 <input type="text" value={updateForm.vehicleNumber} onChange={(e) => setUpdateForm(f => ({ ...f, vehicleNumber: e.target.value }))} placeholder="e.g. MH70AA4444"
                   className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
               </div>

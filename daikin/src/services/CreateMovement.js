@@ -5,14 +5,13 @@
 
 const SRV = '/sap/opu/odata/shiv/SUP_PORTAL_GDS_MVT_APP_SRV'
 
-// ── Auth config ───────────────────────────────────────────────
 export const authConfig = { loginId: '', loginType: '' }
 
 // ── SAP Date helpers ──────────────────────────────────────────
 
 export const toSapDate = (isoDate) => {
   if (!isoDate) return ''
-  return isoDate.replace(/-/g, '')               // '2026-05-27' → '20260527'
+  return isoDate.replace(/-/g, '')
 }
 
 export const fromSapDate = (sapDate) => {
@@ -72,27 +71,6 @@ async function fetchCsrfToken() {
   return res.headers.get('X-CSRF-Token') || res.headers.get('x-csrf-token') || ''
 }
 
-// ── Generic OData write (PATCH only — POST handled explicitly) ─
-async function odataWrite(path, payload, method = 'PATCH') {
-  const csrf = await fetchCsrfToken()
-  const res = await fetch(`${SRV}${path}`, {
-    method,
-    headers: {
-      ...getHeaders(),
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': csrf,
-    },
-    credentials: 'include',
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`OData ${method} ${res.status}: ${text.slice(0, 200)}`)
-  }
-  if (res.status === 204) return {}
-  return res.json()
-}
-
 // ── ASN Mapper (AsnHelpSet row → UI shape) ────────────────────
 const mapAsnHelp = (raw) => ({
   asnId:           raw.Asn              || '',
@@ -115,13 +93,13 @@ const mapFixedBin = (raw) => ({
   storageType: raw.StorageType  || '',
 })
 
-// ── POST body builder ─────────────────────────────────────────
-const buildPostBody = (form) => {
-  const currentYear = String(new Date().getFullYear())
+// ── POST body builder (create: Txn='1', edit: Txn='2') ────────
+const buildPostBody = (form, { trackNo = '', year = '', txn = '1' } = {}) => {
+  const currentYear = year || String(new Date().getFullYear())
 
   const asnResults = (form.asnNums || []).map((a) => ({
-    TrackNo:         '',
-    Year:            '',
+    TrackNo:         trackNo,
+    Year:            currentYear,
     Asn:             a.asnId,
     AsnYear:         a.asnYear || currentYear,
     ItmCount:        '',
@@ -136,7 +114,7 @@ const buildPostBody = (form) => {
   }))
 
   return {
-    TrackNo:        '',
+    TrackNo:        trackNo,
     Year:           currentYear,
     Vendor:         '',
     Name:           '',
@@ -165,7 +143,7 @@ const buildPostBody = (form) => {
     Status:         '',
     StatusText:     '',
     Shipment:       '',
-    Txn:            '1',
+    Txn:            txn,   // '1' = create, '2' = edit/update
     EwayBill:       form.ewayBillNo                      || '',
     EwayBillDate:   toSapDate(form.ewayBillDate)         || '',
     LeadTime:       '',
@@ -177,27 +155,11 @@ const buildPostBody = (form) => {
     SafetyGauMat:   !!form.safetyGuardForMaterial,
     TotalAmt:       '',
     FixedBin:       form.fixedBin  || '',
-    InvoiceNum:     form.lrNum     || '',   // LR No. → InvoiceNum
+    InvoiceNum:     form.lrNum     || '',
     HeaderAsnNav:   { results: asnResults },
     HeaderRpmInNav: { results: [] },
   }
 }
-
-// ── PATCH body builder ────────────────────────────────────────
-const buildPatchBody = (form) => ({
-  RegNum:      (form.vehicleRegNo   || '').toUpperCase(),
-  Transporter:  form.transporterName || '',
-  Person:       form.driverName      || '',
-  Contact:      form.contactNumber   || '',
-  Mode:         TRANS_MODE_LABEL_TO_CODE[form.transportMode] || '01',
-  TransMode:    form.transportMode   || 'By Road',
-  EwayBill:     form.ewayBillNo      || '',
-  EwayBillDate: toSapDate(form.ewayBillDate) || '',
-  InvoiceNum:   form.lrNum           || '',
-  PollCertApp:  !!form.pollutionCertificateApplicable,
-  SafetyEquip:  !!form.safetyEquipments,
-  SafetyGauMat: !!form.safetyGuardForMaterial,
-})
 
 // ── Result mapper after POST ──────────────────────────────────
 const mapCreateResult = (d) => {
@@ -217,7 +179,6 @@ const mapCreateResult = (d) => {
 export const createMovementApi = {
 
   // ── Search ASNs (AsnHelpSet) ────────────────────────────────
-  // GET /AsnHelpSet?$skip=0&$top=300
   async searchAsns({ search = '' } = {}) {
     const data = await odata('/AsnHelpSet?$skip=0&$top=300')
     let results = (data.d?.results || []).map(mapAsnHelp)
@@ -242,14 +203,10 @@ export const createMovementApi = {
     return (data.d?.results || []).map(mapFixedBin)
   },
 
-  // ── Create Movement (POST GoodsMvtHeaderSet) ────────────────
-  // Mirrors createAsnApi.submitAsn pattern:
-  //   • raw fetch (not odataWrite) so we can parse SAP error JSON properly
-  //   • extracts error.message.value on failure
-  //   • returns { trackingId, trackNo, year, message, raw }
+  // ── Create Movement (POST GoodsMvtHeaderSet, Txn='1') ───────
   async createMovement(form) {
     const token   = await fetchCsrfToken()
-    const payload = buildPostBody(form)
+    const payload = buildPostBody(form, { txn: '1' })
 
     const res = await fetch(`${SRV}/GoodsMvtHeaderSet`, {
       method: 'POST',
@@ -272,8 +229,8 @@ export const createMovementApi = {
       throw new Error(msg)
     }
 
-    const data    = await res.json()
-    const result  = mapCreateResult(data.d)
+    const data   = await res.json()
+    const result = mapCreateResult(data.d)
     const message = result.trackNo
       ? `Movement No. ${result.trackingId} created successfully`
       : 'Movement created successfully'
@@ -281,17 +238,42 @@ export const createMovementApi = {
     return { ...result, message }
   },
 
-  // ── Update Movement (PATCH GoodsMvtHeaderSet) ───────────────
+  // ── Update Movement (POST GoodsMvtHeaderSet, Txn='2') ───────
+  // Edit for "Yet to Ship" — SAP uses POST with Txn='2' (not PATCH)
+  // Existing TrackNo + Year passed in body so SAP knows which record to update
   async updateMovement(id, form) {
     const [trackNo, year] = id.split('/')
-    const key  = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
-    const body = buildPatchBody(form)
-    await odataWrite(`/GoodsMvtHeaderSet(${key})`, body, 'PATCH')
-    return { trackingId: id, trackNo, year }
+    const token   = await fetchCsrfToken()
+    const payload = buildPostBody(form, { trackNo, year, txn: '2' })
+
+    const res = await fetch(`${SRV}/GoodsMvtHeaderSet`, {
+      method: 'POST',
+      headers: {
+        ...getHeaders(),
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token,
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      let msg = `POST ${res.status}`
+      try {
+        const errJson = JSON.parse(t)
+        msg = errJson?.error?.message?.value || msg
+      } catch { msg = t.slice(0, 200) || msg }
+      throw new Error(msg)
+    }
+
+    // 204 or response — both fine
+    if (res.status === 204) return { trackingId: id, trackNo, year }
+    const data = await res.json().catch(() => ({}))
+    return { trackingId: id, trackNo, year, raw: data.d }
   },
 
   // ── Get tracking after create (for detail navigation) ───────
-  // GET /GoodsMvtHeaderSet(TrackNo='...',Year='...')?$expand=...
   async getTracking(trackNo, year) {
     const key    = `TrackNo='${encodeURIComponent(trackNo)}',Year='${encodeURIComponent(year)}'`
     const expand = '$expand=HeaderAsnNav,HeaderRpmInNav,HeaderRpmOutNav'

@@ -37,10 +37,9 @@ const TRANSPORT_MODES = [
 
 // ═══════════════════════════════════════════════════════════════
 // INITIAL FORM STATE
-// asnNums: array of { asnId, asnYear } — supports multiple ASNs
 // ═══════════════════════════════════════════════════════════════
 const INITIAL_FORM = {
-  asnNums: [],                  // [{ asnId, asnYear, invoiceNumber, plant, invoiceAmount, currency }]
+  asnNums: [],
   transportMode: 'By Road',
   ewayBillNo: '',
   ewayBillDate: '',
@@ -55,7 +54,7 @@ const INITIAL_FORM = {
   safetyGuardForMaterial: false,
 }
 
-// ── Helper: map editData (tracking object from goodsMovementApi) → form ──
+// ── Helper: map editData (tracking object) → form ─────────────
 const trackingToForm = (t) => {
   let ewayBillDateVal = ''
   if (t.ewayBillDate) {
@@ -115,45 +114,41 @@ const FieldRow = ({ label, required, children, error }) => (
 )
 
 // ═══════════════════════════════════════════════════════════════
-// REUSABLE: Toggle Switch (Yes / No)
+// REUSABLE: Toggle Switch
 // ═══════════════════════════════════════════════════════════════
 const ToggleSwitch = ({ value, onChange }) => (
   <button
     type="button"
     onClick={() => onChange(!value)}
     className={`relative inline-flex items-center h-8 w-[74px] rounded-full transition-all duration-200 border ${
-      value
-        ? 'bg-[#107e3e] border-[#107e3e]'
-        : 'bg-[#6a6d70] border-[#6a6d70]'
+      value ? 'bg-[#107e3e] border-[#107e3e]' : 'bg-[#6a6d70] border-[#6a6d70]'
     } shadow-sm hover:scale-[1.02] active:scale-[0.98]`}
   >
-    <span className={`absolute text-[11px] font-bold text-white tracking-wider transition-all ${
-      value ? 'left-3' : 'right-3'
-    }`}>
+    <span className={`absolute text-[11px] font-bold text-white tracking-wider transition-all ${value ? 'left-3' : 'right-3'}`}>
       {value ? 'YES' : 'NO'}
     </span>
-    <span
-      className={`inline-block w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-        value ? 'translate-x-[44px]' : 'translate-x-[2px]'
-      }`}
-    />
+    <span className={`inline-block w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${value ? 'translate-x-[44px]' : 'translate-x-[2px]'}`} />
   </button>
 )
 
 // ═══════════════════════════════════════════════════════════════
-// SUCCESS POPUP
+// SUCCESS POPUP — used for both create and edit
 // ═══════════════════════════════════════════════════════════════
-const SuccessPopup = ({ trackingId, onOk }) => (
+const SuccessPopup = ({ trackingId, isEdit, onOk }) => (
   <div className="fixed inset-0 z-[80] flex items-center justify-center px-4 anim-overlay">
     <div className="absolute inset-0 bg-black/40" />
     <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[400px] p-8 flex flex-col items-center gap-4 anim-modal">
       <div className="w-16 h-16 rounded-full bg-[#e8f5e9] flex items-center justify-center">
         <CheckCircle2 size={36} className="text-[#107e3e]" strokeWidth={1.8} />
       </div>
-      <h4 className="text-[17px] font-bold text-[#32363a] text-center">Movement Created Successfully</h4>
+      <h4 className="text-[17px] font-bold text-[#32363a] text-center">
+        {isEdit ? 'Movement Updated Successfully' : 'Movement Created Successfully'}
+      </h4>
       <p className="text-[14px] text-[#6a6d70] text-center leading-relaxed">
-        Movement has been generated for tracking ID
-        <span className="font-semibold text-[#0a6ed1] block mt-1">{trackingId}</span>
+        {isEdit
+          ? <>Tracking number <span className="font-semibold text-[#0a6ed1]">{trackingId}</span> has been updated successfully.</>
+          : <>Movement has been generated for tracking ID <span className="font-semibold text-[#0a6ed1] block mt-1">{trackingId}</span></>
+        }
       </p>
       <button
         onClick={onOk}
@@ -167,11 +162,6 @@ const SuccessPopup = ({ trackingId, onOk }) => (
 
 // ═══════════════════════════════════════════════════════════════
 // COMPONENT
-// Props:
-//   editData   — tracking object to pre-fill (null = create mode)
-//   onBack     — callback to return to previous page
-//   onNavigateToTracking(trackingId) — called after successful create
-//                to open GoodsMovement detail with the new tracking ID
 // ═══════════════════════════════════════════════════════════════
 export default function CreateMovement({ editData = null, onBack = null, onNavigateToTracking = null }) {
   const { loginId, loginType, loading: userLoading } = useUser()
@@ -191,7 +181,6 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
 
   const goToTracking = (trackingId) => {
     if (onNavigateToTracking) { onNavigateToTracking(trackingId); return }
-    // Fallback: navigate with react-router state if available
     if (navigate) navigate(`/goods-movement?trackingId=${encodeURIComponent(trackingId)}`)
     else goBack()
   }
@@ -204,13 +193,13 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
 
   // ── Success popup ───────────────────────────────────────────
   const [successTrackingId, setSuccessTrackingId] = useState(null)
+  const [successIsEdit, setSuccessIsEdit]         = useState(false)
 
   // ── ASN value-help dialog ───────────────────────────────────
   const [asnLookupOpen, setAsnLookupOpen]       = useState(false)
   const [asnLookupSearch, setAsnLookupSearch]   = useState('')
   const [asnLookupResults, setAsnLookupResults] = useState([])
   const [asnLookupLoading, setAsnLookupLoading] = useState(false)
-  const searchRef = useRef('')
 
   // Re-initialise form when editData changes
   useEffect(() => {
@@ -234,13 +223,9 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
     return () => { cancelled = true }
   }, [userLoading, loginId, loginType, asnLookupOpen, asnLookupSearch])
 
-  // Close dialog on Escape
+  // Close on Escape
   useEffect(() => {
-    const handler = (e) => {
-      if (e.key === 'Escape') {
-        if (asnLookupOpen) setAsnLookupOpen(false)
-      }
-    }
+    const handler = (e) => { if (e.key === 'Escape' && asnLookupOpen) setAsnLookupOpen(false) }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [asnLookupOpen])
@@ -280,11 +265,15 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
     setSubmitting(true)
     try {
       if (isEditMode) {
+        // Edit: POST GoodsMvtHeaderSet with Txn='2' and existing TrackNo/Year
         await createMovementApi.updateMovement(editData.id, form)
-        goBack()
+        // Show update success popup
+        setSuccessIsEdit(true)
+        setSuccessTrackingId(editData.id)
       } else {
+        // Create: POST with Txn='1'
         const result = await createMovementApi.createMovement(form)
-        // Show success popup with the new tracking ID
+        setSuccessIsEdit(false)
         setSuccessTrackingId(result.trackingId)
       }
     } catch (err) {
@@ -295,10 +284,16 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
     }
   }
 
-  // Called when user clicks OK on success popup
+  // OK on success popup
   const handleSuccessOk = () => {
+    const id = successTrackingId
     setSuccessTrackingId(null)
-    goToTracking(successTrackingId)
+    if (successIsEdit) {
+      // Go back to goods movement list — edit is done
+      goBack()
+    } else {
+      goToTracking(id)
+    }
   }
 
   const handleReset = () => {
@@ -307,16 +302,15 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
     setSubmitError('')
   }
 
-  // ── ASN pick: fetch FixedBin, then add to asnNums list ──────
+  // ── ASN pick ────────────────────────────────────────────────
   const handlePickAsn = async (row) => {
-    // Prevent duplicate
     if (form.asnNums.some((a) => a.asnId === row.asnId && a.asnYear === row.asnYear)) {
       setAsnLookupOpen(false)
       setAsnLookupSearch('')
       return
     }
 
-    // Fire FixedBin call in background (per spec: happens after ASN selection)
+    // Fire FixedBin call (non-blocking, per spec)
     try {
       createMovementApi.getFixedBin(row.asnId, row.asnYear).catch((err) =>
         console.warn('FixedBin fetch failed (non-blocking):', err)
@@ -332,10 +326,7 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
       currency:      row.currency      || '',
     }
 
-    setForm((f) => ({
-      ...f,
-      asnNums: [...f.asnNums, newAsn],
-    }))
+    setForm((f) => ({ ...f, asnNums: [...f.asnNums, newAsn] }))
     if (errors.asnNums) setErrors((e) => ({ ...e, asnNums: null }))
 
     setAsnLookupOpen(false)
@@ -421,10 +412,9 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
               </FieldRow>
             )}
 
-            {/* ── ASN Number(s) — multi-select via dialog ─────── */}
+            {/* ASN Number(s) */}
             <FieldRow label="ASN Num." required error={errors.asnNums}>
               <div className="space-y-2">
-                {/* Selected ASN chips */}
                 {form.asnNums.length > 0 && (
                   <div className="flex flex-wrap gap-2 p-2 bg-[#f5f6f7] rounded-lg border border-[#e5e5e5]">
                     {form.asnNums.map((a) => (
@@ -445,8 +435,6 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                     ))}
                   </div>
                 )}
-
-                {/* Add ASN button */}
                 <button
                   type="button"
                   onClick={() => setAsnLookupOpen(true)}
@@ -486,7 +474,7 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
               </div>
             </FieldRow>
 
-            {/* Eway Bill No. — must be 12 chars */}
+            {/* Eway Bill No. */}
             <FieldRow label="Eway Bill No." error={errors.ewayBillNo}>
               <input
                 type="text"
@@ -621,29 +609,19 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
 
             {/* Pollution Certificate */}
             <FieldRow label="Pollution Certificate Applicable" required>
-              <ToggleSwitch
-                value={form.pollutionCertificateApplicable}
-                onChange={(v) => updateField('pollutionCertificateApplicable', v)}
-              />
+              <ToggleSwitch value={form.pollutionCertificateApplicable} onChange={(v) => updateField('pollutionCertificateApplicable', v)} />
             </FieldRow>
 
             {/* Safety Equipments */}
             <FieldRow label="Safety Equipments (Shoes, PPE, ARM Cover, Cap)" required>
-              <ToggleSwitch
-                value={form.safetyEquipments}
-                onChange={(v) => updateField('safetyEquipments', v)}
-              />
+              <ToggleSwitch value={form.safetyEquipments} onChange={(v) => updateField('safetyEquipments', v)} />
             </FieldRow>
 
             {/* Safety Guard for Material */}
             <FieldRow label="Safety Guard for Material" required>
-              <ToggleSwitch
-                value={form.safetyGuardForMaterial}
-                onChange={(v) => updateField('safetyGuardForMaterial', v)}
-              />
+              <ToggleSwitch value={form.safetyGuardForMaterial} onChange={(v) => updateField('safetyGuardForMaterial', v)} />
             </FieldRow>
 
-            {/* Submit error banner */}
             {submitError && (
               <div className="mt-4 mx-auto max-w-md text-[13px] text-[#cc1c14] bg-[#fce8e6] border border-[#f5b3ae] rounded-lg px-3 py-2 flex items-center gap-2 anim-fade">
                 <AlertCircle size={14} />
@@ -656,47 +634,33 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
 
       {/* Bottom action bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex items-center justify-end gap-3 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-        <button
-          onClick={handleReset}
-          disabled={submitting}
-          className="px-4 h-9 text-[13px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all disabled:opacity-60"
-        >
+        <button onClick={handleReset} disabled={submitting}
+          className="px-4 h-9 text-[13px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all disabled:opacity-60">
           Reset
         </button>
-        <button
-          onClick={goBack}
-          disabled={submitting}
-          className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] border border-[#0a6ed1] bg-white rounded-lg hover:bg-[#ebf5ff] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60"
-        >
+        <button onClick={goBack} disabled={submitting}
+          className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] border border-[#0a6ed1] bg-white rounded-lg hover:bg-[#ebf5ff] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
           Cancel
         </button>
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="flex items-center gap-2 px-5 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
-        >
+        <button onClick={handleSubmit} disabled={submitting}
+          className="flex items-center gap-2 px-5 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100">
           <Save size={15} />
           {submitting ? 'Submitting…' : 'Submit'}
         </button>
       </div>
 
-      {/* ─────────────── ASN Value-Help Dialog ─────────────── */}
+      {/* ASN Value-Help Dialog */}
       {asnLookupOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAsnLookupOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[720px] anim-modal flex flex-col" style={{ maxHeight: '80vh' }}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
               <h4 className="text-[15px] font-bold text-[#32363a]">Select ASN</h4>
-              <button
-                onClick={() => setAsnLookupOpen(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all"
-              >
+              <button onClick={() => setAsnLookupOpen(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all">
                 <X size={17} />
               </button>
             </div>
-
-            {/* Search */}
             <div className="px-6 py-3 border-b border-[#e5e5e5]">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6a6d70]" />
@@ -710,8 +674,6 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 />
               </div>
             </div>
-
-            {/* Table */}
             <div className="flex-1 overflow-y-auto">
               {asnLookupLoading ? (
                 <div className="py-12 flex flex-col items-center gap-2 text-[#6a6d70]">
@@ -739,9 +701,7 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                           key={`${row.asnId}-${row.asnYear}`}
                           onClick={() => !alreadyAdded && handlePickAsn(row)}
                           className={`border-b border-[#f0f0f0] transition-colors ${
-                            alreadyAdded
-                              ? 'opacity-40 cursor-not-allowed bg-[#f5f6f7]'
-                              : 'hover:bg-[#ebf5ff] cursor-pointer'
+                            alreadyAdded ? 'opacity-40 cursor-not-allowed bg-[#f5f6f7]' : 'hover:bg-[#ebf5ff] cursor-pointer'
                           }`}
                         >
                           <td className="py-3 px-4 font-semibold text-[#0a6ed1]">{row.asnId}</td>
@@ -767,16 +727,12 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 </table>
               )}
             </div>
-
-            {/* Footer */}
             <div className="px-6 py-3 border-t border-[#e5e5e5] flex items-center justify-between">
               <div className="text-[12px] text-[#6a6d70]">
                 {asnLookupResults.length > 0 && `${asnLookupResults.length} result${asnLookupResults.length !== 1 ? 's' : ''}`}
               </div>
-              <button
-                onClick={() => setAsnLookupOpen(false)}
-                className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all"
-              >
+              <button onClick={() => setAsnLookupOpen(false)}
+                className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all">
                 Cancel
               </button>
             </div>
@@ -784,10 +740,11 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
         </div>
       )}
 
-      {/* ─────────────── Success Popup ─────────────── */}
+      {/* Success Popup */}
       {successTrackingId && (
         <SuccessPopup
           trackingId={successTrackingId}
+          isEdit={successIsEdit}
           onOk={handleSuccessOk}
         />
       )}
