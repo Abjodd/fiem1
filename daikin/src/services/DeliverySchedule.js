@@ -42,6 +42,13 @@ function mapDeliveryRow(raw) {
     timeDelay:    str(raw.DelayInd),
     city:         str(raw.City),
     supplier:     str(raw.Name),
+    // These fields enable client-side filtering as a safety net
+    // in case the SAP server does not filter them correctly.
+    // If GoodsMvtHeaderSet does not return these fields,
+    // they will be empty strings — client filter will skip them gracefully.
+    material:     str(raw.Matnr  ?? raw.Material ?? ''),
+    asn:          str(raw.AsnNum ?? raw.Asn      ?? ''),
+    invoiceNo:    str(raw.InvNo  ?? raw.Invoice  ?? ''),
   }
 }
 
@@ -71,29 +78,43 @@ export const DeliveryScheduleApi = {
   // Go button — GoodsMvtHeaderSet
   // Spec: ?$filter=Eta ge '20260429' and Eta le '20260529'
   async fetchDeliveries({
-    startDate = '', endDate = '',
-    status = '', supplier = '', material = '',
-    asn = '', invoiceNo = '', trackSearch = '',
-    skip = 0, top = 200,
-  } = {}) {
-    const sapFrom = toSapDate(startDate)
-    const sapTo   = toSapDate(endDate)
+  startDate = '', endDate = '',
+  status = '', supplier = '', material = '',
+  asn = '', invoiceNo = '', trackSearch = '',
+  skip = 0, top = 200,
+} = {}) {
+  const sapFrom = toSapDate(startDate)
+  const sapTo   = toSapDate(endDate)
 
-    const parts = []
-    if (sapFrom)     parts.push(`Eta ge '${sapFrom}'`)
-    if (sapTo)       parts.push(`Eta le '${sapTo}'`)
-    if (status)      parts.push(`StatusText eq '${status}'`)
-    if (supplier)    parts.push(`Name eq '${supplier}'`)
-    if (material)    parts.push(`Material eq '${material}'`)
-    if (asn)         parts.push(`AsnNum eq '${asn}'`)
-    if (invoiceNo)   parts.push(`InvNo eq '${invoiceNo}'`)
-    if (trackSearch) parts.push(`TrackNo eq '${trackSearch}'`)
+  const parts = []
+  if (sapFrom)     parts.push(`Eta ge '${sapFrom}'`)
+  if (sapTo)       parts.push(`Eta le '${sapTo}'`)
+  if (status)      parts.push(`StatusText eq '${status}'`)
+  if (supplier)    parts.push(`Vendor eq '${supplier}'`)
+  if (material)    parts.push(`Material eq '${material}'`)
+  if (asn)         parts.push(`AsnNum eq '${asn}'`)
+  if (invoiceNo)   parts.push(`InvNo eq '${invoiceNo}'`)
+  if (trackSearch) parts.push(`TrackNo eq '${trackSearch}'`)
 
-    const f          = encodeURIComponent(parts.join(' and '))
-    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
-    const data       = await odata(`/GoodsMvtHeaderSet?$filter=${f}${pagination}`)
+  const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+
+  // Guard: if no filter parts, fetch without $filter entirely
+  // Sending $filter= (empty) causes SAP to ignore it and return all records
+  const url = parts.length > 0
+    ? `/GoodsMvtHeaderSet?$filter=${encodeURIComponent(parts.join(' and '))}${pagination}`
+    : `/GoodsMvtHeaderSet?${pagination.replace('&','')}`
+
+  const data = await odata(url)
+    console.log('=== SAP fetchDeliveries ===')
+    console.log('URL sent:', SRV + url)
+    console.log('Parts:', parts)
+    console.log('Rows returned:', data.d?.results?.length ?? 0)
+    if (data.d?.results?.length > 0) {
+      console.log('First raw row keys:', Object.keys(data.d.results[0]))
+      console.log('First raw row:', JSON.stringify(data.d.results[0], null, 2))
+    }
     return (data.d?.results || []).map(mapDeliveryRow)
-  },
+},
 
   // Detail — AsnDetailsSet
   async fetchDetail(trackingNo, trackYear) {
@@ -144,6 +165,13 @@ export const DeliveryScheduleApi = {
     const data = await odata(`/InvHelpSet?${pagination}`)
     return (data.d?.results || []).map(r => ({ code: str(r.InvNo), label: '' }))
   },
+
+  async fetchTodayScheduled(todayDate) {
+  const sapToday = todayDate.replace(/-/g, '')   // reuse same logic as toSapDate
+  const f = encodeURIComponent(`Status ge '02' and Status le '06' and Eta eq '${sapToday}'`)
+  const data = await odata(`/GoodsMvtHeaderSet?$filter=${f}`)
+  return (data.d?.results || []).map(mapDeliveryRow)
+},
 }
 
 export default DeliveryScheduleApi

@@ -1,6 +1,7 @@
 // src/services/UploadAttachment.js
-
+import { authConfig } from './authConfig.js'
 const SA_ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
+// export const authConfig = { loginId: '', loginType: '' }
 
 /**
  * Fetch a CSRF token from the SA OData service.
@@ -12,6 +13,8 @@ async function fetchCsrfToken() {
     headers: {
       Accept: 'application/json',
       'X-CSRF-Token': 'Fetch',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
     },
     credentials: 'include',
   })
@@ -51,6 +54,8 @@ export async function uploadAttachmentToSap({ asnNum, fisYear, file, csrfToken, 
       'Content-Type': file.type || 'application/octet-stream',
       'Accept': 'application/json',
       'X-CSRF-Token': csrfToken,
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
       // SAP reads the filename from the slug header
       'slug': file.name,
       // Pass ASN keys so SAP can link the attachment to the correct document

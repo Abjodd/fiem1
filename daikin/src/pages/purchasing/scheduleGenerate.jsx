@@ -741,7 +741,7 @@ export default function ScheduleGenerate() {
 
                   <button
                     onClick={handleApprove}
-                    disabled={selArr.length === 0 || busy}
+                    disabled={selArr.length === 0 || busy || selArr.some(no => items.find(i => i.itemNo === no)?.status === 'Not Generated')}
                     className="h-8 px-3 text-[12px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40"
                   >
                     {busy && busyLabel === 'Saving…' ? 'Saving…' : 'Approve'}

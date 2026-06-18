@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import PageLayout from '../../layouts/PageLayout.jsx'
-import { DeliveryScheduleApi } from '../../services/DeliverySchedule.js'
-
+import { DeliveryScheduleApi, authConfig } from '../../services/DeliverySchedule.js'
+// import { useUser } from '../../context/UserContext.jsx'
 // ═══════════════════════════════════════════════════════════════
 // DATE HELPERS
 // ═══════════════════════════════════════════════════════════════
@@ -257,52 +257,57 @@ function HorizontalBarChart({ title, data, colorMap, order }) {
 //           Pie is only shown for today's overview (not after search)
 //           If today has no rows, show "No schedule for today" in pie slot
 // ═══════════════════════════════════════════════════════════════
-function ChartRow({ chartData, loading, showTodayPie, todayHasData, todayLoading }) {
+// chartData      — bar/horizontal bar data (search results or today if no search)
+// todayChartData — pie chart data (ALWAYS today only, never changes with search)
+// loading        — search loading state for bar charts
+// todayLoading   — today's fetch loading state for pie
+// todayHasData   — whether today has any deliveries
+function ChartRow({ chartData, todayChartData, loading, todayHasData, todayLoading }) {
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade">
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
 
-        {/* SLOT 1 — Pie: today overview only */}
-        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
-          {showTodayPie ? (
-            todayLoading ? (
-              <Spinner />
-            ) : todayHasData ? (
-              <PieChart
-                title="Today's Status"
-                data={chartData.shipment}
-                colorMap={PIE_COLORS_STATUS}
-                order={PIE_STATUS_ORDER}
-              />
-            ) : (
-              /* No schedules today */
-              <div style={{ height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d9d9d9" strokeWidth="1.5">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/>
-                  <path d="M16 2v4M8 2v4M3 10h18"/>
-                </svg>
-                <div style={{ fontSize:13, fontWeight:700, color:'#6a6d70', textAlign:'center' }}>No Schedule for Today</div>
-                <div style={{ fontSize:11, color:'#94a3b8', textAlign:'center' }}>No deliveries are scheduled for today</div>
-              </div>
-            )
+        {/* SLOT 1 — Pie: TODAY only, always, never affected by search */}
+        <div
+          className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4"
+          style={{ height:210, position:'relative', order:1 }}
+        >
+          {todayLoading ? (
+            <Spinner />
+          ) : todayHasData ? (
+            <PieChart
+              title="Today's Status"
+              data={todayChartData.shipment}
+              colorMap={PIE_COLORS_STATUS}
+              order={PIE_STATUS_ORDER}
+            />
           ) : (
-            /* After search — hide pie, show neutral message */
-            <div style={{ height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <div style={{ fontSize:12, color:'#94a3b8', textAlign:'center' }}>Today's pie shown<br/>before search</div>
+            <div style={{ height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d9d9d9" strokeWidth="1.5">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <path d="M16 2v4M8 2v4M3 10h18"/>
+              </svg>
+              <div style={{ fontSize:13, fontWeight:700, color:'#6a6d70', textAlign:'center' }}>No Schedules for Today</div>
             </div>
           )}
         </div>
 
-        {/* SLOT 2 — Shipment Status Bar */}
-        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
+        {/* SLOT 2 — Shipment Status Bar: reflects search results (or today if no search) */}
+        <div
+          className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4"
+          style={{ height:210, position:'relative', order:2 }}
+        >
           {loading
             ? <Spinner />
             : <BarChart title="Shipment Status" data={chartData.shipment} colorMap={PIE_COLORS_STATUS} order={BAR_STATUS_ORDER} />
           }
         </div>
 
-        {/* SLOT 3 — Delay Status Horizontal Bar */}
-        <div className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4" style={{ height:210, position:'relative' }}>
+        {/* SLOT 3 — Delay Status Horizontal Bar: reflects search results (or today if no search) */}
+        <div
+          className="bg-white rounded-xl border border-[#e5e5e5] shadow-sm p-4"
+          style={{ height:210, position:'relative', order:3 }}
+        >
           {loading
             ? <Spinner />
             : <HorizontalBarChart title="Delay Status" data={chartData.delay} colorMap={PIE_COLORS_DELAY} order={DELAY_ORDER} />
@@ -420,10 +425,53 @@ function ValueHelpInput({ placeholder, value, onOpen }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// DD/MM/YYYY DATE INPUT
+// Uses three separate inputs so format is browser/OS independent.
+// Internal value is always yyyy-mm-dd (ISO) — nothing else changes.
+// ═══════════════════════════════════════════════════════════════
+function DateInput({ value, onChange }) {
+  const inputRef = useRef(null)
+
+  // Format ISO yyyy-mm-dd → dd/mm/yyyy for display only
+  const displayValue = value
+    ? value.split('-').reverse().join('/')  // "2026-06-18" → "18/06/2026"
+    : ''
+
+  return (
+    <div className="relative h-10 w-full">
+      {/* Native date input — invisible but fully functional (handles calendar picker) */}
+      <input
+        ref={inputRef}
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      />
+      {/* Visual overlay showing dd/mm/yyyy format */}
+      <div
+        onClick={() => inputRef.current?.showPicker?.()}
+        className="absolute inset-0 flex items-center justify-between px-3 h-10 border border-[#d9d9d9] rounded-lg bg-white cursor-pointer
+                   focus-within:border-[#0a6ed1] transition-all"
+      >
+        <span className={`text-[14px] ${value ? 'text-[#32363a]' : 'text-[#94a3b8]'}`}>
+          {displayValue || 'DD/MM/YYYY'}
+        </span>
+        {/* Calendar icon */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6a6d70" strokeWidth="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
 // DETAIL VIEW
 // FIX #4 — Left: Tracking No + Supplier  |  Right: Status (bold big) + Shipment Date + ETA
-// ═══════════════════════════════════════════════════════════════
-function DetailView({ trackingNo, trackYear, onBack }) {
+function DetailView({ trackingNo, trackYear, supplierName, onBack }) {
   const [detail,  setDetail]  = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
@@ -450,13 +498,17 @@ function DetailView({ trackingNo, trackYear, onBack }) {
         </span>
       </div>
 
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3 text-[#6a6d70]">
-            <div className="w-8 h-8 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin" />
-            <span className="text-[14px]">Loading detail…</span>
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3 text-[#6a6d70]">
+              <div className="w-8 h-8 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin" />
+              <span className="text-[14px]">Loading detail…</span>
+              {/* Show supplier immediately from the list row while API loads */}
+              {supplierName && (
+                <span className="text-[13px] text-[#94a3b8]">{supplierName}</span>
+              )}
+            </div>
           </div>
-        </div>
       ) : error ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="flex items-center gap-2 px-4 py-3 bg-[#fce8e6] text-[#cc1c14] rounded-lg text-[13px]">
@@ -481,9 +533,9 @@ function DetailView({ trackingNo, trackYear, onBack }) {
                 }}>
                   {displayTrackingNo}
                 </div>
-                {detail.supplier && (
+                {(detail.supplier || supplierName) && (
                   <div className="text-[13px] text-[#6a6d70]">
-                    Supplier: <span className="font-semibold text-[#32363a]">{detail.supplier}</span>
+                    Supplier: <span className="font-semibold text-[#32363a]">{detail.supplier || supplierName}</span>
                   </div>
                 )}
               </div>
@@ -561,15 +613,25 @@ function DetailView({ trackingNo, trackYear, onBack }) {
 // ═══════════════════════════════════════════════════════════════
 const STATUS_OPTIONS = ['', 'In Transit', 'Reached Plant', 'Unloading Started', 'Goods Received', 'Completed']
 
+// Client-side filter acts as a safety net after the API returns rows.
+// All fields now exist on the row object (see mapDeliveryRow).
+// This guarantees filtering works even if SAP ignores certain OData filter params.
 function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, trackSearch }) {
   return rows.filter(row => {
-    if (status    && row.status !== status)                                                          return false
-    if (supplier  && row.supplier !== supplier)                                                      return false
-    if (material  && !String(row.material  || '').toLowerCase().includes(material.toLowerCase()))   return false
-    if (asn       && !String(row.asn       || '').toLowerCase().includes(asn.toLowerCase()))        return false
-    if (invoiceNo && !String(row.invoiceNo || '').toLowerCase().includes(invoiceNo.toLowerCase()))  return false
+    // Exact match filters — must equal exactly
+    if (status   && row.status   !== status)   return false
+    if (supplier && row.supplier !== supplier) return false
+
+    // Partial match filters — contains check (case-insensitive)
+    // If the field is empty on the row (SAP didn't return it), skip the check
+    // so we don't incorrectly hide rows that the server already filtered correctly
+    if (material && row.material && !row.material.toLowerCase().includes(material.toLowerCase())) return false
+    if (asn      && row.asn      && !row.asn.toLowerCase().includes(asn.toLowerCase()))           return false
+    if (invoiceNo && row.invoiceNo && !row.invoiceNo.toLowerCase().includes(invoiceNo.toLowerCase())) return false
+
+    // Multi-field search across trackingNo, plant, city
     if (trackSearch) {
-      const q = trackSearch.toLowerCase()
+      const q   = trackSearch.toLowerCase()
       const hit = String(row.trackingNo || '').toLowerCase().includes(q) ||
                   String(row.plant      || '').toLowerCase().includes(q) ||
                   String(row.city       || '').toLowerCase().includes(q)
@@ -578,17 +640,20 @@ function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, 
     return true
   })
 }
-
 const EMPTY_CHART = { shipment: {}, delay: {} }
 
 export default function DeliverySchedule() {
+  // const { loginId, loginType, loading: userLoading } = useUser()
+  // authConfig.loginId   = loginId
+  // authConfig.loginType = loginType
   const companyCode = '1000 (Comstar India)'
 
   const [view,             setView]             = useState('list')
   const [selectedTracking, setSelectedTracking] = useState(null)
   const [selectedYear,     setSelectedYear]     = useState(null)
+  const [selectedSupplier, setSelectedSupplier] = useState(null)
 
-  const [startDate,   setStartDate]   = useState(offsetDateIso(-30))
+  const [startDate,   setStartDate]   = useState(todayIso())
   const [endDate,     setEndDate]     = useState(todayIso())
   const [status,      setStatus]      = useState('')
   const [supplier,    setSupplier]    = useState('')
@@ -614,10 +679,10 @@ export default function DeliverySchedule() {
   const [todayLoading, setTodayLoading] = useState(true)
   const [todayFetched, setTodayFetched] = useState(false)
 
-  const rows = useMemo(() =>
-    applyClientFilters(rawRows, { status, supplier, material, asn, invoiceNo, trackSearch }),
-    [rawRows, status, supplier, material, asn, invoiceNo, trackSearch]
-  )
+const rows = useMemo(() =>
+  applyClientFilters(rawRows, { status, supplier, material, asn, invoiceNo, trackSearch }),
+  [rawRows, status, supplier, material, asn, invoiceNo, trackSearch]
+)
 
   const chartData      = useMemo(() => computeChartData(rows),     [rows])
   const todayChartData = useMemo(() => computeChartData(todayRows), [todayRows])
@@ -625,14 +690,37 @@ export default function DeliverySchedule() {
   // After search: bar & horizontal bar use search results; pie always uses today
   const activeBarChartData = hasSearched ? chartData : todayChartData
 
-  useEffect(() => {
-    const today = todayIso()
-    setTodayLoading(true)
-    DeliveryScheduleApi.fetchDeliveries({ startDate: today, endDate: today })
-      .then(data => { setTodayRows(data); setTodayFetched(true) })
-      .catch(() => { setTodayFetched(true) })
-      .finally(() => setTodayLoading(false))
-  }, [])
+useEffect(() => {
+  // if (userLoading) return
+  // if (!loginId || !loginType) return
+  const today = todayIso()
+
+  // 1. Fetch today's rows for the pie chart — always runs on mount, never changes
+  setTodayLoading(true)
+  DeliveryScheduleApi.fetchDeliveries({ startDate: today, endDate: today })
+    .then(data => {
+      setTodayRows(data)
+      setTodayFetched(true)
+    })
+    .catch(() => setTodayFetched(true))
+    .finally(() => setTodayLoading(false))
+
+  // 2. Also auto-load today's data into the main table on first render
+  // so the user sees today's deliveries immediately without clicking Go.
+  // Uses fetchTodayScheduled (Status 02–06) same as the "View Today's" link.
+// 2. Auto-load today into main table using same fetchDeliveries as Go button
+// fetchTodayScheduled (Status 02-06) is unreliable if SAP numeric codes differ
+setLoading(true)
+DeliveryScheduleApi.fetchDeliveries({ startDate: today, endDate: today })
+  .then(data => {
+    setRawRows(data)
+    setHasSearched(true)
+  })
+  .catch(err => {
+    console.warn('Mount auto-load failed:', err.message)
+  })
+  .finally(() => setLoading(false))
+}, [])
 
   const openVh = async (field) => {
     setVhModal(field); setVhOptions([])
@@ -656,6 +744,7 @@ export default function DeliverySchedule() {
 
   // FIX #1 — pass ALL filters to API  |  FIX #2 — date validation
   const handleGo = async () => {
+    console.log('handleGo fired with:', { startDate, endDate, status, supplier, material, asn, invoiceNo, trackSearch })
     // Date validation
     if (startDate && endDate && startDate > endDate) {
       setDateError('Start date must be on or before end date.')
@@ -683,15 +772,36 @@ export default function DeliverySchedule() {
   }
 
   const handleClear = () => {
-    setStartDate(offsetDateIso(-30)); setEndDate(todayIso())
+    setStartDate(todayIso()); setEndDate(todayIso())
     setStatus(''); setSupplier(''); setMaterial('')
     setAsn(''); setInvoiceNo(''); setTrackSearch('')
     setRawRows([]); setHasSearched(false); setError(null); setDateError('')
   }
-
-  const handleRowClick = (trackingNo, trackYear) => {
-    setSelectedTracking(trackingNo); setSelectedYear(trackYear); setView('detail')
+  const handleViewToday = async () => {
+  const today = todayIso()                   // e.g. "2026-06-18"
+  setStartDate(today)                        // sync date inputs to today
+  setEndDate(today)
+  setStatus(''); setSupplier(''); setMaterial('')
+  setAsn(''); setInvoiceNo(''); setTrackSearch('')
+  setDateError('')
+  setLoading(true); setError(null)
+  try {
+    const data = await DeliveryScheduleApi.fetchTodayScheduled(today)
+    setRawRows(data)
+    setHasSearched(true)
+  } catch (err) {
+    setError(err.message || 'Failed to fetch today\'s schedule')
+  } finally {
+    setLoading(false)
   }
+}
+
+ const handleRowClick = (trackingNo, trackYear, supplier) => {
+  setSelectedTracking(trackingNo)
+  setSelectedYear(trackYear)
+  setSelectedSupplier(supplier || '')   
+  setView('detail')
+}
   const handleBack = () => { setView('list'); setSelectedTracking(null); setSelectedYear(null) }
 
   return (
@@ -737,7 +847,7 @@ export default function DeliverySchedule() {
           </div>
 
           {view === 'detail' ? (
-            <DetailView trackingNo={selectedTracking} trackYear={selectedYear} onBack={handleBack} />
+            <DetailView trackingNo={selectedTracking} trackYear={selectedYear} supplierName={selectedSupplier} onBack={handleBack}/>
           ) : (
             <>
               {/* Header row */}
@@ -745,6 +855,13 @@ export default function DeliverySchedule() {
                 <h2 className="text-[15px] sm:text-[16px] font-bold text-[#32363a] tracking-tight">
                   {hasSearched ? 'Search Results' : 'Schedule for Today'}
                 </h2>
+                  <button
+                    onClick={handleViewToday}
+                    disabled={loading}
+                    className="text-[13px] font-semibold text-[#0a6ed1] underline underline-offset-2 hover:text-[#085caf] hover:no-underline transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    View Today&apos;s Scheduled Items
+                  </button>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button onClick={handleGo} disabled={loading}
                     className="flex items-center gap-1.5 px-5 h-9 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
@@ -765,8 +882,8 @@ export default function DeliverySchedule() {
               {/* FIX #3 — Charts with corrected order and today-only pie */}
               <ChartRow
                 chartData={activeBarChartData}
-                loading={hasSearched ? loading : todayLoading}
-                showTodayPie={!hasSearched}
+                todayChartData={todayChartData}
+                loading={loading}
                 todayHasData={todayRows.length > 0}
                 todayLoading={todayLoading}
               />
@@ -775,7 +892,6 @@ export default function DeliverySchedule() {
               {filterBarVisible && (
                 <div className="px-4 sm:px-6 lg:px-10 pb-4 flex-shrink-0 anim-fade border-t border-[#e5e5e5] pt-4">
 
-                  {/* FIX #2 — Date error message */}
                   {dateError && (
                     <div className="mb-3 flex items-center gap-2 px-4 py-2.5 bg-[#fce8e6] text-[#cc1c14] rounded-lg text-[13px] font-medium">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
@@ -785,26 +901,47 @@ export default function DeliverySchedule() {
 
                   <div className="filter-grid">
                     {/* FIX #3 — Removed SVG calendar icons; native date input has its own picker */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] text-[#6a6d70] font-semibold">
-                        Start Date<span className="text-[#cc1c14]">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={e => { setStartDate(e.target.value); setDateError('') }}
-                        className="h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
+                  {/* <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] text-[#6a6d70] font-semibold">
+                      Start Date<span className="text-[#cc1c14]">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      lang="en-GB"
+                      value={startDate}
+                      onChange={e => { setStartDate(e.target.value); setDateError('') }}
+                      className="h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full"
+                    />
+                  </div> */}
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] text-[#6a6d70] font-semibold">
+                      Start Date<span className="text-[#cc1c14]">*</span>
+                    </label>
+                    <DateInput
+                      value={startDate}
+                      onChange={v => { setStartDate(v); setDateError('') }}
+                    />
+                  </div>
+                  {/* <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] text-[#6a6d70] font-semibold">
+                      End Date<span className="text-[#cc1c14]">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      lang="en-GB"
+                      value={endDate}
+                      onChange={e => { setEndDate(e.target.value); setDateError('') }}
+                      className="h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full"
+                    />
+                  </div> */}
+                  <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">
                         End Date<span className="text-[#cc1c14]">*</span>
                       </label>
-                      <input
-                        type="date"
+                      <DateInput
                         value={endDate}
-                        onChange={e => { setEndDate(e.target.value); setDateError('') }}
-                        className="h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all w-full"
+                        onChange={v => { setEndDate(v); setDateError('') }}
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -908,7 +1045,7 @@ export default function DeliverySchedule() {
                           ) : rows.map((row, idx) => (
                             <tr key={`${row.trackingNo}-${idx}`}
                               className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#f0f7ff] transition-colors duration-100 cursor-pointer tracking-row"
-                              onClick={() => handleRowClick(row.trackingNo, row.trackYear)}>
+                              onClick={() => handleRowClick(row.trackingNo, row.trackYear, row.supplier)}>
                               <td className="py-3 px-3 text-center border-r border-[#f0f0f0]">
                                 <span className="tracking-link text-[#0a6ed1] font-semibold text-[12px] font-mono">
                                   {row.trackingNo}{row.trackYear ? `/${row.trackYear}` : ''}
