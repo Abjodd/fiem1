@@ -373,20 +373,22 @@ export default function ScheduleLinesPage() {
   const { state } = useLocation()
 
   const {
-    selectedItemNos  = [],
-    itemsData        = [],
-    editable         = false,
-    title            = 'Schedule Lines',
-    mode             = '',
-    dayCount         = 5,
-    pendingIndicator,
-    agreementId      = '',
-    supplierCode     = '',
-    supplierName     = '',
-    plantName        = '',
-    companyCode      = '',
-    agreementDate    = '',
-  } = state || {}
+  selectedItemNos  = [],
+  itemsData        = [],
+  editable         = false,
+  title            = 'Schedule Lines',
+  mode             = '',
+  dayCount         = 5,
+  pendingIndicator,
+  agreementId      = '',
+  supplierCode     = '',
+  supplierName     = '',
+  plantName        = '',
+  companyCode      = '',
+  agreementDate    = '',
+  supplierFull     = null,   // ← ADD
+  agreementFull    = null,   // ← ADD
+} = state || {}
 
   const calDays = useMemo(() => buildCalendarDays(), [])
 
@@ -403,31 +405,48 @@ export default function ScheduleLinesPage() {
   const canSave = !saving && overLines.length === 0
 
   // ── Save ──
-  const handleSave = async () => {
-    if (!canSave) return
-    setSaving(true)
-    try {
-      await scheduleGenerateApi.saveScheduleLines(agreementId, displayLines)
-      navigate('/purchasing/schedule-generate', {
-        state: {
-          returnData: {
-            savedLines: displayLines,
-            pendingIndicator,
-          },
-        },
-      })
-    } catch (err) {
-      console.error(err)
-      setSaving(false)
+  // AFTER
+const handleSave = async () => {
+  if (!canSave) return
+  setSaving(true)
+  try {
+    if (mode === 'WEEKLY') {
+      await scheduleGenerateApi.generateWeekSchedule(agreementId, supplierCode, displayLines)
+    } else if (mode === 'DAILY') {
+      await scheduleGenerateApi.generateDaySchedule(agreementId, supplierCode, displayLines, dayCount)
+    } else {
+      await scheduleGenerateApi.saveScheduleLines(agreementId, supplierCode, displayLines)
     }
-  }
-
-  // ── Close (X) ──
-  const handleClose = () => {
     navigate('/purchasing/schedule-generate', {
-      state: { preserveSupplier: true },
-    })
+  state: {
+    returnData: {
+      savedLines:       displayLines,
+      pendingIndicator,
+    },
+    restoreData: {          // ← ADD THIS
+      supplier:  supplierFull,
+      agreement: agreementFull,
+    },
+  },
+})
+  } catch (err) {
+    console.error(err)
+    setSaving(false)
   }
+}
+  // ── Close (X) ──
+
+  // REPLACE WITH THIS
+const handleClose = () => {
+  navigate('/purchasing/schedule-generate', {
+    state: {
+      restoreData: {
+        supplier:  supplierFull,
+        agreement: agreementFull,
+      },
+    },
+  })
+}
 
   // Build a clean display title: "Schedule Lines" with mode as a badge, no em dash
   const baseTitle  = title.replace(/\s*[—–-]\s*(Week|Day).*$/i, '').trim() || 'Schedule Lines'

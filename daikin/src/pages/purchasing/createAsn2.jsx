@@ -258,9 +258,10 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
 // ═══════════════════════════════════════════════════════════════
 // MOBILE ITEM CARD
 // ═══════════════════════════════════════════════════════════════
-function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirOptions }) {
+function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirOptions, originalQty }) {
   const [expanded, setExpanded] = useState(false)
-  const isZeroQty = parseFloat(item.avlAsnQty || 0) === 0
+  const isZeroQty = originalQty === 0
+  // const isZeroQty = parseFloat(item.avlAsnQty || 0) === 0
   const batchCount = item.batches?.length || 0
   const batchSum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
   const target = parseFloat(item.avlAsnQty || 0)
@@ -399,8 +400,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
 // ═══════════════════════════════════════════════════════════════
 // DESKTOP ITEM CARD
 // ═══════════════════════════════════════════════════════════════
-function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirOptions }) {
-  const isZeroQty = parseFloat(item.avlAsnQty || 0) === 0
+function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirOptions, originalQty }) {
+  const isZeroQty = originalQty === 0
   const bc = item.batches?.length || 0
   const bsum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
   const balanced = bc > 0 && Math.abs(bsum - parseFloat(item.avlAsnQty || 0)) < 0.0001
@@ -605,23 +606,66 @@ export default function CreateASN2({ agreement: propAgreement }) {
   const [splitBatchItem, setSplitBatchItem] = useState(null)
   const [modal, setModal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [originalQties, setOriginalQties] = useState({})
 
-  useEffect(() => {
-    if (userLoading) return
-    if (!loginId || !loginType) return
-    if (!agreement?.id) return
-    setItemsLoading(true)
-    setItemsError(null)
-    Promise.all([
-      createAsnApi.getEligibleItems({ scheduleNo: agreement.id }),
-      createAsnApi.getPdirRefNos(agreement.id),
-    ])
-      .then(([asnItems, pdirNos]) => { setItems(asnItems); setPdirOptions(pdirNos) })
-      .catch(err => setItemsError(err.message))
-      .finally(() => setItemsLoading(false))
-  }, [userLoading, loginId, loginType, agreement?.id])
+  // useEffect(() => {
+  //   if (userLoading) return
+  //   if (!loginId || !loginType) return
+  //   if (!agreement?.id) return
+  //   setItemsLoading(true)
+  //   setItemsError(null)
+  //   Promise.all([
+  //     createAsnApi.getEligibleItems({ scheduleNo: agreement.id }),
+  //     createAsnApi.getPdirRefNos(agreement.id),
+  //   ])
+  //     .then(([asnItems, pdirNos]) => { setItems(asnItems); setPdirOptions(pdirNos) })
+  //     .catch(err => setItemsError(err.message))
+  //     .finally(() => setItemsLoading(false))
+  // }, [userLoading, loginId, loginType, agreement?.id])
 
-  const selectableItems = useMemo(() => items.filter(i => parseFloat(i.avlAsnQty || 0) > 0), [items])
+  // Fields the user can edit — preserve these across re-fetches
+const USER_EDITABLE_FIELDS = [
+  'avlAsnQty', 'fgStock', 'supplierNetPrice', 'materialExpiry',
+  'taxMismatch', 'packingMaterialType', 'packingMaterialQty',
+  'packagingType', 'qtyPerPackaging', 'pdirNo', 'batches',
+]
+
+useEffect(() => {
+  if (userLoading) return
+  if (!loginId || !loginType) return
+  if (!agreement?.id) return
+  setItemsLoading(true)
+  setItemsError(null)
+  Promise.all([
+    createAsnApi.getEligibleItems({ scheduleNo: agreement.id }),
+    createAsnApi.getPdirRefNos(agreement.id),
+  ])
+    .then(([asnItems, pdirNos]) => {
+      setItems(prev => {
+        const prevMap = Object.fromEntries(prev.map(i => [i.itemNo, i]))
+        return asnItems.map(freshItem => {
+          const existing = prevMap[freshItem.itemNo]
+          if (!existing) return freshItem
+          const preserved = {}
+          USER_EDITABLE_FIELDS.forEach(f => { preserved[f] = existing[f] })
+          return { ...freshItem, ...preserved }
+        })
+      })
+      // ADD THIS BLOCK:
+      setOriginalQties(prev => {
+        const next = { ...prev }
+        asnItems.forEach(i => {
+          if (!(i.itemNo in next)) next[i.itemNo] = parseFloat(i.avlAsnQty || 0)
+        })
+        return next
+      })
+      setPdirOptions(pdirNos)
+    })
+    .catch(err => setItemsError(err.message))
+    .finally(() => setItemsLoading(false))
+}, [userLoading, loginId, loginType, agreement?.id])
+
+  const selectableItems = useMemo(() =>items.filter(i => (originalQties[i.itemNo] ?? parseFloat(i.avlAsnQty || 0)) > 0),[items, originalQties])
   const allSelected = selectableItems.length > 0 && selectedItemNos.length === selectableItems.length
   const someSelected = selectedItemNos.length > 0 && !allSelected
 
@@ -635,17 +679,36 @@ export default function CreateASN2({ agreement: propAgreement }) {
   const updateItem = (itemNo, field, value) => setItems(items.map(i => i.itemNo === itemNo ? { ...i, [field]: value } : i))
   const handleSplitBatchSave = (itemNo, batches) => setItems(items.map(i => i.itemNo === itemNo ? { ...i, batches } : i))
 
-  const handleGo = async () => {
-    if (!agreement?.id) return
-    setItemsLoading(true)
-    setItemsError(null)
-    try {
-      const asnItems = await createAsnApi.getEligibleItems({ scheduleNo: agreement.id, fromDate, toDate, storageLocation: storageSearch })
-      setItems(asnItems)
-      setSelectedItemNos(prev => prev.filter(no => asnItems.some(i => i.itemNo === no)))
-    } catch (err) { setItemsError(err.message) }
-    finally { setItemsLoading(false) }
-  }
+const handleGo = async () => {
+  if (!agreement?.id) return
+  setItemsLoading(true)
+  setItemsError(null)
+  try {
+    const asnItems = await createAsnApi.getEligibleItems({
+      scheduleNo: agreement.id, fromDate, toDate, storageLocation: storageSearch
+    })
+    setItems(prev => {
+      const prevMap = Object.fromEntries(prev.map(i => [i.itemNo, i]))
+      return asnItems.map(freshItem => {
+        const existing = prevMap[freshItem.itemNo]
+        if (!existing) return freshItem
+        const preserved = {}
+        USER_EDITABLE_FIELDS.forEach(f => { preserved[f] = existing[f] })
+        return { ...freshItem, ...preserved }
+      })
+    })
+
+      setOriginalQties(prev => {
+      const next = { ...prev }
+      asnItems.forEach(i => {
+        if (!(i.itemNo in next)) next[i.itemNo] = parseFloat(i.avlAsnQty || 0)
+      })
+      return next
+    })
+    setSelectedItemNos(prev => prev.filter(no => asnItems.some(i => i.itemNo === no)))
+  } catch (err) { setItemsError(err.message) }
+  finally { setItemsLoading(false) }
+}
   const handleClear = () => { setFromDate(''); setToDate(''); setMaterialSearch(''); setStorageSearch('') }
 
   const calcInvoiceValue = () =>
@@ -729,11 +792,11 @@ export default function CreateASN2({ agreement: propAgreement }) {
   const totalAttachments = generalAttachments.length + pdirAttachments.length
 
   const filteredItems = useMemo(() => {
-    const available = items.filter(i => parseFloat(i.avlAsnQty || 0) > 0)
+    const available = items.filter(i => (originalQties[i.itemNo] ?? parseFloat(i.avlAsnQty || 0)) > 0)
     if (!materialSearch.trim()) return available
     const q = materialSearch.trim().toUpperCase()
     return available.filter(i => i.materialNumber.toUpperCase().includes(q) || i.materialName.toUpperCase().includes(q))
-  }, [items, materialSearch])
+  }, [items, materialSearch, originalQties])
 
   return (
     <PageLayout>
@@ -953,7 +1016,7 @@ export default function CreateASN2({ agreement: propAgreement }) {
                   </div>
                   {filteredItems.length === 0 && <div className="py-12 text-center text-[#6a6d70] text-[14px]">No items available</div>}
                   {filteredItems.map(item => (
-                    <MobileItemCard key={item.itemNo} item={item} isSelected={selectedItemNos.includes(item.itemNo)} onToggle={() => toggleOne(item.itemNo)} onUpdate={(field, val) => updateItem(item.itemNo, field, val)} onSplitBatch={(it) => setSplitBatchItem(it)} packagingTypes={packagingTypes} pdirOptions={pdirOptions} />
+                    <MobileItemCard key={item.itemNo} item={item} isSelected={selectedItemNos.includes(item.itemNo)} onToggle={() => toggleOne(item.itemNo)} onUpdate={(field, val) => updateItem(item.itemNo, field, val)} onSplitBatch={(it) => setSplitBatchItem(it)} packagingTypes={packagingTypes} pdirOptions={pdirOptions} originalQty={originalQties[item.itemNo] ?? parseFloat(item.avlAsnQty || 0)} />
                   ))}
                 </div>
               ) : !itemsLoading && (
@@ -970,7 +1033,7 @@ export default function CreateASN2({ agreement: propAgreement }) {
                   </div>
                   {filteredItems.length === 0 && <div className="py-16 text-center text-[#6a6d70] text-[14px] border border-dashed border-[#d9d9d9] rounded-xl">No items available. Adjust filters and click Go.</div>}
                   {filteredItems.map(item => (
-                    <DesktopItemCard key={item.itemNo} item={item} isSelected={selectedItemNos.includes(item.itemNo)} onToggle={() => toggleOne(item.itemNo)} onUpdate={(field, val) => updateItem(item.itemNo, field, val)} onSplitBatch={(it) => setSplitBatchItem(it)} packagingTypes={packagingTypes} pdirOptions={pdirOptions} />
+                    <DesktopItemCard key={item.itemNo} item={item} isSelected={selectedItemNos.includes(item.itemNo)} onToggle={() => toggleOne(item.itemNo)} onUpdate={(field, val) => updateItem(item.itemNo, field, val)} onSplitBatch={(it) => setSplitBatchItem(it)} packagingTypes={packagingTypes} pdirOptions={pdirOptions} originalQty={originalQties[item.itemNo] ?? parseFloat(item.avlAsnQty || 0)} />
                   ))}
                 </div>
               )}

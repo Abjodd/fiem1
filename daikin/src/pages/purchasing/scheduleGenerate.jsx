@@ -4,6 +4,13 @@ import PageLayout from '../../layouts/PageLayout.jsx'
 import { scheduleGenerateApi, generateDays, authConfig } from '../../services/ScheduleGenerate.js'
 import { useUser } from '../../context/UserContext.jsx'
 
+
+
+const formatSapDate = (v) => {
+  const s = String(v ?? '').trim()
+  if (s.length !== 8) return s
+  return `${s.slice(6, 8)}.${s.slice(4, 6)}.${s.slice(0, 4)}`
+}
 // const SS_KEY = 'scheduleGenerate_state'
 
 // function loadSession() {
@@ -364,7 +371,8 @@ export default function ScheduleGenerate() {
   const [selectedItems,     setSelectedItems]     = useState(new Set())
   const [showDayPopup,      setShowDayPopup]      = useState(false)
   // const [showSupplierPopup, setShowSupplierPopup] = useState(!session?.supplier)
-  const [showSupplierPopup, setShowSupplierPopup] = useState(true)
+  const [showSupplierPopup, setShowSupplierPopup] = useState(
+  () => !location.state?.restoreData?.supplier )
   const [busy,              setBusy]              = useState(false)
   const [busyLabel,         setBusyLabel]         = useState('')
 
@@ -400,14 +408,31 @@ export default function ScheduleGenerate() {
       // saveSession({ supplier, agreement, items: next })
       return next
     })
+    if (restore?.supplier && restore?.agreement) {
+    setSupplier(restore.supplier)
+    setAgreement(restore.agreement)
+    setShowSupplierPopup(false)
+    // Don't reset items here — returnData already updated them above
+  }
     navigate(location.pathname, { replace: true, state: {} })
-  }, [location.state?.returnData]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.state?.returnData, , location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (location.state?.preserveSupplier) {
-      navigate(location.pathname, { replace: true, state: {} })
-    }
-  }, [location.state?.preserveSupplier]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // REPLACE WITH THIS
+useEffect(() => {
+  const restore = location.state?.restoreData
+  if (!restore) return
+
+  if (restore.supplier && restore.agreement) {
+    setSupplier(restore.supplier)
+    setAgreement(restore.agreement)
+    setItems(restore.agreement.items.map(it => ({ ...it })))
+    setSelectedItems(new Set())
+    setShowSupplierPopup(false)
+  }
+
+  navigate(location.pathname, { replace: true, state: {} })
+}, [location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSupplierSubmit = supp => {
     setShowSupplierPopup(false)
@@ -450,79 +475,62 @@ export default function ScheduleGenerate() {
   const dayDisabled  = selArr.length === 0 || anyHaveW || busy
   const editDisabled = selArr.length === 0 || !anyHaveInd || busy
 
-  const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
-    const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
-    navigate('/purchasing/schedule-lines', {
-      state: {
-        selectedItemNos,
-        editable,
-        title,
-        mode,
-        pendingIndicator,
-        agreementId:   agreement.id,
-        supplierCode:  supplier.code,
-        supplierName:  supplier.name,
-        plantName:     agreement.plantName,
-        companyCode:   agreement.companyCode,
-        agreementDate: agreement.date,
-        itemsData:     itemsForLines,
-      },
-    })
-  }
+const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
+  const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
+  navigate('/purchasing/schedule-lines', {
+    state: {
+      selectedItemNos,
+      editable,
+      title,
+      mode,
+      pendingIndicator,
+      agreementId:   agreement.id,
+      supplierCode:  supplier.code,
+      supplierName:  supplier.name,
+      plantName:     agreement.plantName,
+      companyCode:   agreement.companyCode,
+      agreementDate: formatSapDate(agreement.date),
+      itemsData:     itemsForLines,
+      supplierFull:  supplier,       // ← ADD THIS
+      agreementFull: agreement,      // ← ADD THIS
+    },
+  })
+}
 
-  const handleWeek = async () => {
+// AFTER — handleWeek (no async, no busy spinner needed)
+  const handleWeek = () => {
     if (weekDisabled) return
-    setBusy(true); setBusyLabel('Generating…')
-    try {
-      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-      const itemsWithDays = selectedItemData.map(it => ({
-        ...it,
-        days: generateDays(it.totalQuantity, 'week', null),
-        indicator: 'W',
-      }))
-      const serverItems = await scheduleGenerateApi.generateWeekSchedule(
-        agreement.id, supplier.code, itemsWithDays,
-      )
-      const mergedItems = items.map(it => {
-        const srv = serverItems.find(s => s.itemNo === it.itemNo)
-        return srv ? { ...it, ...srv, indicator: 'W' } : it
-      })
-      setItems(mergedItems)
-      // saveSession({ supplier, agreement, items: mergedItems })
-      openScheduleLines(selArr, false, 'Schedule Lines — Week', 'WEEKLY', 'W', mergedItems)
-    } catch (err) {
-      console.error('weekSet error:', err)
-      alert(`Failed to generate week schedule: ${err.message}`)
-    } finally {
-      setBusy(false); setBusyLabel('')
-    }
+
+    const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
+    const itemsWithDays = selectedItemData.map(it => ({
+      ...it,
+      days: generateDays(it.totalQuantity, 'week', null),
+      indicator: 'W',
+    }))
+
+    // Navigate immediately with locally-computed days
+    // Pass mode so ScheduleLinesPage knows how to re-compute if needed
+    openScheduleLines(selArr, true, 'Schedule Lines — Week', 'WEEKLY', 'W', itemsWithDays)
+    //                       ^^^^ editable: true — user must be able to adjust before saving
   }
 
   const handleDayClick = () => { if (!dayDisabled) setShowDayPopup(true) }
 
-  const handleDayGenerate = async dayCount => {
-    setShowDayPopup(false)
-    setBusy(true); setBusyLabel('Generating…')
-    try {
+  // AFTER
+    const handleDayGenerate = (dayCount) => {
+      setShowDayPopup(false)
+
       const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
       const itemsWithDays = selectedItemData.map(it => ({
         ...it,
         days: generateDays(it.totalQuantity, 'day', dayCount),
         indicator: 'D',
       }))
-      const serverItems = await scheduleGenerateApi.generateDaySchedule(
-        agreement.id, supplier.code, itemsWithDays, dayCount,
-      )
-      const mergedItems = items.map(it => {
-        const srv = serverItems.find(s => s.itemNo === it.itemNo)
-        return srv ? { ...it, ...srv, indicator: 'D' } : it
-      })
-      setItems(mergedItems)
-      // saveSession({ supplier, agreement, items: mergedItems })
+
       navigate('/purchasing/schedule-lines', {
         state: {
           selectedItemNos:  selArr,
-          editable:         false,
+          editable:         true,       // ← always editable now
           title:            `Schedule Lines — Day (${dayCount})`,
           mode:             'DAILY',
           dayCount,
@@ -533,16 +541,10 @@ export default function ScheduleGenerate() {
           plantName:        agreement.plantName,
           companyCode:      agreement.companyCode,
           agreementDate:    agreement.date,
-          itemsData:        mergedItems.filter(it => selArr.includes(it.itemNo)),
+          itemsData:        itemsWithDays,   // locally-computed days, no SAP yet
         },
       })
-    } catch (err) {
-      console.error('daySet error:', err)
-      alert(`Failed to generate day schedule: ${err.message}`)
-    } finally {
-      setBusy(false); setBusyLabel('')
     }
-  }
 
   const handleEdit = () => {
     if (editDisabled) return
@@ -648,7 +650,7 @@ export default function ScheduleGenerate() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-3 flex-wrap justify-end">
                   <span className="text-[14px] font-semibold text-[#32363a] bg-white px-4 py-2 rounded-lg border border-[#e5e5e5] shadow-sm">
-                    {agreement.date}
+                    {formatSapDate(agreement.date)}
                   </span>
                   <button
                     onClick={handleChangeSupplier}

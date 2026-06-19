@@ -1,4 +1,4 @@
-const ODATA_BASE = '/sap/opu/odata/shiv/MO_SUPP_PORTAL_ASN_APP_SRV'
+const ODATA_BASE = '/sap/opu/odata/SHIV/MO_SUPP_PORTAL_ASN_APP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
 // ── base GET helper ──
@@ -231,7 +231,10 @@ export const asnApi = {
         valueUrl = valueUrl + '/$value'
 
         const res = await fetch(valueUrl, {
-          headers: { Accept: mime || 'application/octet-stream' },
+          headers: { Accept: mime || 'application/octet-stream',
+                      Loginid: authConfig.loginId,
+          Logintype: authConfig.loginType,
+           },
           credentials: 'include',
         })
         if (res.ok) {
@@ -251,7 +254,10 @@ export const asnApi = {
         let srcUrl = mediaSrc
         try { srcUrl = new URL(mediaSrc).pathname } catch {}
         const res = await fetch(srcUrl, {
-          headers: { Accept: mime || 'application/octet-stream' },
+          headers: { Accept: mime || 'application/octet-stream',
+                      Loginid: authConfig.loginId,
+          Logintype: authConfig.loginType,
+           },
           credentials: 'include',
         })
         if (res.ok) {
@@ -292,7 +298,10 @@ export const asnApi = {
     const [asnNum, fisYear] = id.split('/')
     const res = await fetch(
       `${ODATA_BASE}/ASN_HEADERSet(Asn_Num='${asnNum}',FisYear='${fisYear}')`,
-      { method: 'DELETE', headers: { Accept: 'application/json' } }
+      { method: 'DELETE', headers: { Accept: 'application/json',
+                  Loginid: authConfig.loginId,
+          Logintype: authConfig.loginType,
+       } }
     )
     if (!res.ok) throw new Error(`Cancel failed: HTTP ${res.status}`)
     return { success: true, id }
