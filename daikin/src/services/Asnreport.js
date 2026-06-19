@@ -31,8 +31,14 @@ export const toSapDate = (isoDate) => {
 
 const formatDate = (v) => {
   const s = str(v)
-  if (s.length !== 8) return s
+  if (s.length !== 8 || s === '00000000') return ''   // ← add this guard
   return `${s.slice(6, 8)}-${s.slice(4, 6)}-${s.slice(0, 4)}`
+}
+
+const formatTime = (v) => {
+  const s = str(v)
+  if (s.length < 6 || s === '000000') return ''
+  return `${s.slice(0, 2)}:${s.slice(2, 4)}:${s.slice(4, 6)}`
 }
 
 
@@ -51,7 +57,7 @@ function mapAsnRow(raw) {
 
     // IBD / Gate
     ibdNo:             str(raw.Ibd),
-    gateEntryNo:       str(raw.GateEntryNo ?? ''),      // Missing in payload
+    gateEntryNo:       str(raw.GateNo ?? ''),     // Missing in payload
 
     // ASN / Shipment
     asnNumber:         str(raw.AsnNumber),
@@ -85,12 +91,12 @@ function mapAsnRow(raw) {
 
     // Dates
     reachedPlantDate:  formatDate(raw.RchPlantDt),
-    ewayBillDate:      formatDate(raw.EwayDate),        // Missing in payload
-    etaTime:           str(raw.EtaTime ?? ''),          // Missing in payload
-    gateEntryDate:     formatDate(raw.GateEntryDate ?? ''),    // Missing in payload
-    gateEntryTime:     str(raw.GateEntryTime ?? ''),    // Missing in payload
-    gateExitDate:      formatDate(raw.GateExitDate ?? ''),     // Missing in payload
-    gateExitTime:      str(raw.GateExitTime ?? ''),     // Missing in payload
+    etaDate:           formatDate(raw.Eta ?? ''),
+    etaTime:           formatTime(raw.EtaTime ?? ''),
+    gateEntryDate:     formatDate(raw.GenDate ?? ''),
+    gateEntryTime:     formatTime(raw.GenTime ?? ''),
+    gateExitDate:      formatDate(raw.GexDate ?? ''),
+    gateExitTime:      formatTime(raw.GexTime ?? ''),
 
     // Material (used in detail page)
     material:          str(raw.Material ?? raw.Matnr ?? ''),
@@ -189,27 +195,28 @@ export const AsnReportApi = {
 
   // Value Help — Shipment (404 → empty, backend not ready)
   async fetchShipmentHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
-    try {
-      const f = dateFilter(startDate, endDate)
-      const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
-      const data = await odata(`/ShipmentHelpSet?$filter=${f}${pagination}`)
-      return (data.d?.results || []).map(r => ({ code: str(r.Shipment ?? r.ShipmentNo ?? ''), label: '' }))
-    } catch {
-      return [] // 404 — backend not ready
-    }
-  },
+  try {
+    const f = dateFilter(startDate, endDate)
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/ShipmentHelpSet?$filter=${f}${pagination}`)
+    return (data.d?.results || []).map(r => ({ code: str(r.Shipment), label: '' }))
+  } catch {
+    return []
+  }
+},
+
 
   // Value Help — IBD Number (404 → empty, backend not ready)
-  async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
-    try {
-      const f = dateFilter(startDate, endDate)
-      const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
-      const data = await odata(`/IBDHelpSet?$filter=${f}${pagination}`)
-      return (data.d?.results || []).map(r => ({ code: str(r.Ibd ?? r.IbdNo ?? ''), label: '' }))
-    } catch {
-      return [] // 404 — backend not ready
-    }
-  },
+async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
+  try {
+    const f = dateFilter(startDate, endDate)
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/IBDHelpSet?$filter=${f}${pagination}`)
+    return (data.d?.results || []).map(r => ({ code: str(r.Ibd), label: '' }))
+  } catch {
+    return []
+  }
+},
 
   // Value Help — Material
   async fetchMaterialHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {

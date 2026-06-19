@@ -31,6 +31,7 @@ export const toSapDate = (isoDate) => {
 }
 
 // ── Row mapper — HeaderDataSet ────────────────────────────────
+// ── Row mapper — fix 3 wrong OData field names ─────────────
 function mapGrnRow(raw) {
   return {
     grnNumber:           str(raw.Mblnr),
@@ -50,22 +51,20 @@ function mapGrnRow(raw) {
     materialCode:        str(raw.Matnr),
     materialName:        str(raw.Maktx),
     vehicleNo:           str(raw.VehicleRegNumb),
-    // Plant: filter-only in UI — still mapped internally
     plant:               str(raw.Werks),
     plantLoc:            str(raw.Plantdesc),
     asnCrBy:             str(raw.AsnCreater),
     grnBy:               str(raw.Usnam),
     stLoc:               str(raw.Lgort),
-    trNo:                str(raw.TrNo ?? ''),
-    toNo:                str(raw.ToNo ?? ''),
-    packagingComment:    str(raw.HeaderText ?? ''),
+    trNo:                str(raw.Tbnum),          // ← was TrNo ?? ''
+    toNo:                str(raw.Tanum),          // ← was ToNo ?? ''
+    packagingComment:    str(raw.PkgStdCmt),      // ← was HeaderText
     packingMaterialType: str(raw.PkgMatType),
     packingMaterialQty:  num(raw.PkgMatQty),
     shortQty:            num(raw.ShortQty ?? 0),
     remarks:             str(raw.Remarks),
   }
 }
-
 // ── Filter builder ────────────────────────────────────────────
 function buildFilter(required = {}, optional = {}) {
   const parts = []
@@ -177,33 +176,38 @@ export const GateInMIGOApi = {
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
     const data = await odata(`/MaterialHelpSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(r => ({
-      code:  str(r.Matnr),
-      label: str(r.Maktx ?? ''),
-    }))
+  code:  str(r.Matnr),
+  label: str(r.Maktx ?? ''),   // ← was missing
+}))
   },
 
   // VH — Shipment: ShipmentHelpSet (no filter params in spec)
-  async fetchShipmentHelp({ skip = 0, top = 20 } = {}) {
-    const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
-    const data = await odata(`/ShipmentHelpSet?${pagination}`)
-    return (data.d?.results || []).map(r => ({
-      code:  str(r.Shipmentno),
-      label: '',
-    }))
-  },
+async fetchShipmentHelp({ skip = 0, top = 20 } = {}) {
+  const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
+  const data = await odata(`/ShipmentHelpSet?${pagination}`)
+  return (data.d?.results || []).map(r => ({
+    code:  str(r.Shipment),    // ← was r.Shipmentno
+    label: '',
+  }))
+},
 
   // VH — IBD: IBDHelpSet returns 404 → graceful empty
-  async fetchIbdHelp() {
-    try {
-      const data = await odata(`/IBDHelpSet?$top=20`)
-      return (data.d?.results || []).map(r => ({
-        code:  str(r.Ibd ?? r.IbdNo ?? ''),
-        label: '',
-      }))
-    } catch {
-      return [] // 404 — backend not ready
-    }
-  },
+async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
+  try {
+    const f = buildFilter(
+      { Sdate: toSapDate(startDate), Edate: toSapDate(endDate) },
+      {},
+    )
+    const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
+    const data = await odata(`/IBDHelpSet?$filter=${f}${pagination}`)
+    return (data.d?.results || []).map(r => ({
+      code:  str(r.Ibd),
+      label: '',
+    }))
+  } catch {
+    return []
+  }
+},
 }
 
 export default GateInMIGOApi

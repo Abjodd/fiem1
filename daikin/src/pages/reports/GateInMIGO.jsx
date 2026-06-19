@@ -241,7 +241,10 @@ export default function GateInMIGO() {
         case 'grn':      opts = await GateInMIGOApi.fetchGrnHelp({ ...dateArgs, asnNo });                                break
         case 'material': opts = await GateInMIGOApi.fetchMaterialHelp({ ...dateArgs, asnNo, grnNo, plant });             break
         case 'shipment': opts = await GateInMIGOApi.fetchShipmentHelp();                                                 break
-        case 'ibd':      opts = await GateInMIGOApi.fetchIbdHelp();                                                      break
+        case 'ibd': opts = await GateInMIGOApi.fetchIbdHelp({ 
+  startDate: postingStartDate, 
+  endDate: postingEndDate 
+}); break                                                    
         case 'plant':    opts = await GateInMIGOApi.fetchPlantHelp({ ...dateArgs, asnNo, grnNo });                       break  // ← NEW
         default:         opts = []
       }
