@@ -11,23 +11,9 @@ const formatSapDate = (v) => {
   if (s.length !== 8) return s
   return `${s.slice(6, 8)}.${s.slice(4, 6)}.${s.slice(0, 4)}`
 }
-// const SS_KEY = 'scheduleGenerate_state'
-
-// function loadSession() {
-//   try {
-//     const raw = sessionStorage.getItem(SS_KEY)
-//     return raw ? JSON.parse(raw) : null
-//   } catch { return null }
-// }
-// function saveSession(data) {
-//   try { sessionStorage.setItem(SS_KEY, JSON.stringify(data)) } catch {}
-// }
-// function clearSession() {
-//   try { sessionStorage.removeItem(SS_KEY) } catch {}
-// }
 
 // ═══════════════════════════════════════════════════════════════
-// F4 SUPPLIER PICKER  (value help modal)
+// F4 SUPPLIER PICKER
 // ═══════════════════════════════════════════════════════════════
 function F4SupplierPicker({ onSelect, onClose }) {
   const [suppliers, setSuppliers] = useState([])
@@ -59,7 +45,6 @@ function F4SupplierPicker({ onSelect, onClose }) {
         style={{ maxHeight: '75vh', animation: 'modalIn .2s ease-out both' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-5 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h3 className="text-[15px] font-bold text-white">Select Supplier</h3>
@@ -74,7 +59,6 @@ function F4SupplierPicker({ onSelect, onClose }) {
           </button>
         </div>
 
-        {/* Search bar */}
         <div className="px-4 py-3 border-b border-[#e5e5e5] flex-shrink-0 bg-[#fafbfc]">
           <div className="relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9e9e]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -91,13 +75,11 @@ function F4SupplierPicker({ onSelect, onClose }) {
           </div>
         </div>
 
-        {/* Table header */}
         <div className="flex items-center px-4 py-2 bg-[#f5f6f7] border-b border-[#e5e5e5] flex-shrink-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] w-[110px]">Supplier Code</span>
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] flex-1">Supplier Name</span>
         </div>
 
-        {/* Rows */}
         <div className="overflow-y-auto flex-1">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#6a6d70]">
@@ -118,15 +100,12 @@ function F4SupplierPicker({ onSelect, onClose }) {
               className={`w-full flex items-center px-4 py-3 text-left transition-colors hover:bg-[#ebf5ff] active:bg-[#d6ecff]
                 ${idx !== 0 ? 'border-t border-[#f0f0f0]' : ''}`}
             >
-              {/* Code pill */}
               <span className="w-[110px] flex-shrink-0">
                 <span className="inline-block px-2 py-0.5 rounded-md bg-[#ebf5ff] text-[#0a6ed1] text-[12px] font-bold tracking-wider">
                   {s.lifnr}
                 </span>
               </span>
-              {/* Name */}
               <span className="flex-1 text-[13px] text-[#32363a] font-medium truncate">{s.name}</span>
-              {/* Arrow */}
               <svg className="ml-2 flex-shrink-0 text-[#c0c2c4]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M9 18l6-6-6-6"/>
               </svg>
@@ -134,7 +113,6 @@ function F4SupplierPicker({ onSelect, onClose }) {
           ))}
         </div>
 
-        {/* Footer count */}
         {!loading && !error && (
           <div className="px-4 py-2.5 border-t border-[#e5e5e5] bg-[#fafbfc] flex-shrink-0">
             <span className="text-[11px] text-[#9e9e9e]">
@@ -148,13 +126,13 @@ function F4SupplierPicker({ onSelect, onClose }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUPPLIER CODE POPUP  (with F4 icon)
+// SUPPLIER CODE POPUP
 // ═══════════════════════════════════════════════════════════════
 function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
-  const [code,       setCode]       = useState('')
-  const [error,      setError]      = useState('')
-  const [loading,    setLoading]    = useState(false)
-  const [showF4,     setShowF4]     = useState(false)
+  const [code,    setCode]    = useState('')
+  const [error,   setError]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [showF4,  setShowF4]  = useState(false)
 
   const handleSubmit = async () => {
     if (!code.trim()) { setError('Please enter a supplier code.'); return }
@@ -166,7 +144,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
     } catch (err) { setError(err.message || 'Failed to load supplier'); setLoading(false) }
   }
 
-  // User picks from F4 picker → set code then auto-submit
   const handleF4Select = async (lifnr) => {
     setShowF4(false)
     setCode(lifnr)
@@ -191,7 +168,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
           style={{ animation: 'modalIn .22s ease-out both' }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Modal header */}
           <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
             <div>
               <h2 className="text-[18px] font-bold text-white">Schedule Generate</h2>
@@ -215,7 +191,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
               Supplier Code <span className="text-[#cc1c14]">*</span>
             </label>
 
-            {/* Input row with F4 button */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <input
@@ -228,8 +203,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
                   className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase pr-3"
                 />
               </div>
-
-              {/* F4 value help button */}
               <button
                 type="button"
                 onClick={() => setShowF4(true)}
@@ -237,7 +210,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
                 title="Open supplier value help (F4)"
                 className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-lg border border-[#0a6ed1] bg-white text-[#0a6ed1] hover:bg-[#ebf5ff] active:bg-[#d6ecff] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {/* Copy/value-help icon */}
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -245,7 +217,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
               </button>
             </div>
 
-            {/* F4 hint text */}
             <p className="mt-1.5 text-[11px] text-[#9e9e9e]">
               Type a code manually or click <span className="font-semibold text-[#0a6ed1]">⧉</span> to browse all suppliers
             </p>
@@ -261,7 +232,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
           </div>
 
           <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
-            {/* Keyboard shortcut hint */}
             <span className="text-[11px] text-[#9e9e9e] hidden sm:inline">Press Enter to load</span>
             <button
               onClick={handleSubmit}
@@ -275,7 +245,6 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, disabled }) {
         </div>
       </div>
 
-      {/* F4 picker rendered on top (z-300 > z-200) */}
       {showF4 && (
         <F4SupplierPicker
           onSelect={handleF4Select}
@@ -358,21 +327,17 @@ const getStatusDot   = s => STATUS_DOT[s]   || '#b45309'
 export default function ScheduleGenerate() {
   const navigate = useNavigate()
   const location = useLocation()
-  // const session = loadSession()
 
-  // const [supplier,          setSupplier]          = useState(session?.supplier  ?? null)
-  // const [agreement,         setAgreement]         = useState(session?.agreement ?? null)
-  // const [items,             setItems]             = useState(session?.items     ?? [])
-  const [supplier, setSupplier] = useState(null)
-  const [agreement, setAgreement] = useState(null)
-  const [items, setItems] = useState([])
+  const [supplier,          setSupplier]          = useState(null)
+  const [agreement,         setAgreement]         = useState(null)
+  const [items,             setItems]             = useState([])
   const [fromDate,          setFromDate]          = useState('')
   const [toDate,            setToDate]            = useState('')
   const [selectedItems,     setSelectedItems]     = useState(new Set())
   const [showDayPopup,      setShowDayPopup]      = useState(false)
-  // const [showSupplierPopup, setShowSupplierPopup] = useState(!session?.supplier)
   const [showSupplierPopup, setShowSupplierPopup] = useState(
-  () => !location.state?.restoreData?.supplier )
+    () => !location.state?.restoreData?.supplier
+  )
   const [busy,              setBusy]              = useState(false)
   const [busyLabel,         setBusyLabel]         = useState('')
 
@@ -385,47 +350,43 @@ export default function ScheduleGenerate() {
     authConfig.loginType = loginType
   }, [userLoading, loginId, loginType])
 
-  // useEffect(() => {
-  //   if (supplier) saveSession({ supplier, agreement, items })
-  // }, [supplier, agreement, items])
   useEffect(() => {
-  const ret     = location.state?.returnData
-  const restore = location.state?.restoreData
+    const ret     = location.state?.returnData
+    const restore = location.state?.restoreData
 
-  if (!ret && !restore) return
+    if (!ret && !restore) return
 
-  // Always restore supplier/agreement first
-  if (restore?.supplier && restore?.agreement) {
-    setSupplier(restore.supplier)
-    setAgreement(restore.agreement)
-    setShowSupplierPopup(false)
+    if (restore?.supplier && restore?.agreement) {
+      setSupplier(restore.supplier)
+      setAgreement(restore.agreement)
+      setShowSupplierPopup(false)
 
-    if (ret) {
-      // Save path: restore items from agreement, then apply the saved day changes on top
-      const { savedLines, pendingIndicator } = ret
-      const baseItems = restore.agreement.items.map(it => ({ ...it }))
-      setItems(baseItems.map(it => {
-        const saved = savedLines?.find(sl => sl.itemNo === it.itemNo)
-        if (!saved) return it
-        return {
-          ...it,
-          days:       [...saved.days],
-          frozenDays: saved.frozenDays ?? it.frozenDays,
-          status:     'In Draft',
-          ...(pendingIndicator ? { indicator: pendingIndicator } : {}),
-        }
-      }))
-    } else {
-      // Close path: restore items as-is, no day changes
-      setItems(restore.agreement.items.map(it => ({ ...it })))
-      setSelectedItems(new Set())
+      if (ret) {
+        // Save path: restore items from agreement, then apply backend savedLines on top.
+        // indicator comes from savedLines (backend response), NOT pendingIndicator.
+        const { savedLines } = ret
+        const baseItems = restore.agreement.items.map(it => ({ ...it }))
+        setItems(baseItems.map(it => {
+          const saved = savedLines?.find(sl => sl.itemNo === it.itemNo)
+          if (!saved) return it
+          return {
+            ...it,
+            days:       [...(saved.days ?? it.days)],
+            frozenDays: saved.frozenDays ?? it.frozenDays,
+            status:     'In Draft',
+            // ── indicator set from backend response, no frontend fallback ──
+            indicator:  saved.indicator || it.indicator,
+          }
+        }))
+      } else {
+        // Close path: restore items as-is
+        setItems(restore.agreement.items.map(it => ({ ...it })))
+        setSelectedItems(new Set())
+      }
     }
-  }
 
-  navigate(location.pathname, { replace: true, state: {} })
-}, [location.state?.returnData, location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
-
- // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
+    navigate(location.pathname, { replace: true, state: {} })
+  }, [location.state?.returnData, location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSupplierSubmit = supp => {
     setShowSupplierPopup(false)
@@ -436,12 +397,10 @@ export default function ScheduleGenerate() {
       const newItems = ag.items.map(it => ({ ...it }))
       setItems(newItems)
       setSelectedItems(new Set())
-      // saveSession({ supplier: supp, agreement: ag, items: newItems })
     }
   }
 
   const handleChangeSupplier = () => {
-    // clearSession()
     setSupplier(null)
     setAgreement(null)
     setItems([])
@@ -466,80 +425,72 @@ export default function ScheduleGenerate() {
 
   const weekDisabled = selArr.length === 0 || anyHaveD || busy
   const dayDisabled  = selArr.length === 0 || anyHaveW || busy
+  // Edit is only enabled when backend has confirmed an indicator on the item
   const editDisabled = selArr.length === 0 || !anyHaveInd || busy
 
-const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
-  const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
-  navigate('/purchasing/schedule-lines', {
-    state: {
-      selectedItemNos,
-      editable,
-      title,
-      mode,
-      pendingIndicator,
-      agreementId:   agreement.id,
-      supplierCode:  supplier.code,
-      supplierName:  supplier.name,
-      plantName:     agreement.plantName,
-      companyCode:   agreement.companyCode,
-      agreementDate: formatSapDate(agreement.date),
-      itemsData:     itemsForLines,
-      supplierFull:  supplier,       // ← ADD THIS
-      agreementFull: agreement,      // ← ADD THIS
-    },
-  })
-}
+  const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
+    const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
+    navigate('/purchasing/schedule-lines', {
+      state: {
+        selectedItemNos,
+        editable,
+        title,
+        mode,
+        pendingIndicator,
+        agreementId:   agreement.id,
+        supplierCode:  supplier.code,
+        supplierName:  supplier.name,
+        plantName:     agreement.plantName,
+        companyCode:   agreement.companyCode,
+        agreementDate: formatSapDate(agreement.date),
+        itemsData:     itemsForLines,
+        supplierFull:  supplier,
+        agreementFull: agreement,
+      },
+    })
+  }
 
-// AFTER — handleWeek (no async, no busy spinner needed)
   const handleWeek = () => {
     if (weekDisabled) return
-
     const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
     const itemsWithDays = selectedItemData.map(it => ({
       ...it,
       days: generateDays(it.totalQuantity, 'week', null),
       indicator: 'W',
     }))
-
-    // Navigate immediately with locally-computed days
-    // Pass mode so ScheduleLinesPage knows how to re-compute if needed
     openScheduleLines(selArr, true, 'Schedule Lines — Week', 'WEEKLY', 'W', itemsWithDays)
-    //                      
   }
 
   const handleDayClick = () => { if (!dayDisabled) setShowDayPopup(true) }
 
-  // AFTER
   const handleDayGenerate = (dayCount) => {
-  setShowDayPopup(false)
-
-  const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-  const itemsWithDays = selectedItemData.map(it => ({
-    ...it,
-    days: generateDays(it.totalQuantity, 'day', dayCount),
-    indicator: 'D',
-  }))
-
-  navigate('/purchasing/schedule-lines', {
-    state: {
-      selectedItemNos:  selArr,
-      editable:         true,
-      title:            `Schedule Lines — Day (${dayCount})`,
-      mode:             'DAILY',
-      dayCount,
-      pendingIndicator: 'D',
-      agreementId:      agreement.id,
-      supplierCode:     supplier.code,
-      supplierName:     supplier.name,
-      plantName:        agreement.plantName,
-      companyCode:      agreement.companyCode,
-      agreementDate:    agreement.date,
-      itemsData:        itemsWithDays,
-      supplierFull:     supplier,       // ← ADD THIS
-      agreementFull:    agreement,      // ← ADD THIS
-    },
-  })
-}
+    setShowDayPopup(false)
+    const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
+    const itemsWithDays = selectedItemData.map(it => ({
+      ...it,
+      days: generateDays(it.totalQuantity, 'day', dayCount),
+      indicator: 'D',
+    }))
+    navigate('/purchasing/schedule-lines', {
+      state: {
+        selectedItemNos:  selArr,
+        editable:         true,
+        title:            `Schedule Lines — Day (${dayCount})`,
+        mode:             'DAILY',
+        dayCount,
+        pendingIndicator: 'D',
+        agreementId:      agreement.id,
+        supplierCode:     supplier.code,
+        supplierName:     supplier.name,
+        plantName:        agreement.plantName,
+        companyCode:      agreement.companyCode,
+        agreementDate:    agreement.date,
+        itemsData:        itemsWithDays,
+        supplierFull:     supplier,
+        agreementFull:    agreement,
+      },
+    })
+  }
 
   const handleEdit = () => {
     if (editDisabled) return
@@ -556,14 +507,12 @@ const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndica
       const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
       await scheduleGenerateApi.approveSchedule(agreement.id, supplier.code, selectedItemData)
       setItems(prev => {
-        const next = prev.map(it => {
+        return prev.map(it => {
           if (!selectedItems.has(it.itemNo)) return it
           if (it.status === 'In Draft')    return { ...it, status: 'In Approval' }
           if (it.status === 'In Approval') return { ...it, status: 'Generated' }
           return it
         })
-        // saveSession({ supplier, agreement, items: next })
-        return next
       })
     } catch (err) {
       console.error('approveSet error:', err)
@@ -731,7 +680,7 @@ const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndica
                     onClick={handleEdit}
                     disabled={editDisabled}
                     className="h-8 px-3 text-[12px] font-semibold text-white bg-[#e76500] rounded-lg hover:bg-[#c55600] transition-all shadow-sm disabled:opacity-40"
-                    title={selArr.length > 0 && !anyHaveInd ? 'Assign Week or Day indicator first' : ''}
+                    title={selArr.length > 0 && !anyHaveInd ? 'Save schedule lines first — indicator must come from backend' : ''}
                   >
                     Edit
                   </button>
@@ -790,6 +739,7 @@ const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndica
                             <td className="py-3 px-3 text-center text-[#32363a] border-r border-[#f0f0f0]">{item.hsnCode}</td>
                             <td className="py-3 px-3 text-center font-bold text-[#32363a] tabular-nums border-r border-[#f0f0f0]">{item.totalQuantity.toLocaleString()}</td>
                             <td className="py-3 px-3 text-center font-semibold tabular-nums border-r border-[#f0f0f0]">{item.unitPrice.toFixed(2)}</td>
+                            {/* Indicator — sourced from backend after save */}
                             <td className="py-3 px-3 text-center border-r border-[#f0f0f0]">
                               {item.indicator
                                 ? <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[12px] font-bold

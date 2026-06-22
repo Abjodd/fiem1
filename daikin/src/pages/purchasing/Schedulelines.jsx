@@ -1,11 +1,5 @@
 // src/pages/purchasing/ScheduleLinesPage.jsx
 // Route: /purchasing/schedule-lines
-// FIXES:
-// 1. Past dates are no longer blocked — they render as normal editable cells (value 0).
-//    They are visually dimmed (grey header) to indicate they're historical, but users
-//    can still type values into them after Save if needed.
-// 2. allocateByDay / allocateByWeek still skip past dates during auto-allocation
-//    (you don't want new qty dumped into the past), but the cells themselves are open.
 
 import { useState, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -18,7 +12,6 @@ import { scheduleGenerateApi } from '../../services/ScheduleGenerate.js'
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAY_ABBR    = ['SUN','MON','TUE','WED','THU','FRI','SAT']
 
-// Government holidays as MM-DD (year-agnostic)
 const GOVT_HOLIDAYS_MD = new Set(['01-26', '08-15', '10-02'])
 
 // ═══════════════════════════════════════════════════════════════
@@ -47,8 +40,7 @@ function nextValidDayInMonth(date) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CALENDAR DAYS — full current month (day 1 → last day)
-// isPast is still flagged for visual distinction, but does NOT block editing.
+// CALENDAR DAYS
 // ═══════════════════════════════════════════════════════════════
 function buildCalendarDays() {
   const today = new Date()
@@ -79,11 +71,8 @@ function buildCalendarDays() {
 
 // ═══════════════════════════════════════════════════════════════
 // ALLOCATION LOGIC
-// (Past dates are still skipped during auto-allocation — qty goes to future days)
 // ═══════════════════════════════════════════════════════════════
-
 function allocateByDay(totalQty, dayCount, calDays) {
-  // Only allocate to future, non-blocked days
   const validIndices = []
   for (let i = 0; i < calDays.length && validIndices.length < dayCount; i++) {
     if (!calDays[i].blocked && !calDays[i].blockedSunday && !calDays[i].isPast) validIndices.push(i)
@@ -156,13 +145,11 @@ function buildInitialLines(itemsData, mode, dayCount, calDays) {
 
 // ═══════════════════════════════════════════════════════════════
 // SCHEDULE GRID
-// Past dates render as normal cells (value 0, editable when editable=true).
-// They are visually distinguished by a grey header only.
+// Includes read-only Indicator column after Total Qty
 // ═══════════════════════════════════════════════════════════════
 function ScheduleGrid({ lines, editable, calDays, onChange }) {
   const handleCellChange = (li, di, val) => {
     if (!onChange) return
-    // Only hard-block Sundays and government holidays from editing
     const isCellBlocked = calDays[di]?.blocked || (calDays[di]?.blockedSunday && !editable)
     if (isCellBlocked) return
     onChange(prev => prev.map((l, i) => {
@@ -174,7 +161,7 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
   }
 
   return (
-    <table className="border-collapse text-[12px]" style={{ minWidth: `${400 + calDays.length * 42}px` }}>
+    <table className="border-collapse text-[12px]" style={{ minWidth: `${440 + calDays.length * 42}px` }}>
       <thead className="sticky top-0 z-10">
 
         {/* ── Row 1: Month label ── */}
@@ -194,6 +181,11 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
           <th rowSpan={2}
             className="text-center font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#6a6d70]"
             style={{ minWidth: 80 }}>Total Qty</th>
+
+          {/* ── Indicator column header ── */}
+          <th rowSpan={2}
+            className="text-center font-semibold py-2.5 px-3 border-b border-r border-[#e5e5e5] text-[11px] uppercase tracking-wider text-[#6a6d70]"
+            style={{ minWidth: 72 }}>Indicator</th>
 
           {calDays.length > 0 && (
             <th
@@ -217,7 +209,6 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
         {/* ── Row 2: Date + day-of-week ── */}
         <tr style={{ background: '#fafbfc' }}>
           {calDays.map((cd, i) => {
-            // Sunday: red tint. Holiday: orange tint. Normal (including past): blue tint.
             const bg = cd.isSunday
               ? '#fff1f0'
               : cd.isHoliday
@@ -265,16 +256,14 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
           const allocated = (line.days || []).reduce((s, v) => s + v, 0)
           const over      = allocated > line.totalQuantity
           const full      = allocated === line.totalQuantity && allocated > 0
-          const pct       = line.totalQuantity > 0
-            ? Math.min(100, Math.round((allocated / line.totalQuantity) * 100))
-            : 0
+          const ind       = line.indicator || ''
 
           return (
             <tr
               key={line.itemNo}
               className={`border-b border-[#f0f0f0] transition-colors ${over ? 'bg-[#fff5f5]' : 'hover:bg-[#fafbfc]'}`}
             >
-              {/* Item + allocation text only */}
+              {/* Item + allocation */}
               <td className={`py-2 px-3 border-r border-[#f0f0f0] sticky left-0 z-10
                 ${over ? 'bg-[#fff5f5]' : full ? 'bg-[#f0fff4]' : 'bg-white'}`}>
                 <div className="text-[12px] font-bold text-[#32363a]">{line.itemNo}</div>
@@ -292,11 +281,21 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                 {line.totalQuantity.toLocaleString()}
               </td>
 
+              {/* ── Indicator cell (read-only) ── */}
+              <td className="py-2 px-3 border-r border-[#f0f0f0] text-center">
+                {ind ? (
+                  <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[12px] font-bold
+                    ${ind === 'W' ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'bg-[#fff3e8] text-[#e76500]'}`}>
+                    {ind}
+                  </span>
+                ) : (
+                  <span className="text-[#d9d9d9] text-[13px]">—</span>
+                )}
+              </td>
+
               {/* Day cells */}
               {calDays.map((cd, di) => {
                 const val = (line.days || [])[di] ?? 0
-
-                // Hard-blocked: Sunday or government holiday — no input, no value
                 const isCellBlocked = cd.blocked || (cd.blockedSunday && !editable)
 
                 if (isCellBlocked) {
@@ -311,7 +310,6 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                   )
                 }
 
-                // Past date OR normal future date — both render identically
                 return (
                   <td
                     key={di}
@@ -325,7 +323,7 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                         min="0"
                         value={val}
                         onChange={e => {
-                          const v = e.target.value.replace(/[^0-9]/g, '')  // strip non-numeric
+                          const v = e.target.value.replace(/[^0-9]/g, '')
                           handleCellChange(li, di, v === '' ? 0 : v)
                         }}
                         onFocus={e => e.target.select()}
@@ -373,22 +371,22 @@ export default function ScheduleLinesPage() {
   const { state } = useLocation()
 
   const {
-  selectedItemNos  = [],
-  itemsData        = [],
-  editable         = false,
-  title            = 'Schedule Lines',
-  mode             = '',
-  dayCount         = 5,
-  pendingIndicator,
-  agreementId      = '',
-  supplierCode     = '',
-  supplierName     = '',
-  plantName        = '',
-  companyCode      = '',
-  agreementDate    = '',
-  supplierFull     = null,   // ← ADD
-  agreementFull    = null,   // ← ADD
-} = state || {}
+    selectedItemNos  = [],
+    itemsData        = [],
+    editable         = false,
+    title            = 'Schedule Lines',
+    mode             = '',
+    dayCount         = 5,
+    pendingIndicator,
+    agreementId      = '',
+    supplierCode     = '',
+    supplierName     = '',
+    plantName        = '',
+    companyCode      = '',
+    agreementDate    = '',
+    supplierFull     = null,
+    agreementFull    = null,
+  } = state || {}
 
   const calDays = useMemo(() => buildCalendarDays(), [])
 
@@ -405,50 +403,52 @@ export default function ScheduleLinesPage() {
   const canSave = !saving && overLines.length === 0
 
   // ── Save ──
-  // AFTER
-const handleSave = async () => {
-  if (!canSave) return
-  setSaving(true)
-  try {
-    if (mode === 'WEEKLY') {
-      await scheduleGenerateApi.generateWeekSchedule(agreementId, supplierCode, displayLines)
-    } else if (mode === 'DAILY') {
-      await scheduleGenerateApi.generateDaySchedule(agreementId, supplierCode, displayLines, dayCount)
-    } else {
-      await scheduleGenerateApi.saveScheduleLines(agreementId, supplierCode, displayLines)
+  // Capture the backend result and pass it back as savedLines so
+  // ScheduleGenerate uses the backend's indicator, not a frontend guess.
+  const handleSave = async () => {
+    if (!canSave) return
+    setSaving(true)
+    try {
+      let savedLines
+
+      if (mode === 'WEEKLY') {
+        savedLines = await scheduleGenerateApi.generateWeekSchedule(agreementId, supplierCode, displayLines)
+      } else if (mode === 'DAILY') {
+        savedLines = await scheduleGenerateApi.generateDaySchedule(agreementId, supplierCode, displayLines, dayCount)
+      } else {
+        savedLines = await scheduleGenerateApi.saveScheduleLines(agreementId, supplierCode, displayLines)
+      }
+
+      navigate('/purchasing/schedule-generate', {
+        state: {
+          returnData: {
+            // Backend response — carries indicator set by backend
+            savedLines,
+          },
+          restoreData: {
+            supplier:  supplierFull,
+            agreement: agreementFull,
+          },
+        },
+      })
+    } catch (err) {
+      console.error(err)
+      setSaving(false)
     }
-    navigate('/purchasing/schedule-generate', {
-  state: {
-    returnData: {
-      savedLines:       displayLines,
-      pendingIndicator,
-    },
-    restoreData: {          // ← ADD THIS
-      supplier:  supplierFull,
-      agreement: agreementFull,
-    },
-  },
-})
-  } catch (err) {
-    console.error(err)
-    setSaving(false)
   }
-}
+
   // ── Close (X) ──
-
-  // REPLACE WITH THIS
-const handleClose = () => {
-  navigate('/purchasing/schedule-generate', {
-    state: {
-      restoreData: {
-        supplier:  supplierFull,
-        agreement: agreementFull,
+  const handleClose = () => {
+    navigate('/purchasing/schedule-generate', {
+      state: {
+        restoreData: {
+          supplier:  supplierFull,
+          agreement: agreementFull,
+        },
       },
-    },
-  })
-}
+    })
+  }
 
-  // Build a clean display title: "Schedule Lines" with mode as a badge, no em dash
   const baseTitle  = title.replace(/\s*[—–-]\s*(Week|Day).*$/i, '').trim() || 'Schedule Lines'
   const dayLabel   = mode === 'DAILY'  ? `Day · ${dayCount}` : ''
   const weekLabel  = mode === 'WEEKLY' ? 'Week' : ''
@@ -565,7 +565,7 @@ const handleClose = () => {
           </div>
         </div>
 
-        {/* ── Sticky bottom bar — Save only ── */}
+        {/* ── Sticky bottom bar ── */}
         <div className="flex-shrink-0 bg-white border-t border-[#e5e5e5] shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
           {overLines.length > 0 && (
             <div className="flex items-center gap-2 px-6 py-2.5 bg-[#fce8e6] border-b border-[#f5c6c2]">

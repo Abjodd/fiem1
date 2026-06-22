@@ -74,9 +74,10 @@ function mapItem(d) {
     hsnCode:       d.hsn,
     totalQuantity: Number(d.totalsch) || 0,
     unitPrice:     Number(d.unitprice) || 0,
+    // ── indicator now mapped from backend ──────────────────────
     indicator:     d.indicator || '',
-    status:        d.status   || 'Not Generated',
-    date:          d.date     || '',
+    status:        d.status    || 'Not Generated',
+    date:          d.date      || '',
     days:          new Array(31).fill(0),
     frozenDays:    [],
   }
@@ -98,6 +99,8 @@ function mapDayRecord(d) {
     hsnCode:       d.hsn,
     totalQuantity: Number(d.totalsch) || 0,
     total:         Number(d.total)    || 0,
+    // ── indicator from backend response ───────────────────────
+    indicator:     d.indicator || '',
     days,
     frozenDays,
   }
@@ -251,9 +254,8 @@ function buildApprovePayload(agreementId, lifnr, item) {
     approveSet: { results: [childRow] },
   }
 }
-// Add after buildDayPayload()
+
 function buildDeepPayload(agreementId, lifnr, item, mode) {
-  // The child rows for weekSet / daySet
   const childRow = { agreement: agreementId }
   item.days.forEach((val, idx) => {
     childRow[`day${idx + 1}`] = String(val)
@@ -267,13 +269,8 @@ function buildDeepPayload(agreementId, lifnr, item, mode) {
     desc:     item.description   ?? '',
     hsn:      item.hsnCode       ?? '',
     totalsch: String(item.totalQuantity),
-    // total:    String(item.days.reduce((s, v) => s + v, 0)),
-    // fn1: String(item.frozenDays?.[0] ?? ''),
-    // fn2: String(item.frozenDays?.[1] ?? ''),
-    // fn3: String(item.frozenDays?.[2] ?? ''),
   }
 
-  // Deep navigation: nest the child set based on mode
   if (mode === 'WEEKLY') {
     payload.weekSet = { results: [childRow] }
   } else if (mode === 'DAILY') {
@@ -304,8 +301,7 @@ export function generateDays(totalQty, mode, dayCount) {
 export const scheduleGenerateApi = {
 
   // ────────────────────────────────────────────────────────────
-  // fetchAllSuppliers  (NEW — for F4 value help)
-  // GET f4supplierSet → [{lifnr, name}]
+  // fetchAllSuppliers  (for F4 value help)
   // ────────────────────────────────────────────────────────────
   async fetchAllSuppliers() {
     if (USE_MOCK) {
@@ -354,70 +350,79 @@ export const scheduleGenerateApi = {
     }
   },
 
-
-  
   // ────────────────────────────────────────────────────────────
   // generateWeekSchedule
+  // Returns mapped items with indicator from backend response
   // ────────────────────────────────────────────────────────────
   async generateWeekSchedule(agreementId, lifnr, itemsData) {
-  if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 250))
-    return itemsData.map(it => ({ ...it }))
-  }
-  const results = await Promise.all(
-    itemsData.map(item =>
-      odataPost('/sg_itemSet', buildDeepPayload(agreementId, lifnr, item, 'WEEKLY'))
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 250))
+      // Mock: echo back with W indicator as backend would set it
+      return itemsData.map(it => ({ ...it, indicator: 'W' }))
+    }
+    const results = await Promise.all(
+      itemsData.map(item =>
+        odataPost('/sg_itemSet', buildDeepPayload(agreementId, lifnr, item, 'WEEKLY'))
+      )
     )
-  )
-  return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
-},
+    // Merge backend response (including indicator) over the sent item
+    return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
+  },
+
   // ────────────────────────────────────────────────────────────
   // generateDaySchedule
+  // Returns mapped items with indicator from backend response
   // ────────────────────────────────────────────────────────────
   async generateDaySchedule(agreementId, lifnr, itemsData, dayCount) {
-  if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 250))
-    return itemsData.map(it => ({ ...it }))
-  }
-  const results = await Promise.all(
-    itemsData.map(item =>
-      odataPost('/sg_itemSet', buildDeepPayload(agreementId, lifnr, item, 'DAILY'))
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 250))
+      // Mock: echo back with D indicator as backend would set it
+      return itemsData.map(it => ({ ...it, indicator: 'D' }))
+    }
+    const results = await Promise.all(
+      itemsData.map(item =>
+        odataPost('/sg_itemSet', buildDeepPayload(agreementId, lifnr, item, 'DAILY'))
+      )
     )
-  )
-  return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
-},
+    return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
+  },
+
   // ────────────────────────────────────────────────────────────
   // saveScheduleLines (editSet)
+  // Returns mapped items with indicator from backend response
   // ────────────────────────────────────────────────────────────
   async saveScheduleLines(agreementId, lifnr, itemsData) {
-  if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 300))
-    console.log('[mock] saveScheduleLines', agreementId, itemsData)
-    return { success: true }
-  }
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 300))
+      console.log('[mock] saveScheduleLines', agreementId, itemsData)
+      return itemsData.map(it => ({ ...it }))
+    }
 
-  const results = await Promise.all(
-    itemsData.map(item =>
-      odataPost('/sg_itemSet', buildEditPayload(agreementId, lifnr, item))
+    const results = await Promise.all(
+      itemsData.map(item =>
+        odataPost('/sg_itemSet', buildEditPayload(agreementId, lifnr, item))
+      )
     )
-  )
-  return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
-},
+    return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
+  },
 
-async approveSchedule(agreementId, lifnr, itemsData) {
-  if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 300))
-    console.log('[mock] approveSchedule', agreementId, itemsData.map(i => i.itemNo))
-    return { success: true }
-  }
+  // ────────────────────────────────────────────────────────────
+  // approveSchedule
+  // ────────────────────────────────────────────────────────────
+  async approveSchedule(agreementId, lifnr, itemsData) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 300))
+      console.log('[mock] approveSchedule', agreementId, itemsData.map(i => i.itemNo))
+      return { success: true }
+    }
 
-  await Promise.all(
-    itemsData.map(item =>
-      odataPost('/sg_itemSet', buildApprovePayload(agreementId, lifnr, item))
+    await Promise.all(
+      itemsData.map(item =>
+        odataPost('/sg_itemSet', buildApprovePayload(agreementId, lifnr, item))
+      )
     )
-  )
-  return { success: true }
-},
+    return { success: true }
+  },
 }
 
 export default scheduleGenerateApi
