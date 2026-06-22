@@ -208,72 +208,26 @@ const MOCK_F4_SUPPLIERS = Object.values(MOCK_SUPPLIERS).map(s => ({
 }))
 
 
-function buildEditPayload(agreementId, lifnr, item) {
-  const childRow = { agreement: agreementId }
-  item.days.forEach((val, idx) => {
-    childRow[`day${idx + 1}`] = String(val)
-  })
-
-  return {
-    agreement: agreementId,
-    lifnr,
-    itemno:  item.itemNo,
-    sapcode: item.sapCode,
-    desc:    item.description ?? '',
-    hsn:     item.hsnCode     ?? '',
-    totalsch: String(item.totalQuantity),
-    editSet: { results: [childRow] },
-  }
-}
-
-function buildApprovePayload(agreementId, lifnr, item) {
-  const childRow = {
-    agreement: agreementId,
-    itemno:    item.itemNo,
-    sapcode:   item.sapCode,
-    indicator: item.indicator,
-    status:    item.status,
-    appflag:   'X',
-  }
-
-  return {
-    agreement: agreementId,
-    lifnr,
-    itemno:    item.itemNo,
-    sapcode:   item.sapCode,
-    desc:      item.description ?? '',
-    hsn:       item.hsnCode     ?? '',
-    totalsch:  String(item.totalQuantity),
-    unitprice: String(item.unitPrice),
-    indicator: item.indicator,
-    status:    item.status,
-    date:      item.date || '',
-    approveSet: { results: [childRow] },
-  }
-}
-// Add after buildDayPayload()
 function buildDeepPayload(agreementId, lifnr, item, mode) {
-  // The child rows for weekSet / daySet
   const childRow = { agreement: agreementId }
   item.days.forEach((val, idx) => {
     childRow[`day${idx + 1}`] = String(val)
   })
 
   const payload = {
-    agreement: agreementId,
+    agreement:  agreementId,
     lifnr,
-    itemno:   item.itemNo,
-    sapcode:  item.sapCode,
-    desc:     item.description   ?? '',
-    hsn:      item.hsnCode       ?? '',
-    totalsch: String(item.totalQuantity),
-    // total:    String(item.days.reduce((s, v) => s + v, 0)),
-    // fn1: String(item.frozenDays?.[0] ?? ''),
-    // fn2: String(item.frozenDays?.[1] ?? ''),
-    // fn3: String(item.frozenDays?.[2] ?? ''),
+    itemno:     item.itemNo,
+    sapcode:    item.sapCode,
+    desc:       item.description ?? '',
+    hsn:        item.hsnCode     ?? '',
+    totalsch:   String(item.totalQuantity),
+    unitprice:  String(item.unitPrice  ?? 0),   // ← ADD
+    indicator:  item.indicator ?? '',            // ← ADD
+    status:     item.status    ?? '',            // ← ADD
+    date:       item.date      ?? '',            // ← ADD
   }
 
-  // Deep navigation: nest the child set based on mode
   if (mode === 'WEEKLY') {
     payload.weekSet = { results: [childRow] }
   } else if (mode === 'DAILY') {
@@ -281,6 +235,54 @@ function buildDeepPayload(agreementId, lifnr, item, mode) {
   }
 
   return payload
+}
+
+function buildEditPayload(agreementId, lifnr, item) {
+  const childRow = { agreement: agreementId }
+  item.days.forEach((val, idx) => {
+    childRow[`day${idx + 1}`] = String(val)
+  })
+
+  return {
+    agreement:  agreementId,
+    lifnr,
+    itemno:     item.itemNo,
+    sapcode:    item.sapCode,
+    desc:       item.description ?? '',
+    hsn:        item.hsnCode     ?? '',
+    totalsch:   String(item.totalQuantity),
+    unitprice:  String(item.unitPrice  ?? 0),   // ← ADD
+    indicator:  item.indicator ?? '',            // ← ADD
+    status:     item.status    ?? '',            // ← ADD
+    date:       item.date      ?? '',            // ← ADD
+    editSet:    { results: [childRow] },
+  }
+}
+
+function buildApprovePayload(agreementId, lifnr, item) {
+  const childRow = {
+    agreement:  agreementId,
+    itemno:     item.itemNo,
+    sapcode:    item.sapCode,
+    indicator:  item.indicator ?? '',
+    status:     item.status    ?? '',
+    appflag:    'X',
+  }
+
+  return {
+    agreement:  agreementId,
+    lifnr,
+    itemno:     item.itemNo,
+    sapcode:    item.sapCode,
+    desc:       item.description ?? '',
+    hsn:        item.hsnCode     ?? '',
+    totalsch:   String(item.totalQuantity),
+    unitprice:  String(item.unitPrice  ?? 0),
+    indicator:  item.indicator ?? '',
+    status:     item.status    ?? '',
+    date:       item.date      ?? '',
+    approveSet: { results: [childRow] },
+  }
 }
 
 // ── Schedule generation helpers ───────────────────────────────
