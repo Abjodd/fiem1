@@ -563,8 +563,8 @@ function SidebarContent({
                   className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[14px] font-semibold text-[#0a6ed1]">{doc.id}</span>
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(printOk)}`}>
+                    <span className="text-[14px] font-bold text-[#0a6ed1]">{doc.id}</span>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${statusStyle(printOk)}`}>
                       {printOk ? 'Started' : 'Not Started'}
                     </span>
                   </div>
@@ -599,14 +599,11 @@ function SidebarContent({
   )
 }
 
-function InfoField({ Icon, label, value }) {
+function InfoField({ label, value }) {
   return (
-    <div className="flex items-start gap-2">
-      <Icon size={14} className="text-[#6a6d70] mt-[3px] flex-shrink-0" strokeWidth={1.8} />
-      <div className="min-w-0">
-        <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">{label}</div>
-        <div className="text-[13px] font-semibold text-[#32363a] mt-0.5 break-words">{value || '—'}</div>
-      </div>
+    <div className="min-w-0">
+      <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">{label}</div>
+      <div className="text-[#32363a] font-medium break-words text-[13px]">{value || '—'}</div>
     </div>
   )
 }
@@ -882,13 +879,16 @@ export default function ReturnPOMatdoc() {
                       <span className="text-[13px] text-[#6a6d70]">Return Documents</span>
                     </div>
 
-                    <div className="flex items-start justify-between flex-wrap gap-3">
+                    <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
                       <div className="min-w-0">
-                        <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Delivery Challan No.</div>
-                        <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight break-all">{doc.id}</h2>
+                        <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Delivery Challan No.</div>
+                        <h2 className="text-[20px] sm:text-[24px] font-bold text-[#0a6ed1] tracking-tight break-all">{doc.id}</h2>
                       </div>
 
                       <div className="flex items-center gap-3 ml-3 flex-shrink-0 relative group">
+                        <span className="text-[13px] text-[#6a6d70] bg-white px-3 py-2 rounded-lg border border-[#e5e5e5] shadow-sm whitespace-nowrap mr-2 hidden sm:block">
+                          {doc.documentDate}
+                        </span>
                         <span className={`text-[13px] sm:text-[14px] font-bold px-3 py-1 rounded-full whitespace-nowrap ${statusStyle(printOk)}`}>
                           <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: statusDotColor(printOk) }} />
                           {doc.status}
@@ -918,19 +918,15 @@ export default function ReturnPOMatdoc() {
                       </div>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[14px]">
                       {[
-                        { Icon: Building2, label: 'Plant Code',    value: doc.plantCode },
-                        { Icon: Calendar,  label: 'Document Date', value: doc.documentDate },
-                        { Icon: Hash,      label: 'Document No',   value: doc.documentNo },
-                        { Icon: Calendar,  label: 'Posting Date',  value: doc.postingDate },
-                      ].map(({ Icon, label, value }) => (
-                        <div key={label} className="flex items-start gap-2.5">
-                          <Icon size={18} className="text-[#6a6d70] mt-[2px] flex-shrink-0" strokeWidth={1.8} />
-                          <div className="min-w-0">
-                            <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold">{label}</div>
-                            <div className="text-[17px] sm:text-[19px] font-bold text-[#32363a] mt-1 break-words">{value || '—'}</div>
-                          </div>
+                        { label: 'Plant Code',    value: doc.plantCode },
+                        { label: 'Document No',   value: doc.documentNo },
+                        { label: 'Posting Date',  value: doc.postingDate },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">{label}</div>
+                          <div className="text-[#32363a] font-medium break-words">{value || '—'}</div>
                         </div>
                       ))}
                     </div>
