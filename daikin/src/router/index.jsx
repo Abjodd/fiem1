@@ -19,24 +19,22 @@ export const NAV_MODULES = [
         label: 'Schedule Release',
         path: '/purchasing/schedule-release',
         icon: 'schedule',
-        cover:
-          'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1200',
-      },
+        cover: import.meta.env.BASE_URL + 'images/ScheduleRelease.png',
+      },      
+           
       {
         id: 'poreturn',
         label: 'PO Return / MATDOC',
         path: '/purchasing/poreturn',
         icon: 'return',
-        cover:
-          'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/PO_Return.png',
       },
       {
         id: 'purchase-order',
         label: 'Purchase Order',
         path: '/purchasing/purchase-order',
         icon: 'order',
-        cover:
-          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/PurchaseOrder.png',
       },
 
     
@@ -57,8 +55,7 @@ export const NAV_MODULES = [
         sub: 'For Supplier',
         path: '/purchasing/schedule-generate',
         icon: 'generate',
-        cover:
-          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/ScheduleGenerate.png',
       },
     ],
   },
@@ -77,32 +74,28 @@ export const NAV_MODULES = [
         label: 'Forecast Reports',
         path: '/reports/forecast-report',
         icon: 'forecast',
-        cover:
-          'https://images.unsplash.com/photo-1562577309-2592ab84b1bc?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/Forecast.png',
       },
       {
         id:'asn-report',
         label:'ASN Report',
         path: '/reports/asn-report',
         icon: 'asn',
-        cover:
-          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/asn-report.png',
       },
       {
         id:'gatein-to-migo',
         label:'Gate-In to MIGO Report', 
         path: '/reports/gatein-to-migo',
         icon: 'gate-migo',
-        cover:
-          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/Gate_IN_MIGO.png',
       },
       {
         id: 'delivery-schedule',
         label: 'Delivery Schedule Tracker',
         path: '/reports/delivery-schedule',
         icon: 'schedule-tracker',
-        cover:
-          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/Delivery_schedule_tracker.png',
       },
 
       {
@@ -110,8 +103,7 @@ export const NAV_MODULES = [
         label: 'Vendor Ledger Report',
         path: '/reports/vendor-ledger-report',
         icon: 'ledger',
-        cover:
-          'https://images.unsplash.com/photo-1554224154-26032ffc0d07?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/Vender_ledger_report.png',
       },
 
       
@@ -135,8 +127,7 @@ export const NAV_MODULES = [
         label: 'Advance Shipping Note',
         path: '/shipment/advance-shipping-note',
         icon: 'shipment',
-        cover:
-          'https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/advance-shipping-note.png',
       },
 
       {
@@ -145,8 +136,7 @@ export const NAV_MODULES = [
         sub: 'Track Shipments',
         path: '/shipment/goods-movement',
         icon: 'tracking',
-        cover:
-          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/goods-movement.png',
       },
 
       {
@@ -155,8 +145,7 @@ export const NAV_MODULES = [
         sub: 'Manage Inbound/Outbound',
         path: '/shipment/gatein-gateout',
         icon: 'gate',
-        cover:
-          'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=1200',
+        cover: import.meta.env.BASE_URL + 'images/gatein-gateout.png',
       },
     ],
   },

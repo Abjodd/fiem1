@@ -291,19 +291,19 @@ const CSS = `
   .ml-section:nth-of-type(8n+1) .ml-section-head {
     background-image:
       linear-gradient(120deg, rgba(7,41,107,0.92) 0%, rgba(11,61,145,0.75) 55%, rgba(30,93,214,0.45) 100%),
-      url('https://images.unsplash.com/photo-1565043666747-69f6646db940?w=1800&q=80');
+      url('/images/purchasing-head.png');
     background-size: cover; background-position: center;
   }
   .ml-section:nth-of-type(8n+2) .ml-section-head {
     background-image:
       linear-gradient(120deg, rgba(7,41,107,0.92) 0%, rgba(11,61,145,0.75) 55%, rgba(30,93,214,0.45) 100%),
-      url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1800&q=80');
+      url('/images/reports-head.png');
     background-size: cover; background-position: center;
   }
   .ml-section:nth-of-type(8n+3) .ml-section-head {
     background-image:
       linear-gradient(120deg, rgba(7,41,107,0.92) 0%, rgba(11,61,145,0.75) 55%, rgba(30,93,214,0.45) 100%),
-      url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1800&q=80');
+      url('/images/shipment-head.png');
     background-size: cover; background-position: center;
   }
   .ml-section:nth-of-type(8n+4) .ml-section-head {
