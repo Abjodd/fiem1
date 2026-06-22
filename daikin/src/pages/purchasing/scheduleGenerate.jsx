@@ -388,51 +388,44 @@ export default function ScheduleGenerate() {
   // useEffect(() => {
   //   if (supplier) saveSession({ supplier, agreement, items })
   // }, [supplier, agreement, items])
-
   useEffect(() => {
-    const ret = location.state?.returnData
-    if (!ret) return
-    const { savedLines, pendingIndicator } = ret
-    setItems(prev => {
-      const next = prev.map(it => {
-        const saved = savedLines.find(sl => sl.itemNo === it.itemNo)
+  const ret     = location.state?.returnData
+  const restore = location.state?.restoreData
+
+  if (!ret && !restore) return
+
+  // Always restore supplier/agreement first
+  if (restore?.supplier && restore?.agreement) {
+    setSupplier(restore.supplier)
+    setAgreement(restore.agreement)
+    setShowSupplierPopup(false)
+
+    if (ret) {
+      // Save path: restore items from agreement, then apply the saved day changes on top
+      const { savedLines, pendingIndicator } = ret
+      const baseItems = restore.agreement.items.map(it => ({ ...it }))
+      setItems(baseItems.map(it => {
+        const saved = savedLines?.find(sl => sl.itemNo === it.itemNo)
         if (!saved) return it
         return {
           ...it,
-          days:      [...saved.days],
+          days:       [...saved.days],
           frozenDays: saved.frozenDays ?? it.frozenDays,
-          status:    'In Draft',
+          status:     'In Draft',
           ...(pendingIndicator ? { indicator: pendingIndicator } : {}),
         }
-      })
-      // saveSession({ supplier, agreement, items: next })
-      return next
-    })
-    if (restore?.supplier && restore?.agreement) {
-    setSupplier(restore.supplier)
-    setAgreement(restore.agreement)
-    setShowSupplierPopup(false)
-    // Don't reset items here — returnData already updated them above
-  }
-    navigate(location.pathname, { replace: true, state: {} })
-  }, [location.state?.returnData, , location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps
-
-
-  // REPLACE WITH THIS
-useEffect(() => {
-  const restore = location.state?.restoreData
-  if (!restore) return
-
-  if (restore.supplier && restore.agreement) {
-    setSupplier(restore.supplier)
-    setAgreement(restore.agreement)
-    setItems(restore.agreement.items.map(it => ({ ...it })))
-    setSelectedItems(new Set())
-    setShowSupplierPopup(false)
+      }))
+    } else {
+      // Close path: restore items as-is, no day changes
+      setItems(restore.agreement.items.map(it => ({ ...it })))
+      setSelectedItems(new Set())
+    }
   }
 
   navigate(location.pathname, { replace: true, state: {} })
-}, [location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
+}, [location.state?.returnData, location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
+
+ // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSupplierSubmit = supp => {
     setShowSupplierPopup(false)
@@ -511,40 +504,42 @@ const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndica
     // Navigate immediately with locally-computed days
     // Pass mode so ScheduleLinesPage knows how to re-compute if needed
     openScheduleLines(selArr, true, 'Schedule Lines — Week', 'WEEKLY', 'W', itemsWithDays)
-    //                       ^^^^ editable: true — user must be able to adjust before saving
+    //                      
   }
 
   const handleDayClick = () => { if (!dayDisabled) setShowDayPopup(true) }
 
   // AFTER
-    const handleDayGenerate = (dayCount) => {
-      setShowDayPopup(false)
+  const handleDayGenerate = (dayCount) => {
+  setShowDayPopup(false)
 
-      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-      const itemsWithDays = selectedItemData.map(it => ({
-        ...it,
-        days: generateDays(it.totalQuantity, 'day', dayCount),
-        indicator: 'D',
-      }))
+  const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
+  const itemsWithDays = selectedItemData.map(it => ({
+    ...it,
+    days: generateDays(it.totalQuantity, 'day', dayCount),
+    indicator: 'D',
+  }))
 
-      navigate('/purchasing/schedule-lines', {
-        state: {
-          selectedItemNos:  selArr,
-          editable:         true,       // ← always editable now
-          title:            `Schedule Lines — Day (${dayCount})`,
-          mode:             'DAILY',
-          dayCount,
-          pendingIndicator: 'D',
-          agreementId:      agreement.id,
-          supplierCode:     supplier.code,
-          supplierName:     supplier.name,
-          plantName:        agreement.plantName,
-          companyCode:      agreement.companyCode,
-          agreementDate:    agreement.date,
-          itemsData:        itemsWithDays,   // locally-computed days, no SAP yet
-        },
-      })
-    }
+  navigate('/purchasing/schedule-lines', {
+    state: {
+      selectedItemNos:  selArr,
+      editable:         true,
+      title:            `Schedule Lines — Day (${dayCount})`,
+      mode:             'DAILY',
+      dayCount,
+      pendingIndicator: 'D',
+      agreementId:      agreement.id,
+      supplierCode:     supplier.code,
+      supplierName:     supplier.name,
+      plantName:        agreement.plantName,
+      companyCode:      agreement.companyCode,
+      agreementDate:    agreement.date,
+      itemsData:        itemsWithDays,
+      supplierFull:     supplier,       // ← ADD THIS
+      agreementFull:    agreement,      // ← ADD THIS
+    },
+  })
+}
 
   const handleEdit = () => {
     if (editDisabled) return
