@@ -346,8 +346,8 @@ const CSS = `
     transform: translateY(-50%) scale(0.96);
   }
 
-  .tg-arrow.tg-arrow-left  { left: -22px; }
-  .tg-arrow.tg-arrow-right { right: -22px; }
+  .tg-arrow.tg-arrow-left  { left: 16px; }
+  .tg-arrow.tg-arrow-right { right: 16px; }
 
   /* Show arrows when track has 5+ tiles */
   .tg-wrap[data-overflow="true"] .tg-arrow { display: flex; }
