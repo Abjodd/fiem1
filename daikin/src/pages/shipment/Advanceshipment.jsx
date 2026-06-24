@@ -94,6 +94,32 @@ function CancelConfirmDialog({ asnId, onConfirm, onDismiss, loading }) {
   )
 }
 
+function CancelSuccessDialog({ asnId, onDismiss }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center px-4" onClick={onDismiss}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 anim-scale" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-[#e8f5ec] flex items-center justify-center flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#107e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+          <h3 className="text-[16px] font-bold text-[#32363a]">ASN Cancelled</h3>
+        </div>
+        <p className="text-[14px] text-[#6a6d70] mb-5">
+          ASN <span className="font-semibold text-[#32363a]">{asnId}</span> has been successfully cancelled.
+        </p>
+        <button onClick={onDismiss}
+          className="w-full h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6632] active:scale-[0.98] transition-all">
+          OK
+        </button>
+      </div>
+    </div>
+  )
+}
+
+
+
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR — extracted OUTSIDE to fix input losing focus bug
 // ═══════════════════════════════════════════════════════════════
@@ -272,6 +298,7 @@ export default function AdvanceShippingNote() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelSuccessAsn, setCancelSuccessAsn] = useState(null) // stores cancelled ASN id string
 
   const filterRef = useRef(null)
 
@@ -313,16 +340,24 @@ export default function AdvanceShippingNote() {
     if (!selectedAsnId) { setAsn(null); return }
 
     asnApi.getAsn(selectedAsnId)
-      .then(async (data) => {
-        if (cancelled || !data) return
-        try {
-          data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear)
-        } catch (e) {
-          console.error('Attachments fetch failed:', e)
-          data.attachments = []
-        }
-        if (!cancelled) { setAsn(data); setActiveTab('items') }
-      })
+  .then(async (data) => {
+    if (cancelled || !data) return
+
+    // ── merge status from list (detail endpoint returns empty Status) ──
+    const listItem = asns.find(a => a.id === selectedAsnId)
+    if (listItem && !data.status) {
+      data.status = listItem.status
+      data.statusColor = listItem.statusColor
+    }
+
+    try {
+      data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear)
+    } catch (e) {
+      console.error('Attachments fetch failed:', e)
+      data.attachments = []
+    }
+    if (!cancelled) { setAsn(data); setActiveTab('items') }
+  })
       .catch(err => { if (!cancelled) console.error('ASN detail fetch failed:', err) })
     return () => { cancelled = true }
   }, [userLoading, loginId, loginType, selectedAsnId])
@@ -363,21 +398,34 @@ export default function AdvanceShippingNote() {
 
   const handleCancelClick = () => setCancelDialogOpen(true)
 
-  const handleCancelConfirm = async () => {
-    if (!asn) return
-    setCancelLoading(true)
-    try {
-      await asnApi.cancelAsn(asn.id)
-      setAsns(prev => prev.filter(a => a.id !== asn.id))
-      setAsn(null)
-      setSelectedAsnId(null)
-      setCancelDialogOpen(false)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setCancelLoading(false)
+const handleCancelConfirm = async () => {
+  if (!asn) return
+  setCancelLoading(true)
+  try {
+    await asnApi.cancelAsn(asn.id)
+    const cancelledId = asn.id
+    setCancelDialogOpen(false)
+    setCancelSuccessAsn(cancelledId)
+    // re-fetch list
+    const data = await asnApi.listAsns({ search: searchQuery, plants: selectedPlants })
+    setAsns(data)
+    // re-fetch detail of same ASN to get updated status
+    const updated = await asnApi.getAsn(cancelledId)
+    if (updated) {
+      try { updated.attachments = await asnApi.getAttachments(updated.asnNum, updated.fisYear) }
+      catch { updated.attachments = [] }
+      setAsn(updated)
     }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    setCancelLoading(false)
   }
+}
+
+const handleSuccessDismiss = async () => {
+  setCancelSuccessAsn(null)
+}
 
   const handleCancelDismiss = () => { if (!cancelLoading) setCancelDialogOpen(false) }
 
@@ -622,10 +670,9 @@ export default function AdvanceShippingNote() {
         .sidebar-transition { transition: width 0.25s ease; }
       `}</style>
 
-      {cancelDialogOpen && asn && (
-        <CancelConfirmDialog asnId={asn.id} onConfirm={handleCancelConfirm} onDismiss={handleCancelDismiss} loading={cancelLoading} />
-      )}
-
+      {cancelSuccessAsn && (
+  <CancelSuccessDialog asnId={cancelSuccessAsn} onDismiss={handleSuccessDismiss} />
+)}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
@@ -682,28 +729,27 @@ export default function AdvanceShippingNote() {
                       </div>
                       <div className="text-[14px] text-[#6a6d70] mt-1">Plant: {asn.plantName} ({asn.plant})</div>
                     </div>
-                    <div className="flex items-center gap-3 ml-3 flex-shrink-0">
-                      <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
-                      {/* Cancel button — only shown for Confirmed status */}
-                      {asn.status === 'Confirmed' && (
-                        <button onClick={handleCancelClick}
-                          className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
-                          </svg>
-                          Cancel ASN
-                        </button>
-                      )}
-                      <button onClick={handlePrint}
-                        className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="6 9 6 2 18 2 18 9" />
-                          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                          <rect x="6" y="14" width="12" height="8" />
-                        </svg>
-                        Print
-                      </button>
-                    </div>
+                    <div className="flex flex-col items-end gap-2 ml-3 flex-shrink-0">
+  <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
+  <button onClick={handlePrint}
+    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
+    </svg>
+    Print
+  </button>
+  {asn.status?.toLowerCase() === 'confirmed' && (
+    <button onClick={handleCancelClick}
+      className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
+      </svg>
+      Cancel ASN
+    </button>
+  )}
+</div>
                   </div>
                 </div>
 
