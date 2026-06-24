@@ -7,7 +7,7 @@ import { generateShipmentNote } from '../../utils/generateShipmentNote.js'
 import {
   FilePlus, Truck, ClipboardCheck, LogIn, PackageCheck, Clock,
   ChevronLeft, ChevronRight, RefreshCw, X, Menu, Printer, Search,
-  ShieldCheck, HardHat, CalendarDays, Car, Phone, User, MapPin,
+  ShieldCheck, HardHat, CalendarDays, Car, Phone, User,
   Hash, Banknote, Edit3, ExternalLink, Save, PlayCircle, AlertTriangle,
 } from 'lucide-react'
 import { useUser } from '../../context/UserContext.jsx'
@@ -41,15 +41,14 @@ const UPDATE_TAB = {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TIMELINE STEP CONFIG
+// TIMELINE STEP CONFIG  (gate_reporting removed)
 // ═══════════════════════════════════════════════════════════════
 const TIMELINE_STEPS = [
-  { key: 'created',       label: 'Created',          Icon: FilePlus     },
-  { key: 'shipped',       label: 'Shipped',          Icon: Truck        },
-  { key: 'gate_reporting',label: 'Gate Reporting',   Icon: MapPin       },
-  { key: 'gate_entry',    label: 'Gate Entry (IN)',  Icon: LogIn        },
-  { key: 'goods_received',label: 'Goods Received',   Icon: PackageCheck },
-  { key: 'completed',     label: 'Completed',        Icon: PackageCheck },
+  { key: 'created',       label: 'Created',         Icon: FilePlus     },
+  { key: 'shipped',       label: 'Shipped',         Icon: Truck        },
+  { key: 'gate_entry',    label: 'Gate Entry (IN)', Icon: LogIn        },
+  { key: 'goods_received',label: 'Goods Received',  Icon: PackageCheck },
+  { key: 'completed',     label: 'Completed',       Icon: PackageCheck },
 ]
 
 // ═══════════════════════════════════════════════════════════════
@@ -131,7 +130,6 @@ function SidebarContent({
                   <div className="flex items-center justify-between text-[13px] text-[#6a6d70]"><span>{t.date}</span></div>
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
-                    {/* status = exact StatusText from SAP */}
                     {t.status && (
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
                         {t.status}
@@ -324,13 +322,10 @@ export default function GoodsMovement() {
     try {
       await goodsMovementApi.startShipment(tracking.id, shipmentDetailsForm)
       setShipmentDetailsOpen(false)
-      // Show success popup
       setShipSuccessMsg(`Tracking number ${tracking.id} has been shipped successfully`)
-      // Refresh tracking detail
       goodsMovementApi.getTracking(tracking.id)
         .then(data => setTracking(data))
         .catch(err => console.error(err))
-      // Refresh list
       goodsMovementApi.listTrackings({ search: searchQuery })
         .then(data => setTrackings(data))
         .catch(err => console.error(err))
@@ -340,13 +335,12 @@ export default function GoodsMovement() {
   }
 
   // ── In-Transit Update modal ────────────────────────────────
-  // Opens from "Edit Details" button inside Update Shipment tab
   const openUpdateModal = () => {
     if (!tracking) return
     const firstAsn = tracking.asns?.[0]
     setUpdateForm({
       asn:           firstAsn?.asnId || '',
-      asnId:         firstAsn?.asnId || '',         // track which ASN to PUT against
+      asnId:         firstAsn?.asnId || '',
       vehicleNumber: tracking.vehicleRegNo || '',
       invoiceNumber: firstAsn?.invoiceNumber || '',
     })
@@ -361,13 +355,11 @@ export default function GoodsMovement() {
     }
     setUpdateSaving(true); setUpdateError('')
     try {
-      // PUT Invoice_Transporter_editSet(ASN='...',TRACK='...')
       await goodsMovementApi.updateInTransitShipment(
         tracking.trackingNo,
         updateForm.asnId || updateForm.asn,
         { vehicleNumber: updateForm.vehicleNumber, invoiceNumber: updateForm.invoiceNumber }
       )
-      // Refresh tracking detail from server
       const updated = await goodsMovementApi.getTracking(tracking.id)
       setTracking(updated)
       setUpdateModalOpen(false)
@@ -376,12 +368,11 @@ export default function GoodsMovement() {
     } finally { setUpdateSaving(false) }
   }
 
-  // When user picks ASN from lookup in update modal
   const handlePickAsn = (row) => {
     setUpdateForm(f => ({
       ...f,
-      asn:          row.asnId,
-      asnId:        row.asnId,
+      asn:           row.asnId,
+      asnId:         row.asnId,
       invoiceNumber: f.invoiceNumber || row.invoiceNumber,
       vehicleNumber: f.vehicleNumber || row.transporter,
     }))
@@ -592,7 +583,6 @@ export default function GoodsMovement() {
                       <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Tracking Number — {tracking.id}</div>
                       <div className="flex items-baseline gap-4 flex-wrap">
                         <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight">{tracking.id}</h2>
-                        {/* status = exact StatusText from SAP */}
                         <span className={`text-[14px] font-bold px-3 py-1 rounded-full ${statusStyle(tracking.statusColor)}`}>
                           <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ backgroundColor: statusDotColor(tracking.statusColor) }} />
                           {tracking.status}
@@ -671,7 +661,6 @@ export default function GoodsMovement() {
           <FilePlus size={15} /> Create
         </button>
 
-        {/* Yet to Ship buttons: Start Shipment + Edit + Cancel */}
         {tracking && isYetToShipStatus(tracking.status) && (
           <>
             <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>

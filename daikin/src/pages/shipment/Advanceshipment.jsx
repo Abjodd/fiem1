@@ -684,7 +684,7 @@ export default function AdvanceShippingNote() {
                     </div>
                     <div className="flex items-center gap-3 ml-3 flex-shrink-0">
                       <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
-                      {/* Cancel button — only shown for Confirmed status */}
+                      {/* Cancel button — shown for Confirmed status */}
                       {asn.status === 'Confirmed' && (
                         <button onClick={handleCancelClick}
                           className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
