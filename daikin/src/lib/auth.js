@@ -4,20 +4,20 @@ export const MOCK_USERS = {
 };
 // Map route paths to allowed roles
 export const PAGE_PERMISSIONS = {
-  '/landing': ['partner', 'employee', 'admin'],
-  '/purchasing/schedule-release':    ['partner', 'employee'],
-  '/purchasing/purchase-order':      ['partner'],
-  '/purchasing/po-schedule-report':  ['partner', 'employee'],
-  '/purchasing/schedule-generate':   ['partner'],
-  '/purchasing/create-asn':          ['partner', 'employee'],
-  '/reports/forecast-report':        ['partner'],
-  '/reports/vendor-ledger-report':   ['partner'],
-  '/goodsreceipt/gatein-to-migo':    ['partner'],
-  '/logistics/delivery-schedule':    ['partner'],
-  '/asn/asn-report':                 ['partner'],
-  '/shipment/advance-shipping-note': ['partner'],
-  '/shipment/goods-movement':        ['partner', 'employee'],
-  '/shipment/gatein-gateout':        ['partner', 'employee'],
+  '/landing': ['partner', 'employee', 'employeeadmin'],
+  '/purchasing/schedule-release':    ['partner', 'employee','employeeadmin'],
+  '/purchasing/purchase-order':      ['partner' , 'employee','employeeadmin'],
+  // '/purchasing/po-schedule-report':  ['partner', 'employee','employeeadmin'],
+  '/purchasing/schedule-generate':   ['partner', 'employee','employeeadmin'],
+  '/purchasing/create-asn':          ['partner', 'employee','employeeadmin'],
+  '/reports/forecast-report':        ['partner','employee',],
+  '/reports/vendor-ledger-report':   ['partner','employee','employeeadmin'],
+  '/goodsreceipt/gatein-to-migo':    ['partner','employee'],
+  '/logistics/delivery-schedule':    ['partner','employee'],
+  '/asn/asn-report':                 ['partner','employee'],
+  '/shipment/advance-shipping-note': ['partner','employee','employeeadmin'],
+  '/shipment/goods-movement':        ['partner','employee','employeeadmin'],
+  '/shipment/gatein-gateout':        [ 'employee'],
 };
 
 export const canAccess = (role, path) => (PAGE_PERMISSIONS[path] ?? ['employee', 'partner']).includes(role);
