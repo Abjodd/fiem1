@@ -1,6 +1,17 @@
 const ODATA_BASE = '/sap/opu/odata/SHIV/MO_SUPP_PORTAL_ASN_APP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
+
+async function fetchCsrfToken() {
+  const res = await fetch(`${ODATA_BASE}/ASN_HEADERSet?$top=1&$format=json`, {
+    headers: {
+      'X-CSRF-Token': 'Fetch',
+      Loginid: authConfig.loginId,
+      Logintype: authConfig.loginType,
+    },
+  })
+  return res.headers.get('x-csrf-token') || ''
+}
 // ── base GET helper ──
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
@@ -294,18 +305,27 @@ export const asnApi = {
   },
 
   // Cancel — DELETE /ASN_HEADERSet(Asn_Num='...',FisYear='...')
-  async cancelAsn(id) {
-    const [asnNum, fisYear] = id.split('/')
-    const res = await fetch(
-      `${ODATA_BASE}/ASN_HEADERSet(Asn_Num='${asnNum}',FisYear='${fisYear}')`,
-      { method: 'DELETE', headers: { Accept: 'application/json',
-                  Loginid: authConfig.loginId,
-          Logintype: authConfig.loginType,
-       } }
-    )
-    if (!res.ok) throw new Error(`Cancel failed: HTTP ${res.status}`)
-    return { success: true, id }
-  },
+async cancelAsn(id) {
+  const [asnNum, fisYear] = id.split('/')
+
+  // fetch CSRF token first
+  const csrfToken = await fetchCsrfToken()
+
+  const res = await fetch(
+    `${ODATA_BASE}/ASN_HEADERSet(Asn_Num='${asnNum}',FisYear='${fisYear}')`,
+    {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-Token': csrfToken,
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
+      },
+    }
+  )
+  if (!res.ok) throw new Error(`Cancel failed: HTTP ${res.status}`)
+  return { success: true, id }
+},
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -299,6 +299,7 @@ export default function AdvanceShippingNote() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
   const [cancelSuccessAsn, setCancelSuccessAsn] = useState(null) // stores cancelled ASN id string
+  const [selectedAsnStatus, setSelectedAsnStatus] = useState(null)
 
   const filterRef = useRef(null)
 
@@ -327,9 +328,13 @@ export default function AdvanceShippingNote() {
   }, [userLoading, loginId, loginType, searchQuery, selectedPlants])
 
   // ── Auto-select first ASN ──
-  useEffect(() => {
-    if (!selectedAsnId && asns.length > 0) setSelectedAsnId(asns[0].id)
-  }, [asns, selectedAsnId])
+useEffect(() => {
+  if (!selectedAsnId && asns.length > 0) {
+    const first = asns[0]
+    setSelectedAsnId(first.id)
+    setSelectedAsnStatus({ status: first.status, statusColor: first.statusColor })
+  }
+}, [asns, selectedAsnId])
 
   // ── Fetch ASN detail + attachments ──
   useEffect(() => {
@@ -344,11 +349,11 @@ export default function AdvanceShippingNote() {
     if (cancelled || !data) return
 
     // ── merge status from list (detail endpoint returns empty Status) ──
-    const listItem = asns.find(a => a.id === selectedAsnId)
-    if (listItem && !data.status) {
-      data.status = listItem.status
-      data.statusColor = listItem.statusColor
-    }
+   const listItem = selectedAsnStatus
+if (listItem && !data.status) {
+  data.status = listItem.status
+  data.statusColor = listItem.statusColor
+}
 
     try {
       data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear)
@@ -389,7 +394,12 @@ export default function AdvanceShippingNote() {
   const togglePlant = (plant) =>
     setSelectedPlants(prev => prev.includes(plant) ? prev.filter(p => p !== plant) : [...prev, plant])
 
-  const handleSelectAsn = (id) => { setSelectedAsnId(id); setMobileSidebarOpen(false) }
+  const handleSelectAsn = (id) => {
+  const listItem = asns.find(a => a.id === id)
+  setSelectedAsnStatus(listItem ? { status: listItem.status, statusColor: listItem.statusColor } : null)
+  setSelectedAsnId(id)
+  setMobileSidebarOpen(false)
+}
 
   const handlePrint = async () => {
     if (!asn) return
@@ -670,7 +680,10 @@ const handleSuccessDismiss = async () => {
         .sidebar-transition { transition: width 0.25s ease; }
       `}</style>
 
-      {cancelSuccessAsn && (
+{cancelDialogOpen && asn && (
+  <CancelConfirmDialog asnId={asn.id} onConfirm={handleCancelConfirm} onDismiss={handleCancelDismiss} loading={cancelLoading} />
+)}
+{cancelSuccessAsn && (
   <CancelSuccessDialog asnId={cancelSuccessAsn} onDismiss={handleSuccessDismiss} />
 )}
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
@@ -740,7 +753,7 @@ const handleSuccessDismiss = async () => {
     </svg>
     Print
   </button>
-  {asn.status?.toLowerCase() === 'confirmed' && (
+  {asns.find(a => a.id === asn.id)?.status?.toLowerCase() === 'confirmed' && (
     <button onClick={handleCancelClick}
       className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
