@@ -26,12 +26,12 @@ import {
 // TRANSPORT MODE OPTIONS
 // ═══════════════════════════════════════════════════════════════
 const TRANSPORT_MODES = [
-  { value: 'By Road',         label: 'By Road',         Icon: Truck     },
-  { value: 'By Air',          label: 'By Air',          Icon: Plane     },
-  { value: 'By Ship',         label: 'By Ship',         Icon: Ship      },
-  { value: 'By Rail',         label: 'By Rail',         Icon: Train     },
-  { value: 'By Courier',      label: 'By Courier',      Icon: Package   },
-  { value: 'By Hand',         label: 'By Hand',         Icon: Hand      },
+  { value: 'By Road', label: 'By Road', Icon: Truck },
+  { value: 'By Air', label: 'By Air', Icon: Plane },
+  { value: 'By Ship', label: 'By Ship', Icon: Ship },
+  { value: 'By Rail', label: 'By Rail', Icon: Train },
+  { value: 'By Courier', label: 'By Courier', Icon: Package },
+  { value: 'By Hand', label: 'By Hand', Icon: Hand },
   { value: 'Tie-up Supplier', label: 'Tie-up Supplier', Icon: Handshake },
 ]
 
@@ -69,21 +69,21 @@ const trackingToForm = (t) => {
 
   return {
     asnNums: (t.asns || []).map((a) => ({
-      asnId:         a.asnId,
-      asnYear:       a.asnYear || '',
+      asnId: a.asnId,
+      asnYear: a.asnYear || '',
       invoiceNumber: a.invoiceNumber || '',
-      plant:         a.plant || '',
+      plant: a.plant || '',
       invoiceAmount: a.invoiceAmount || 0,
-      currency:      a.currency || '',
+      currency: a.currency || '',
     })),
-    transportMode:  t.transportationMode || t.transportMode || 'By Road',
-    ewayBillNo:     t.ewayBillNo   || '',
-    ewayBillDate:   ewayBillDateVal,
-    lrNum:          t.invoiceNum   || '',
+    transportMode: t.transportationMode || t.transportMode || 'By Road',
+    ewayBillNo: t.ewayBillNo || '',
+    ewayBillDate: ewayBillDateVal,
+    lrNum: t.invoiceNum || '',
     transporterName: t.transporter || '',
-    driverName:     t.driverName   || '',
-    contactNumber:  t.contact      || '',
-    vehicleRegNo:   t.vehicleRegNo || '',
+    driverName: t.driverName || '',
+    contactNumber: t.contact || '',
+    vehicleRegNo: t.vehicleRegNo || '',
     finaltranspoterName: t.finalTransporterName || '',
     pollutionCertificateApplicable: t.pollutionCertificateApplicable === 'Yes' || t.pollutionCertificateApplicable === true,
     safetyEquipments: t.safetyEquipments === 'Yes' || t.safetyEquipments === true,
@@ -120,9 +120,8 @@ const ToggleSwitch = ({ value, onChange }) => (
   <button
     type="button"
     onClick={() => onChange(!value)}
-    className={`relative inline-flex items-center h-8 w-[74px] rounded-full transition-all duration-200 border ${
-      value ? 'bg-[#107e3e] border-[#107e3e]' : 'bg-[#6a6d70] border-[#6a6d70]'
-    } shadow-sm hover:scale-[1.02] active:scale-[0.98]`}
+    className={`relative inline-flex items-center h-8 w-[74px] rounded-full transition-all duration-200 border ${value ? 'bg-[#107e3e] border-[#107e3e]' : 'bg-[#6a6d70] border-[#6a6d70]'
+      } shadow-sm hover:scale-[1.02] active:scale-[0.98]`}
   >
     <span className={`absolute text-[11px] font-bold text-white tracking-wider transition-all ${value ? 'left-3' : 'right-3'}`}>
       {value ? 'YES' : 'NO'}
@@ -165,7 +164,7 @@ const SuccessPopup = ({ trackingId, isEdit, onOk }) => (
 // ═══════════════════════════════════════════════════════════════
 export default function CreateMovement({ editData = null, onBack = null, onNavigateToTracking = null }) {
   const { loginId, loginType, loading: userLoading } = useUser()
-  authConfig.loginId   = loginId
+  authConfig.loginId = loginId
   authConfig.loginType = loginType
   const isEditMode = !!editData
 
@@ -186,18 +185,18 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
   }
 
   // ── Form state ──────────────────────────────────────────────
-  const [form, setForm]               = useState(() => editData ? trackingToForm(editData) : INITIAL_FORM)
-  const [errors, setErrors]           = useState({})
-  const [submitting, setSubmitting]   = useState(false)
+  const [form, setForm] = useState(() => editData ? trackingToForm(editData) : INITIAL_FORM)
+  const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
   // ── Success popup ───────────────────────────────────────────
   const [successTrackingId, setSuccessTrackingId] = useState(null)
-  const [successIsEdit, setSuccessIsEdit]         = useState(false)
+  const [successIsEdit, setSuccessIsEdit] = useState(false)
 
   // ── ASN value-help dialog ───────────────────────────────────
-  const [asnLookupOpen, setAsnLookupOpen]       = useState(false)
-  const [asnLookupSearch, setAsnLookupSearch]   = useState('')
+  const [asnLookupOpen, setAsnLookupOpen] = useState(false)
+  const [asnLookupSearch, setAsnLookupSearch] = useState('')
   const [asnLookupResults, setAsnLookupResults] = useState([])
   const [asnLookupLoading, setAsnLookupLoading] = useState(false)
 
@@ -246,10 +245,11 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
       e.transporterName = 'Transporter Name is required'
     if (!form.driverName.trim())
       e.driverName = 'Driver Name is required'
-    if (!form.contactNumber.trim())
+    if (!form.contactNumber.trim()) {
       e.contactNumber = 'Contact Number is required'
-    else if (!/^\d{7,15}$/.test(form.contactNumber.trim()))
-      e.contactNumber = 'Enter a valid contact number (7–15 digits)'
+    } else if (!/^\d{10}$/.test(form.contactNumber.trim())) {
+      e.contactNumber = 'Contact Number must be exactly 10 digits'
+    }
     if (!form.vehicleRegNo.trim())
       e.vehicleRegNo = 'Vehicle Reg. No. is required'
     if (form.ewayBillNo && form.ewayBillNo.trim().length > 0 && form.ewayBillNo.trim().length !== 12)
@@ -318,12 +318,12 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
     } catch { /* non-blocking */ }
 
     const newAsn = {
-      asnId:         row.asnId,
-      asnYear:       row.asnYear,
+      asnId: row.asnId,
+      asnYear: row.asnYear,
       invoiceNumber: row.invoiceNumber || '',
-      plant:         row.plant         || '',
+      plant: row.plant || '',
       invoiceAmount: row.invoiceAmount || 0,
-      currency:      row.currency      || '',
+      currency: row.currency || '',
     }
 
     setForm((f) => ({ ...f, asnNums: [...f.asnNums, newAsn] }))
@@ -438,11 +438,10 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 <button
                   type="button"
                   onClick={() => setAsnLookupOpen(true)}
-                  className={`flex items-center gap-2 h-10 px-3 w-full text-[14px] border rounded-lg transition-all ${
-                    errors.asnNums
-                      ? 'border-[#cc1c14] text-[#cc1c14] bg-[#fff9f9] hover:bg-[#fce8e6]'
-                      : 'border-[#d9d9d9] text-[#0a6ed1] bg-white hover:border-[#0a6ed1] hover:bg-[#f0f7ff]'
-                  }`}
+                  className={`flex items-center gap-2 h-10 px-3 w-full text-[14px] border rounded-lg transition-all ${errors.asnNums
+                    ? 'border-[#cc1c14] text-[#cc1c14] bg-[#fff9f9] hover:bg-[#fce8e6]'
+                    : 'border-[#d9d9d9] text-[#0a6ed1] bg-white hover:border-[#0a6ed1] hover:bg-[#f0f7ff]'
+                    }`}
                 >
                   <Plus size={15} />
                   <span>{form.asnNums.length > 0 ? 'Add another ASN' : 'Pick ASN'}</span>
@@ -482,11 +481,10 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 onChange={(e) => updateField('ewayBillNo', e.target.value.replace(/\D/g, '').slice(0, 12))}
                 placeholder="12-digit Eway Bill Number"
                 maxLength={12}
-                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.ewayBillNo
-                    ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
-                    : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
-                }`}
+                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.ewayBillNo
+                  ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                  : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+                  }`}
               />
               {form.ewayBillNo.length > 0 && (
                 <div className={`mt-1 text-[11px] ${form.ewayBillNo.length === 12 ? 'text-[#107e3e]' : 'text-[#6a6d70]'}`}>
@@ -542,11 +540,11 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 value={form.transporterName}
                 onChange={(e) => updateField('transporterName', e.target.value)}
                 placeholder="e.g. BNE, DHL, Bluedart"
-                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.transporterName
-                    ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
-                    : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
-                }`}
+                readOnly={isEditMode}
+                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.transporterName
+                  ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                  : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+                  }`}
               />
             </FieldRow>
 
@@ -556,12 +554,12 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 type="text"
                 value={form.driverName}
                 onChange={(e) => updateField('driverName', e.target.value)}
+                 readOnly={isEditMode}
                 placeholder="Enter driver's name"
-                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.driverName
-                    ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
-                    : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
-                }`}
+                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.driverName
+                  ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                  : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+                  }`}
               />
             </FieldRow>
 
@@ -570,14 +568,19 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
               <input
                 type="tel"
                 value={form.contactNumber}
-                onChange={(e) => updateField('contactNumber', e.target.value.replace(/\D/g, ''))}
+                onChange={(e) =>
+                  updateField(
+                    'contactNumber',
+                    e.target.value.replace(/\D/g, '').slice(0, 10)
+                  )
+                }
+                readOnly={isEditMode}
                 placeholder="10-digit phone number"
-                maxLength={15}
-                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.contactNumber
-                    ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
-                    : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
-                }`}
+                maxLength={10}
+                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.contactNumber
+                  ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                  : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+                  }`}
               />
             </FieldRow>
 
@@ -599,11 +602,10 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                 value={form.vehicleRegNo}
                 onChange={(e) => updateField('vehicleRegNo', e.target.value.toUpperCase())}
                 placeholder="e.g. UP67 AB 1234"
-                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all uppercase ${
-                  errors.vehicleRegNo
-                    ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
-                    : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
-                }`}
+                className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all uppercase ${errors.vehicleRegNo
+                  ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                  : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+                  }`}
               />
             </FieldRow>
 
@@ -700,9 +702,8 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
                         <tr
                           key={`${row.asnId}-${row.asnYear}`}
                           onClick={() => !alreadyAdded && handlePickAsn(row)}
-                          className={`border-b border-[#f0f0f0] transition-colors ${
-                            alreadyAdded ? 'opacity-40 cursor-not-allowed bg-[#f5f6f7]' : 'hover:bg-[#ebf5ff] cursor-pointer'
-                          }`}
+                          className={`border-b border-[#f0f0f0] transition-colors ${alreadyAdded ? 'opacity-40 cursor-not-allowed bg-[#f5f6f7]' : 'hover:bg-[#ebf5ff] cursor-pointer'
+                            }`}
                         >
                           <td className="py-3 px-4 font-semibold text-[#0a6ed1]">{row.asnId}</td>
                           <td className="py-3 px-4 text-[#6a6d70]">{row.asnYear}</td>
