@@ -21,6 +21,13 @@ const isAllowedFile = (file) => {
   return ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_MIME_TYPES.includes(file.type)
 }
 
+// Fields the user can edit — preserve these across re-fetches
+const USER_EDITABLE_FIELDS = [
+  'avlAsnQty', 'fgStock', 'supplierNetPrice', 'materialExpiry',
+  'taxMismatch', 'packingMaterialType', 'packingMaterialQty',
+  'packagingType', 'qtyPerPackaging', 'pdirNo', 'batches',
+]
+
 // ═══════════════════════════════════════════════════════════════
 // MOBILE HOOK
 // ═══════════════════════════════════════════════════════════════
@@ -40,9 +47,7 @@ function useIsMobile(breakpoint = 768) {
 function Field({ label, children, className = '' }) {
   return (
     <div className={`flex flex-col gap-1 min-w-0 ${className}`}>
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] whitespace-nowrap">
-        {label}
-      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] whitespace-nowrap">{label}</span>
       {children}
     </div>
   )
@@ -50,34 +55,31 @@ function Field({ label, children, className = '' }) {
 
 function ReadonlyVal({ value, accent }) {
   return (
-    <span className={`text-[13px] font-semibold truncate ${accent ? 'text-[#0a6ed1]' : 'text-[#32363a]'}`}>
-      {value}
-    </span>
+    <span className={`text-[13px] font-semibold truncate ${accent ? 'text-[#0a6ed1]' : 'text-[#32363a]'}`}>{value}</span>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TAX MISMATCH TOGGLE (switch style)
+// TAX MISMATCH TOGGLE
 // ═══════════════════════════════════════════════════════════════
-function TaxMismatchToggle({ value, onChange, compact = false }) {
+function TaxMismatchToggle({ value, onChange, compact = false, disabled = false }) {
   return (
-    <div className={`flex items-center gap-2 ${compact ? 'h-8' : ''}`}>
+    <div
+      className={`flex rounded-lg overflow-hidden border border-[#d9d9d9] ${compact ? 'h-8' : ''} ${disabled ? 'opacity-40' : ''}`}
+      style={{ minWidth: compact ? 72 : 88 }}
+    >
       <button
         type="button"
-        onClick={() => onChange(!value)}
-        className={`relative rounded-full transition-colors flex-shrink-0 ${compact ? 'w-10 h-5' : 'w-11 h-6'} ${
-          value ? 'bg-[#107e3e]' : 'bg-[#d9d9d9]'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 bg-white rounded-full shadow-sm transition-transform ${compact ? 'w-4 h-4' : 'w-5 h-5'} ${
-            value ? (compact ? 'translate-x-5' : 'translate-x-5') : 'translate-x-0.5'
-          }`}
-        />
-      </button>
-      <span className={`text-[11px] font-bold ${value ? 'text-[#107e3e]' : 'text-[#9ca3af]'}`}>
-        {value ? 'YES' : 'NO'}
-      </span>
+        onClick={() => !disabled && onChange(true)}
+        disabled={disabled}
+        className={`flex-1 text-[11px] font-bold transition-all px-3 ${value ? 'bg-[#107e3e] text-white' : 'bg-white text-[#9ca3af] hover:bg-[#f0f0f0]'} disabled:cursor-not-allowed`}
+      >YES</button>
+      <button
+        type="button"
+        onClick={() => !disabled && onChange(false)}
+        disabled={disabled}
+        className={`flex-1 text-[11px] font-bold border-l border-[#d9d9d9] transition-all px-3 ${!value ? 'bg-[#cc1c14] text-white' : 'bg-white text-[#9ca3af] hover:bg-[#f0f0f0]'} disabled:cursor-not-allowed`}
+      >NO</button>
     </div>
   )
 }
@@ -91,11 +93,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
 
   useEffect(() => {
     if (!open || !item) return
-    setRows(
-      item.batches && item.batches.length > 0
-        ? item.batches.map(b => ({ ...b }))
-        : []
-    )
+    setRows(item.batches && item.batches.length > 0 ? item.batches.map(b => ({ ...b })) : [])
     setError(null)
   }, [open, item])
 
@@ -108,14 +106,16 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
   const isOver = total > target
 
   const addRow = () => {
+    const maxBatches = parseInt(item.packingMaterialQty, 10)
+    if (!isNaN(maxBatches) && rows.length >= maxBatches) {
+      setError(`Maximum ${maxBatches} batch rows allowed (matches Packing Material Qty).`)
+      return
+    }
     setRows([...rows, { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, batchCode: '', quantity: '' }])
     setError(null)
   }
   const removeRow = (id) => { setRows(rows.filter(r => r.id !== id)); setError(null) }
-  const updateRow = (id, field, value) => {
-    setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r))
-    setError(null)
-  }
+  const updateRow = (id, field, value) => { setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r)); setError(null) }
 
   const handleSave = () => {
     if (rows.length === 0) { onSave(item.itemNo, []); onClose(); return }
@@ -134,15 +134,8 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
   const meterPct = target > 0 ? Math.min(100, (total / target) * 100) : 0
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-3 anim-fade"
-      style={{ background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(2px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden anim-pop"
-        onClick={e => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 anim-fade" style={{ background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(2px)' }} onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden anim-pop" onClick={e => e.stopPropagation()}>
         <div className="px-5 sm:px-6 py-4 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Split Batch</div>
@@ -153,6 +146,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
             </div>
             <div className="text-[12px] text-[#6a6d70] mt-0.5">
               Item {item.itemNo} &middot; Avl. ASN Qty: <strong className="text-[#32363a]">{target} {item.totalUnit}</strong>
+              {item.packingMaterialQty && <> &middot; Max batches: <strong className="text-[#32363a]">{item.packingMaterialQty}</strong></>}
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all flex-shrink-0">
@@ -184,24 +178,22 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" className="mx-auto mb-2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8" /></svg>
                 No data. Click <strong>+ Add Row</strong> below to create a batch.
               </div>
-            ) : (
-              rows.map((r, i) => (
-                <div key={r.id} className="flex items-center px-3 py-2 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc]">
-                  <div className="w-8 flex-shrink-0">
-                    <button onClick={() => removeRow(r.id)} className="w-6 h-6 flex items-center justify-center rounded-full text-[#cc1c14] hover:bg-[#fce8e6] transition-all">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                    </button>
-                  </div>
-                  <div className="flex-1 px-2">
-                    <input type="text" value={r.batchCode} onChange={e => updateRow(r.id, 'batchCode', e.target.value)} placeholder={`Batch ${i + 1}`} className="w-full h-9 px-2.5 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
-                  </div>
-                  <div className="w-28 px-2">
-                    <input type="number" min="0" step="any" value={r.quantity} onChange={e => updateRow(r.id, 'quantity', e.target.value)} placeholder="0" className="w-full h-9 px-2.5 text-[13px] text-right tabular-nums border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
-                  </div>
-                  <div className="w-8 flex-shrink-0 text-[11px] text-[#94a3b8] text-center">{item.totalUnit}</div>
+            ) : rows.map((r, i) => (
+              <div key={r.id} className="flex items-center px-3 py-2 border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc]">
+                <div className="w-8 flex-shrink-0">
+                  <button onClick={() => removeRow(r.id)} className="w-6 h-6 flex items-center justify-center rounded-full text-[#cc1c14] hover:bg-[#fce8e6] transition-all">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+                  </button>
                 </div>
-              ))
-            )}
+                <div className="flex-1 px-2">
+                  <input type="text" value={r.batchCode} onChange={e => updateRow(r.id, 'batchCode', e.target.value)} placeholder={`Batch ${i + 1}`} className="w-full h-9 px-2.5 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+                </div>
+                <div className="w-28 px-2">
+                  <input type="number" min="0" step="any" value={r.quantity} onChange={e => updateRow(r.id, 'quantity', e.target.value)} onWheel={e => e.target.blur()} placeholder="0" className="w-full h-9 px-2.5 text-[13px] text-right tabular-nums border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+                </div>
+                <div className="w-8 flex-shrink-0 text-[11px] text-[#94a3b8] text-center">{item.totalUnit}</div>
+              </div>
+            ))}
           </div>
 
           <div className="flex items-center justify-between mt-3">
@@ -222,7 +214,6 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
               )
             )}
           </div>
-
           {error && (
             <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-[#fce8e6] text-[#cc1c14] rounded-lg text-[12.5px] font-medium anim-fade">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
@@ -265,11 +256,7 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
             {message && <p className="text-[13.5px] text-[#6a6d70] mt-1 leading-relaxed">{message}</p>}
           </div>
         </div>
-        {details && (
-          <div className="px-6 pb-2">
-            <div className="bg-[#fafbfc] border border-[#e5e5e5] rounded-lg px-4 py-3 text-[13px] text-[#32363a] space-y-1.5">{details}</div>
-          </div>
-        )}
+        {details && <div className="px-6 pb-2"><div className="bg-[#fafbfc] border border-[#e5e5e5] rounded-lg px-4 py-3 text-[13px] text-[#32363a] space-y-1.5">{details}</div></div>}
         <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end gap-2 bg-[#fafbfc]">
           {secondaryLabel && <button onClick={onSecondary} className="h-10 px-5 text-[14px] font-semibold text-[#32363a] bg-white border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] hover:scale-[1.02] active:scale-[0.98] transition-all">{secondaryLabel}</button>}
           <button onClick={onPrimary} className="h-10 px-5 text-[14px] font-semibold text-white rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md" style={{ background: palette.ring }}>{primaryLabel || 'OK'}</button>
@@ -282,24 +269,26 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
 // ═══════════════════════════════════════════════════════════════
 // MOBILE ITEM CARD
 // ═══════════════════════════════════════════════════════════════
-function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pdirRefs }) {
+function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirRefs, originalQty }) {
   const [expanded, setExpanded] = useState(false)
+  const isZeroQty = originalQty === 0
   const batchCount = item.batches?.length || 0
   const batchSum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
   const target = parseFloat(item.avlAsnQty || 0)
   const batchBalanced = batchCount > 0 && Math.abs(batchSum - target) < 0.0001
 
   return (
-    <div className={`rounded-xl border mb-3 overflow-hidden transition-colors ${isSelected ? 'bg-[#ebf5ff] border-[#0a6ed1]' : 'bg-white border-[#e5e5e5]'}`}>
+    <div className={`rounded-xl border mb-3 overflow-hidden transition-colors ${isZeroQty ? 'bg-[#fafbfc] border-[#e5e5e5] opacity-60' : isSelected ? 'bg-[#ebf5ff] border-[#0a6ed1]' : 'bg-white border-[#e5e5e5]'}`}>
       <div className="flex items-center gap-3 px-4 py-3">
-        <input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#0a6ed1] w-4 h-4 flex-shrink-0" />
+        <input type="checkbox" checked={isSelected} onChange={isZeroQty ? undefined : onToggle} disabled={isZeroQty} className="accent-[#0a6ed1] w-4 h-4 flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-40" />
         <div className="flex-1 min-w-0">
           <div className="text-[#0a6ed1] font-semibold text-[13px]">{item.materialNumber}</div>
           <div className="text-[#6a6d70] text-[12px] truncate">{item.materialName}</div>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <span className="px-2 py-0.5 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[11px] font-bold">Item {item.itemNo}</span>
-          <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">{item.storageLocation}</span>
+          {item.schLine && <span className="px-2 py-0.5 bg-[#e8f5ec] text-[#107e3e] rounded text-[11px] font-bold">Sch {item.schLine}</span>}
+          {isZeroQty && <span className="px-2 py-0.5 bg-[#fce8e6] text-[#cc1c14] rounded text-[11px] font-semibold">No qty</span>}
         </div>
         <button onClick={() => setExpanded(e => !e)} className="text-[#6a6d70] flex-shrink-0 p-1" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6" /></svg>
@@ -314,7 +303,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
         ].map((s, i) => (
           <div key={i} className={`flex-1 py-2 ${i < 2 ? 'border-r border-[#f0f0f0]' : ''}`}>
             <div className="text-[10px] text-[#9ca3af] font-semibold uppercase tracking-wide">{s.label}</div>
-            <div className="text-[12px] text-[#32363a] font-bold mt-0.5">{s.value}</div>
+            <div className={`text-[12px] font-bold mt-0.5 ${i === 0 && isZeroQty ? 'text-[#cc1c14]' : 'text-[#32363a]'}`}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -322,8 +311,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
       {expanded && (
         <div className="border-t border-[#f0f0f0] bg-[#fafbfc] px-4 py-4">
           <button
-            onClick={() => onSplitBatch(item)}
-            className="w-full flex items-center justify-between gap-2 mb-4 px-3 h-10 text-[13px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg hover:bg-[#d9ecff] hover:scale-[1.01] active:scale-[0.99] transition-all"
+            onClick={() => onSplitBatch(item)} disabled={isZeroQty}
+            className={`w-full flex items-center justify-between gap-2 mb-4 px-3 h-10 text-[13px] font-semibold rounded-lg border transition-all ${isZeroQty ? 'opacity-40 cursor-not-allowed text-[#6a6d70] bg-[#f5f5f5] border-[#d9d9d9]' : 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1] hover:bg-[#d9ecff] hover:scale-[1.01] active:scale-[0.99]'}`}
           >
             <span className="flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v12M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9c0 6-12 0-12 12" /></svg>
@@ -336,12 +325,13 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
             )}
           </button>
 
+
           <div className="grid grid-cols-2 gap-2 mb-4">
             {[
               { label: 'Sch. Line', value: item.schLine },
               { label: 'Total Qty', value: `${item.totalQty} ${item.totalUnit}` },
               { label: 'Conf. Qty', value: `${item.confQty} ${item.confUnit}` },
-              { label: 'Delivered', value: `${item.deliveredQty} ${item.deliveredUnit}` },
+              { label: 'Delivered Qty', value: `${item.deliveredQty} ${item.deliveredUnit}` },
               { label: 'ASN Created', value: item.asnCreated },
               { label: 'SPQ', value: item.spq },
             ].map((d, i) => (
@@ -354,14 +344,12 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
 
           <div className="mb-3">
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">Avl. ASN Qty</label>
-            <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+            <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} disabled={isZeroQty} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all disabled:bg-[#f5f5f5] disabled:cursor-not-allowed" />
           </div>
           <div className="mb-3">
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">FG Stock</label>
-            <input
-              type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} placeholder="0"
-              className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all ${item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`}
-            />
+            <input type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} onWheel={e => e.target.blur()} placeholder="0"
+              className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all ${item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`} />
             {item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) && (
               <p className="text-[11px] text-[#cc1c14] font-semibold mt-1">Must be greater than {item.avlAsnQty}</p>
             )}
@@ -374,7 +362,6 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">Material Expiry</label>
             <input type="date" value={item.materialExpiry} onChange={e => onUpdate('materialExpiry', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
           </div>
-
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Type</label>
@@ -391,38 +378,19 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
               <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Type of Packaging</label>
-              <select value={item.packagingType} onChange={e => onUpdate('packagingType', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
-                <option value="">Select</option>
-                <option value="Box">Box</option>
-                <option value="Bag">Bag</option>
-                <option value="Drum">Drum</option>
-                <option value="Pallet">Pallet</option>
-                <option value="Container">Container</option>
-                <option value="Crate">Crate</option>
-                <option value="Bundle">Bundle</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Total Qty / Packaging</label>
-              <input type="text" value={item.qtyPerPackaging} onChange={e => onUpdate('qtyPerPackaging', e.target.value)} placeholder="0" className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
-            </div>
-          </div>
-
+          
           <div className="mb-3">
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">PDIR No.</label>
             <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
               <option value="">Select</option>
-              {pdirRefs.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+              {(pdirRefs || []).map(p => (
+                <option key={p.value ?? p} value={p.value ?? p}>{p.label ?? p}</option>
+              ))}
             </select>
           </div>
-
           <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 border border-[#e5e5e5]">
             <span className="text-[13px] font-semibold text-[#374151]">Tax Mismatch</span>
-            <TaxMismatchToggle value={item.taxMismatch} onChange={val => onUpdate('taxMismatch', val)} />
+            <TaxMismatchToggle value={item.taxMismatch} onChange={val => onUpdate('taxMismatch', val)} disabled={isZeroQty} />
           </div>
         </div>
       )}
@@ -433,7 +401,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pd
 // ═══════════════════════════════════════════════════════════════
 // DESKTOP ITEM CARD
 // ═══════════════════════════════════════════════════════════════
-function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pdirRefs }) {
+function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, packagingTypes, pdirRefs, originalQty }) {
+  const isZeroQty = originalQty === 0
   const bc = item.batches?.length || 0
   const bsum = (item.batches || []).reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
   const balanced = bc > 0 && Math.abs(bsum - parseFloat(item.avlAsnQty || 0)) < 0.0001
@@ -442,17 +411,17 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
   const selectCls = "h-8 px-1.5 text-[12px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] transition-all w-full"
 
   return (
-    <div className={`rounded-xl border transition-all mb-3 overflow-hidden ${isSelected ? 'border-[#0a6ed1] bg-[#f5f9ff]' : 'border-[#e5e5e5] bg-white hover:border-[#c5d8f0]'}`}>
-      <div className={`flex items-center gap-3 px-4 py-3 border-b ${isSelected ? 'border-[#cce0f5] bg-[#ebf5ff]' : 'border-[#f0f0f0] bg-[#fafbfc]'}`}>
-        <input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#0a6ed1] w-4 h-4 flex-shrink-0 cursor-pointer" />
+    <div className={`rounded-xl border transition-all mb-3 overflow-hidden ${isZeroQty ? 'border-[#e5e5e5] bg-[#fafbfc] opacity-60' : isSelected ? 'border-[#0a6ed1] bg-[#f5f9ff]' : 'border-[#e5e5e5] bg-white hover:border-[#c5d8f0]'}`}>
+      <div className={`flex items-center gap-3 px-4 py-3 border-b ${isZeroQty ? 'border-[#f0f0f0] bg-[#fafbfc]' : isSelected ? 'border-[#cce0f5] bg-[#ebf5ff]' : 'border-[#f0f0f0] bg-[#fafbfc]'}`}>
+        <input type="checkbox" checked={isSelected} onChange={isZeroQty ? undefined : onToggle} disabled={isZeroQty} className="accent-[#0a6ed1] w-4 h-4 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40" title={isZeroQty ? 'No deliverable qty — cannot include in ASN' : undefined} />
         <span className="flex-shrink-0 px-2.5 py-1 bg-[#0a6ed1] text-white rounded-md text-[11px] font-bold tracking-wide">Item {item.itemNo}</span>
+        {item.schLine && <span className="flex-shrink-0 px-2 py-1 bg-[#e8f5ec] text-[#107e3e] rounded text-[11px] font-bold">Sch {item.schLine}</span>}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <span className="text-[13px] font-bold text-[#0a6ed1] flex-shrink-0">{item.materialNumber}</span>
           <span className="text-[#6a6d70] text-[12px] truncate">{item.materialName}</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">{item.storageLocation}</span>
-          <span className="text-[11px] text-[#6a6d70]">Sch. <strong className="text-[#0a6ed1]">{item.schLine}</strong></span>
+          {isZeroQty && <span className="px-2 py-0.5 bg-[#fce8e6] text-[#cc1c14] rounded text-[11px] font-semibold">No qty available</span>}
           <span className="text-[11px] text-[#6a6d70]">Ship: <strong className="text-[#32363a]">{item.shipmentDate}</strong></span>
           <span className="text-[11px] text-[#6a6d70]">SPQ: <strong className="text-[#32363a]">{item.spq}</strong></span>
         </div>
@@ -466,33 +435,31 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
           <Field label="Delivered Qty"><ReadonlyVal value={`${item.deliveredQty} ${item.deliveredUnit}`} /></Field>
           <Field label="ASN Created"><ReadonlyVal value={item.asnCreated} /></Field>
           <Field label="Avl. ASN Qty">
-            <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} className={inputCls + ' font-semibold text-[#0a6ed1]'} />
+            <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} disabled={isZeroQty} className={inputCls + ' font-semibold text-[#0a6ed1] disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
           </Field>
           <Field label="FG Stock">
-            <input
-              type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} placeholder="0"
-              className={inputCls + (item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) ? ' border-[#cc1c14] ring-1 ring-[#cc1c14]/30' : '')}
-            />
+            <input type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} onWheel={e => e.target.blur()} placeholder="0" disabled={isZeroQty}
+              className={inputCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed' + (item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) ? ' border-[#cc1c14] ring-1 ring-[#cc1c14]/30' : '')} />
             {item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) && (
               <span className="text-[10px] text-[#cc1c14] font-semibold leading-tight">Must be &gt; {item.avlAsnQty}</span>
             )}
           </Field>
           <Field label="Net Price"><ReadonlyVal value={item.netPrice} /></Field>
           <Field label="Supplier Net Price">
-            <input type="text" value={item.supplierNetPrice} onChange={e => onUpdate('supplierNetPrice', e.target.value)} className={inputCls} />
+            <input type="text" value={item.supplierNetPrice} onChange={e => onUpdate('supplierNetPrice', e.target.value)} disabled={isZeroQty} className={inputCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
           </Field>
         </div>
 
         {/* ROW 2 */}
         <div className="grid grid-cols-7 gap-3">
           <Field label="Material Expiry">
-            <input type="date" value={item.materialExpiry} onChange={e => onUpdate('materialExpiry', e.target.value)} className={inputCls} />
+            <input type="date" value={item.materialExpiry} onChange={e => onUpdate('materialExpiry', e.target.value)} disabled={isZeroQty} className={inputCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
           </Field>
           <Field label="Tax Mismatch">
-            <TaxMismatchToggle value={item.taxMismatch} onChange={val => onUpdate('taxMismatch', val)} compact />
+            <TaxMismatchToggle value={item.taxMismatch} onChange={val => onUpdate('taxMismatch', val)} compact disabled={isZeroQty} />
           </Field>
-          <Field label="Packing Material Type">
-            <select value={item.packingMaterialType} onChange={e => onUpdate('packingMaterialType', e.target.value)} className={selectCls}>
+          <Field label="Type of Packaging">
+            <select value={item.packingMaterialType} onChange={e => onUpdate('packingMaterialType', e.target.value)} disabled={isZeroQty} className={selectCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'}>
               <option value="">Select</option>
               <option value="Trolley">Trolley</option>
               <option value="Pallet">Pallet</option>
@@ -500,46 +467,48 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
               <option value="Crate">Crate</option>
             </select>
           </Field>
-          <Field label="Packing Material Qty">
-            <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} className={inputCls + ' text-center'} />
+          <Field label="Packing Material Qty" className="max-w-[120px]">
+            <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} placeholder="0" disabled={isZeroQty} className={inputCls + ' text-center disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
           </Field>
-          <Field label="Type of Packaging">
-            <select value={item.packagingType} onChange={e => onUpdate('packagingType', e.target.value)} className={selectCls}>
-              <option value="">Select</option>
-              <option value="Box">Box</option>
-              <option value="Bag">Bag</option>
-              <option value="Drum">Drum</option>
-              <option value="Pallet">Pallet</option>
-              <option value="Container">Container</option>
-              <option value="Crate">Crate</option>
-              <option value="Bundle">Bundle</option>
-            </select>
-          </Field>
-          <Field label="Total Qty / Packaging">
-            <input type="text" value={item.qtyPerPackaging} onChange={e => onUpdate('qtyPerPackaging', e.target.value)} placeholder="0" className={inputCls + ' text-center'} />
-          </Field>
+        
           <Field label="PDIR No.">
-            <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} className={selectCls}>
+            <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} disabled={isZeroQty} className={selectCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'}>
               <option value="">Select</option>
-              {pdirRefs.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+              {(pdirRefs || []).map(p => (
+                <option key={p.value ?? p} value={p.value ?? p}>{p.label ?? p}</option>
+              ))}
             </select>
           </Field>
         </div>
 
         {/* ROW 3 — Split Batch */}
         <div className="flex items-center gap-3 pt-1 border-t border-[#f0f0f0]">
-          <button
-            onClick={() => onSplitBatch(item)}
-            className={`flex items-center gap-2 px-4 h-8 text-[12px] font-semibold rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98] ${bc > 0 ? balanced ? 'text-[#107e3e] bg-[#e8f5ec] border-[#107e3e]' : 'text-[#b45309] bg-[#fef7e6] border-[#b45309]' : 'text-white bg-[#0a6ed1] border-[#0a6ed1] hover:bg-[#085caf]'}`}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="18" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="18" cy="18" r="3" /><path d="M6 15V6M6 6h12M18 9v6" /></svg>
-            Split Batch{bc > 0 ? ` (${bc})` : ' +'}
-          </button>
-          {bc > 0 && (
-            <span className={`text-[12px] font-semibold ${balanced ? 'text-[#107e3e]' : 'text-[#b45309]'}`}>
-              {balanced ? `✓ ${bc} batch${bc > 1 ? 'es' : ''} — balanced` : `⚠ ${bc} batch${bc > 1 ? 'es' : ''} — quantities unbalanced`}
-            </span>
-          )}
+          {(() => {
+            const maxBatches = parseInt(item.packingMaterialQty, 10)
+            const batchDisabled = isZeroQty || !item.packingMaterialQty || isNaN(maxBatches) || maxBatches < 1
+            const batchRequired = !batchDisabled && bc === 0 
+            return (
+              <>
+                <button
+                  onClick={() => !batchDisabled && onSplitBatch(item)} disabled={batchDisabled}
+                  className={`flex items-center gap-2 px-4 h-8 text-[12px] font-semibold rounded-lg border transition-all ${batchDisabled ? 'opacity-40 cursor-not-allowed text-[#6a6d70] bg-[#f5f5f5] border-[#d9d9d9]' : bc > 0 ? balanced ? 'text-[#107e3e] bg-[#e8f5ec] border-[#107e3e] hover:scale-[1.02] active:scale-[0.98]' : 'text-[#b45309] bg-[#fef7e6] border-[#b45309] hover:scale-[1.02] active:scale-[0.98]' : 'text-white bg-[#0a6ed1] border-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'}`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v12M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9c0 6-12 0-12 12" /></svg>
+                  Split Batch{bc > 0 ? ` (${bc}/${maxBatches || '?'})` : ' +'}
+                </button>
+                {!isZeroQty && batchDisabled && <span className="text-[11px] text-[#9ca3af]">Enter Packing Material Qty to enable split</span>}
+                {isZeroQty && <span className="text-[11px] text-[#9ca3af]">No deliverable qty — row excluded from ASN</span>}
+                {batchRequired && isSelected && (
+                  <span className="text-[11px] font-semibold text-[#cc1c14]">⚠ Split batch required before creating ASN</span>
+                )}
+                {!batchDisabled && bc > 0 && (
+                  <span className={`text-[12px] font-semibold ${balanced ? 'text-[#107e3e]' : 'text-[#b45309]'}`}>
+                    {balanced ? `✓ ${bc} batch${bc > 1 ? 'es' : ''} — balanced` : `⚠ ${bc} batch${bc > 1 ? 'es' : ''} — quantities unbalanced`}
+                  </span>
+                )}
+              </>
+            )
+          })()}
         </div>
       </div>
     </div>
@@ -555,17 +524,13 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
   const handleSelect = (e) => {
     const files = Array.from(e.target.files)
     for (const file of files) {
-      if (!isAllowedFile(file)) {
-        onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`)
-        continue
-      }
-      // Store the real File object in _file so we can upload it after ASN creation
+      if (!isAllowedFile(file)) { onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`); continue }
       onUpload({
         id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
         name: file.name,
         size: file.size,
         kind,
-        _file: file, // ← raw File reference kept for real upload later
+        _file: file,
       })
     }
     e.target.value = ''
@@ -575,10 +540,7 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
     e.preventDefault()
     const files = Array.from(e.dataTransfer.files)
     for (const file of files) {
-      if (!isAllowedFile(file)) {
-        onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`)
-        continue
-      }
+      if (!isAllowedFile(file)) { onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`); continue }
       onUpload({
         id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
         name: file.name,
@@ -593,9 +555,7 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
     <div className="bg-white border border-[#e5e5e5] rounded-xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
         <div>
-          <h3 className="text-[18px] font-bold text-[#32363a]">
-            {kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})
-          </h3>
+          <h3 className="text-[18px] font-bold text-[#32363a]">{kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})</h3>
           <p className="text-[12px] text-[#6a6d70] mt-0.5">Files will be uploaded to SAP after ASN is created</p>
         </div>
         <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-4 h-9 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98] transition-all">
@@ -604,7 +564,6 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
         </button>
         <input ref={inputRef} type="file" multiple accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleSelect} className="hidden" />
       </div>
-
       {items.length === 0 ? (
         <div onDragOver={e => e.preventDefault()} onDrop={handleDrop} className="py-20 flex flex-col items-center text-center">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" className="mb-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
@@ -645,7 +604,6 @@ export default function CreateASN({ agreement: propAgreement }) {
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
 
-
   const agreementFromState = location.state?.agreement || propAgreement
   const poNo = agreementFromState?.poNo || agreementFromState?.id || ''
 
@@ -660,17 +618,18 @@ export default function CreateASN({ agreement: propAgreement }) {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [materialSearch, setMaterialSearch] = useState('')
-  const [storageSearch, setStorageSearch] = useState('')
+  // const [storageSearch, setStorageSearch] = useState('')
 
   const [header, setHeader] = useState(agreementFromState || null)
   const [items, setItems] = useState([])
+  const [originalQties, setOriginalQties] = useState({})
   const [pdirRefs, setPdirRefs] = useState(location.state?.pdirRefs || [])
+  const [packagingTypes] = useState(['Box', 'Bag', 'Drum', 'Pallet', 'Container', 'Crate', 'Bundle'])
   const [selectedItemNos, setSelectedItemNos] = useState([])
 
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(null)
 
-  // Attachments — each object has { id, name, size, kind, _file }
   const [generalAttachments, setGeneralAttachments] = useState([])
   const [pdirAttachments, setPdirAttachments] = useState([])
 
@@ -678,6 +637,7 @@ export default function CreateASN({ agreement: propAgreement }) {
   const [modal, setModal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // ─── INITIAL LOAD ──────────────────────────────────────────
   useEffect(() => {
     if (userLoading) return
     if (!loginId || !loginType) return
@@ -690,7 +650,23 @@ export default function CreateASN({ agreement: propAgreement }) {
       .then(({ header: fetchedHeader, items: fetchedItems, pdirRefs: fetchedPdir }) => {
         if (cancelled) return
         setHeader(fetchedHeader)
-        setItems(fetchedItems)
+        setItems(prev => {
+          const prevMap = Object.fromEntries(prev.map(i => [i.itemNo, i]))
+          return fetchedItems.map(freshItem => {
+            const existing = prevMap[freshItem.itemNo]
+            if (!existing) return freshItem
+            const preserved = {}
+            USER_EDITABLE_FIELDS.forEach(f => { preserved[f] = existing[f] })
+            return { ...freshItem, ...preserved }
+          })
+        })
+        setOriginalQties(prev => {
+          const next = { ...prev }
+          fetchedItems.forEach(i => {
+            if (!(i.itemNo in next)) next[i.itemNo] = parseFloat(i.avlAsnQty || 0)
+          })
+          return next
+        })
         if (!location.state?.pdirRefs || location.state.pdirRefs.length === 0) setPdirRefs(fetchedPdir)
       })
       .catch(err => { if (!cancelled) setLoadError(err.message) })
@@ -698,26 +674,72 @@ export default function CreateASN({ agreement: propAgreement }) {
     return () => { cancelled = true }
   }, [userLoading, loginId, loginType, poNo])
 
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
-      const storageTerms = storageSearch.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
-      const matchStorage = storageTerms.length === 0 || storageTerms.some(t => (item.storageLocation || '').toLowerCase().includes(t))
-      const matchMaterial = !materialSearch.trim() || item.materialNumber.toLowerCase().includes(materialSearch.toLowerCase()) || item.materialName.toLowerCase().includes(materialSearch.toLowerCase())
-      const matchFrom = !fromDate || item.shipmentDateIso >= fromDate
-      const matchTo = !toDate || item.shipmentDateIso <= toDate
-      return matchStorage && matchMaterial && matchFrom && matchTo
-    })
-  }, [items, storageSearch, materialSearch, fromDate, toDate])
+  // ─── SELECTABLE ITEMS (non-zero qty only) ──────────────────
+  const selectableItems = useMemo(() =>
+    items.filter(i => (originalQties[i.itemNo] ?? parseFloat(i.avlAsnQty || 0)) > 0),
+    [items, originalQties]
+  )
 
-  const allSelected = filteredItems.length > 0 && filteredItems.every(i => selectedItemNos.includes(i.itemNo))
+  // ─── FILTERED ITEMS (client-side, zero-qty already shown but grayed) ───
+  const filteredItems = useMemo(() => {
+    const q = materialSearch.trim().toUpperCase()
+    return items.filter(item => {
+      const matchMaterial = !q || item.materialNumber.toUpperCase().includes(q) || item.materialName.toUpperCase().includes(q)
+      const matchFrom = !fromDate || (item.shipmentDateIso || '') >= fromDate
+      const matchTo = !toDate || (item.shipmentDateIso || '') <= toDate
+      // const storageTerms = storageSearch.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+      // const matchStorage = storageTerms.length === 0 || storageTerms.some(t => (item.storageLocation || '').toLowerCase().includes(t))
+      return matchMaterial && matchFrom && matchTo
+    })
+  }, [items, materialSearch, fromDate, toDate])
+
+  const allSelected = selectableItems.length > 0 && selectableItems.every(i => selectedItemNos.includes(i.itemNo))
   const someSelected = selectedItemNos.length > 0 && !allSelected
 
-  const toggleAll = () => { if (allSelected) setSelectedItemNos([]); else setSelectedItemNos(filteredItems.map(i => i.itemNo)) }
-  const toggleOne = (itemNo) => { if (selectedItemNos.includes(itemNo)) setSelectedItemNos(selectedItemNos.filter(n => n !== itemNo)); else setSelectedItemNos([...selectedItemNos, itemNo]) }
+  const toggleAll = () => {
+    if (allSelected) setSelectedItemNos([])
+    else setSelectedItemNos(selectableItems.map(i => i.itemNo))
+  }
+  const toggleOne = (itemNo) => {
+    const item = items.find(i => i.itemNo === itemNo)
+    if (!item || (originalQties[itemNo] ?? parseFloat(item.avlAsnQty || 0)) === 0) return
+    if (selectedItemNos.includes(itemNo)) setSelectedItemNos(selectedItemNos.filter(n => n !== itemNo))
+    else setSelectedItemNos([...selectedItemNos, itemNo])
+  }
   const updateItem = (itemNo, field, value) => setItems(items.map(i => i.itemNo === itemNo ? { ...i, [field]: value } : i))
   const handleSplitBatchSave = (itemNo, batches) => setItems(items.map(i => i.itemNo === itemNo ? { ...i, batches } : i))
-  const handleGo = () => {}
-  const handleClear = () => { setFromDate(''); setToDate(''); setMaterialSearch(''); setStorageSearch('') }
+
+  const handleGo = async () => {
+    if (!poNo) return
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const { header: fetchedHeader, items: fetchedItems, pdirRefs: fetchedPdir } = await createAsnService.getCreateAsnPageData(poNo)
+      setHeader(fetchedHeader)
+      setItems(prev => {
+        const prevMap = Object.fromEntries(prev.map(i => [i.itemNo, i]))
+        return fetchedItems.map(freshItem => {
+          const existing = prevMap[freshItem.itemNo]
+          if (!existing) return freshItem
+          const preserved = {}
+          USER_EDITABLE_FIELDS.forEach(f => { preserved[f] = existing[f] })
+          return { ...freshItem, ...preserved }
+        })
+      })
+      setOriginalQties(prev => {
+        const next = { ...prev }
+        fetchedItems.forEach(i => {
+          if (!(i.itemNo in next)) next[i.itemNo] = parseFloat(i.avlAsnQty || 0)
+        })
+        return next
+      })
+      if (fetchedPdir?.length) setPdirRefs(fetchedPdir)
+      setSelectedItemNos(prev => prev.filter(no => fetchedItems.some(i => i.itemNo === no)))
+    } catch (err) { setLoadError(err.message) }
+    finally { setLoading(false) }
+  }
+
+  const handleClear = () => { setFromDate(''); setToDate(''); setMaterialSearch('') }
 
   const calcInvoiceValue = () =>
     items.filter(i => selectedItemNos.includes(i.itemNo))
@@ -731,17 +753,31 @@ export default function CreateASN({ agreement: propAgreement }) {
     if (generalAttachments.length === 0) errors.push('At least one General Attachment is required.')
     const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
     selectedItems.forEach(it => {
-      if (it.batches && it.batches.length > 0) {
-        const sum = it.batches.reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
-        const target = parseFloat(it.avlAsnQty || 0)
-        if (Math.abs(sum - target) > 0.0001) errors.push(`Item ${it.itemNo} (${it.materialNumber}): batch quantity sum (${sum}) does not match Avl. ASN Qty (${target}).`)
-        const bad = it.batches.find(b => !b.batchCode || !b.quantity)
-        if (bad) errors.push(`Item ${it.itemNo}: incomplete batch row(s). Each row needs Batch/Heat Code and Quantity.`)
+      const avl = parseFloat(it.avlAsnQty || 0)
+      if (avl === 0) { errors.push(`Item ${it.itemNo} (${it.materialNumber}): Available ASN Qty is 0.`); return }
+      const maxBatches = parseInt(it.packingMaterialQty, 10)
+      if (!isNaN(maxBatches) && maxBatches > 0 && (!it.batches || it.batches.length === 0)) {
+        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Split Batch is required — please add batch rows before creating.`)
       }
       const fgVal = parseFloat(it.fgStock)
-      const asnVal = parseFloat(it.avlAsnQty || 0)
       if (it.fgStock === '' || isNaN(fgVal)) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock is required.`)
-      else if (fgVal <= asnVal) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${asnVal}).`)
+      else if (fgVal <= avl) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${avl}).`)
+      
+      const batchExpected = !isNaN(maxBatches) && maxBatches > 0
+
+      // Split batch mandatory if packing qty is set
+      if (batchExpected && (!it.batches || it.batches.length === 0)) {
+        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Split Batch is required — open the item and add batch rows.`)
+      }
+
+      // If batches exist, validate them
+      if (it.batches && it.batches.length > 0) {
+        const sum = it.batches.reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
+        const balanced = Math.abs(sum - avl) < 0.0001
+        if (!balanced) errors.push(`Item ${it.itemNo} (${it.materialNumber}): batch quantities (${sum}) do not balance with Avl. ASN Qty (${avl}). Please fix in Split Batch.`)
+        const bad = it.batches.find(b => !b.batchCode || !b.quantity)
+        if (bad) errors.push(`Item ${it.itemNo} (${it.materialNumber}): incomplete batch row — every row needs a Batch/Heat Code and a Quantity.`)
+      }
     })
     return errors
   }
@@ -753,7 +789,7 @@ export default function CreateASN({ agreement: propAgreement }) {
       return
     }
     const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
-    const totalAttachments = generalAttachments.length + pdirAttachments.length
+    const totalFiles = generalAttachments.length + pdirAttachments.length
     setModal({
       kind: 'confirm', title: 'Create ASN?', message: 'Please review the details below before submitting.',
       details: (
@@ -764,9 +800,9 @@ export default function CreateASN({ agreement: propAgreement }) {
           <div className="flex justify-between"><span className="text-[#6a6d70]">Items selected</span><strong>{selectedItems.length}</strong></div>
           <div className="flex justify-between"><span className="text-[#6a6d70]">PDIR attachments</span><strong>{pdirAttachments.length}</strong></div>
           <div className="flex justify-between"><span className="text-[#6a6d70]">General attachments</span><strong>{generalAttachments.length}</strong></div>
-          {totalAttachments > 0 && (
+          {totalFiles > 0 && (
             <div className="pt-1 border-t border-[#e5e5e5] text-[#6a6d70] text-[12px]">
-              {totalAttachments} file{totalAttachments > 1 ? 's' : ''} will be uploaded to SAP after ASN creation.
+              {totalFiles} file{totalFiles > 1 ? 's' : ''} will be uploaded to SAP after ASN creation.
             </div>
           )}
         </div>
@@ -775,14 +811,13 @@ export default function CreateASN({ agreement: propAgreement }) {
     })
   }
 
-  // ─── CORE SUBMIT: create ASN then upload attachments ───────────
+  // ─── CORE SUBMIT ───────────────────────────────────────────
   const doCreate = async () => {
     setSubmitting(true)
     setModal(null)
     try {
       const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
 
-      // Step 1 — Create the ASN header + items
       const result = await postCreateAsn({
         poNo,
         invoice: { number: invoiceNumber, date: invoiceDate, amount: calcInvoiceValue(), totalPacking },
@@ -793,22 +828,13 @@ export default function CreateASN({ agreement: propAgreement }) {
       const asnNum = result.AsnNum
       const fisYear = result.FisYear || String(new Date().getFullYear())
 
-      // Step 2 — Upload attachments now that we have the real AsnNum
-      const totalFiles = generalAttachments.length + pdirAttachments.length
       let uploadResult = { uploaded: 0, failed: [] }
-
+      const totalFiles = generalAttachments.length + pdirAttachments.length
       if (totalFiles > 0) {
-        uploadResult = await uploadAllAttachments({
-          asnNum,
-          fisYear,
-          generalAttachments,
-          pdirAttachments,
-        })
+        uploadResult = await uploadAllAttachments({ asnNum, fisYear, generalAttachments, pdirAttachments })
       }
 
-      // Step 3 — Show result
       const someUploadsFailed = uploadResult.failed.length > 0
-
       setModal({
         kind: someUploadsFailed ? 'warning' : 'success',
         title: someUploadsFailed ? 'ASN created — some attachments failed' : 'ASN created successfully',
@@ -869,11 +895,10 @@ export default function CreateASN({ agreement: propAgreement }) {
             disabled={submitting || loading}
             className="flex items-center gap-2 px-5 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? (
-              <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating…</>
-            ) : (
-              <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>Create</>
-            )}
+            {submitting
+              ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating…</>
+              : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>Create</>
+            }
           </button>
         </div>
 
@@ -932,15 +957,11 @@ export default function CreateASN({ agreement: propAgreement }) {
                     </div>
                     <div>
                       <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Invoice Amount (auto)</label>
-                      <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#32363a] text-[13px] font-semibold">
-                        ₹ {calcInvoiceValue()}
-                      </div>
+                      <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#32363a] text-[13px] font-semibold">₹ {calcInvoiceValue()}</div>
                     </div>
                     <div>
                       <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Invoice Value (Vendor)</label>
-                      <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#6a6d70] text-[13px] italic">
-                        Auto-calculated: ₹ {calcInvoiceValue()}
-                      </div>
+                      <div className="h-10 rounded-lg border border-dashed border-[#cfd8e3] bg-[#f8fafc] flex items-center px-3 text-[#6a6d70] text-[13px] italic">₹ {calcInvoiceValue()}</div>
                     </div>
                     <div>
                       <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">Total Packing</label>
@@ -956,7 +977,7 @@ export default function CreateASN({ agreement: propAgreement }) {
                   <div className="px-6 py-4 border-b border-[#e5e5e5] flex items-center justify-between">
                     <div>
                       <h3 className="text-[18px] font-bold text-[#32363a]">Selected Materials</h3>
-                      <p className="text-[13px] text-[#6a6d70] mt-0.5">{selectedItemNos.length} of {items.length} items selected</p>
+                      <p className="text-[13px] text-[#6a6d70] mt-0.5">{selectedItemNos.length} of {selectableItems.length} selectable items chosen</p>
                     </div>
                     <span className="px-3 py-1 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[12px] font-semibold">{selectedItemNos.length} selected</span>
                   </div>
@@ -964,10 +985,10 @@ export default function CreateASN({ agreement: propAgreement }) {
                     <table className="w-full text-[13px] min-w-[800px]">
                       <thead>
                         <tr className="bg-[#fafbfc] border-b border-[#e5e5e5] text-[#6a6d70]">
+                          <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Item</th>
                           <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Material</th>
-                          <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Description</th>
                           <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Net Price</th>
-                          <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Qty</th>
+                          <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Avl. ASN Qty</th>
                           <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">SPQ</th>
                           <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Batches</th>
                           <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Value</th>
@@ -983,16 +1004,14 @@ export default function CreateASN({ agreement: propAgreement }) {
                           const balanced = bc > 0 && Math.abs(bsum - parseFloat(item.avlAsnQty || 0)) < 0.0001
                           return (
                             <tr key={item.itemNo} className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc]">
-                              <td className="py-3 px-4 text-[#0a6ed1] font-semibold">{item.materialNumber}</td>
-                              <td className="py-3 px-4 text-[#32363a]">{item.materialName}</td>
+                              <td className="py-3 px-4 font-semibold text-[#0a6ed1]">{item.itemNo}{item.schLine ? ` / ${item.schLine}` : ''}</td>
+                              <td className="py-3 px-4"><div className="text-[#0a6ed1] font-semibold">{item.materialNumber}</div><div className="text-[#6a6d70] text-[12px]">{item.materialName}</div></td>
                               <td className="py-3 px-4 text-[#32363a]">{item.netPrice}</td>
                               <td className="py-3 px-4 text-[#32363a]">{item.avlAsnQty} {item.totalUnit}</td>
                               <td className="py-3 px-4 text-[#32363a]">{item.spq}</td>
                               <td className="py-3 px-4">
                                 {bc === 0 ? <span className="text-[12px] text-[#9ca3af]">—</span> : (
-                                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${balanced ? 'bg-[#e8f5ec] text-[#107e3e]' : 'bg-[#fef7e6] text-[#b45309]'}`}>
-                                    {bc} · {balanced ? 'balanced' : 'unbalanced'}
-                                  </span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${balanced ? 'bg-[#e8f5ec] text-[#107e3e]' : 'bg-[#fef7e6] text-[#b45309]'}`}>{bc} · {balanced ? 'balanced' : 'unbalanced'}</span>
                                 )}
                               </td>
                               <td className="py-3 px-4 text-[#32363a] font-semibold">{(parseFloat(item.avlAsnQty || 0) * parseFloat(item.supplierNetPrice || 0)).toFixed(2)}</td>
@@ -1007,53 +1026,33 @@ export default function CreateASN({ agreement: propAgreement }) {
             </div>
 
             {/* ═══════════════════════════════════════════════════════
-                TAB BAR — sits between fixed section and tab content
+                TAB BAR
             ═══════════════════════════════════════════════════════ */}
             <div className="bg-white border-t border-b border-[#e5e5e5] px-8 pt-4">
               <div className="flex items-center gap-1">
-                {/* Tab: Items */}
                 <button
                   onClick={() => setActiveTab('items')}
-                  className={`relative flex items-center gap-2 px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${
-                    activeTab === 'items'
-                      ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]'
-                      : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1] hover:bg-[#f5f9ff]'
-                  }`}
+                  className={`relative flex items-center gap-2 px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${activeTab === 'items' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1] hover:bg-[#f5f9ff]'}`}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M12 11v6M9 14h6" />
+                    <path d="M14 2v6h6M12 11v6M9 14h6" />
                   </svg>
                   Create ASN
                   {selectedItemNos.length > 0 && (
-                    <span className="ml-0.5 min-w-[18px] h-[18px] bg-[#0a6ed1] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                      {selectedItemNos.length}
-                    </span>
+                    <span className="ml-0.5 min-w-[18px] h-[18px] bg-[#0a6ed1] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">{selectedItemNos.length}</span>
                   )}
                 </button>
-
-                {/* Tab: Attachments */}
                 <button
                   onClick={() => setActiveTab('attachments')}
-                  className={`relative flex items-center gap-2 px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${
-                    activeTab === 'attachments'
-                      ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]'
-                      : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1] hover:bg-[#f5f9ff]'
-                  }`}
+                  className={`relative flex items-center gap-2 px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${activeTab === 'attachments' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1] hover:bg-[#f5f9ff]'}`}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.49" />
                   </svg>
                   Attachments
-                  {generalAttachments.length === 0 && (
-                    <span className="text-[#cc1c14] text-[16px] font-bold leading-none -mt-1">*</span>
-                  )}
-                  {totalAttachments > 0 && (
-                    <span className="ml-0.5 min-w-[18px] h-[18px] bg-[#0a6ed1] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                      {totalAttachments}
-                    </span>
-                  )}
+                  {generalAttachments.length === 0 && <span className="text-[#cc1c14] text-[16px] font-bold leading-none -mt-1">*</span>}
+                  {totalAttachments > 0 && <span className="ml-0.5 min-w-[18px] h-[18px] bg-[#0a6ed1] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">{totalAttachments}</span>}
                 </button>
               </div>
             </div>
@@ -1086,13 +1085,13 @@ export default function CreateASN({ agreement: propAgreement }) {
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-3 text-[#6a6d70]"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
                     </div>
                   </div>
-                  <div className="col-span-2 md:col-span-3">
+                  {/* <div className="col-span-2 md:col-span-3">
                     <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Enter Storage Location (comma-separated)</label>
                     <div className="relative">
                       <input type="text" value={storageSearch} onChange={e => setStorageSearch(e.target.value)} placeholder="e.g. RM01, RM02" className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-3 text-[#6a6d70]"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Items list */}
@@ -1114,7 +1113,9 @@ export default function CreateASN({ agreement: propAgreement }) {
                           onToggle={() => toggleOne(item.itemNo)}
                           onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
                           onSplitBatch={(it) => setSplitBatchItem(it)}
+                          packagingTypes={packagingTypes}
                           pdirRefs={pdirRefs}
+                          originalQty={originalQties[item.itemNo] ?? parseFloat(item.avlAsnQty || 0)}
                         />
                       ))}
                     </div>
@@ -1128,9 +1129,7 @@ export default function CreateASN({ agreement: propAgreement }) {
                           </label>
                           <span className="text-[13px] text-[#6a6d70]">{filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}</span>
                         </div>
-                        {selectedItemNos.length > 0 && (
-                          <span className="px-3 py-1 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[12px] font-semibold">{selectedItemNos.length} selected</span>
-                        )}
+                        {selectedItemNos.length > 0 && <span className="px-3 py-1 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[12px] font-semibold">{selectedItemNos.length} selected</span>}
                       </div>
                       {filteredItems.length === 0 && (
                         <div className="py-16 text-center text-[#6a6d70] text-[14px] border border-dashed border-[#d9d9d9] rounded-xl">No items available. Adjust filters and click Go.</div>
@@ -1142,7 +1141,9 @@ export default function CreateASN({ agreement: propAgreement }) {
                           onToggle={() => toggleOne(item.itemNo)}
                           onUpdate={(field, val) => updateItem(item.itemNo, field, val)}
                           onSplitBatch={(it) => setSplitBatchItem(it)}
+                          packagingTypes={packagingTypes}
                           pdirRefs={pdirRefs}
+                          originalQty={originalQties[item.itemNo] ?? parseFloat(item.avlAsnQty || 0)}
                         />
                       ))}
                     </div>
@@ -1153,41 +1154,24 @@ export default function CreateASN({ agreement: propAgreement }) {
               /* ─── ATTACHMENTS TAB ─── */
               <div className="anim-fade px-4 md:px-8 py-6">
                 <div className="flex items-center gap-2 mb-4 border-b border-[#e5e5e5]">
-                  <button
-                    onClick={() => setAttachmentsSubTab('general')}
-                    className={`relative flex items-center gap-1 px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${attachmentsSubTab === 'general' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1]'}`}
-                  >
+                  <button onClick={() => setAttachmentsSubTab('general')} className={`relative flex items-center gap-1 px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${attachmentsSubTab === 'general' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1]'}`}>
                     General Attachments
                     {generalAttachments.length === 0 && <span className="text-[#cc1c14] text-[16px] font-bold leading-none -mt-1">*</span>}
                     {generalAttachments.length > 0 && <span className="ml-1 px-1.5 py-0.5 bg-[#0a6ed1] text-white rounded-full text-[10px] font-bold">{generalAttachments.length}</span>}
                   </button>
-                  <button
-                    onClick={() => setAttachmentsSubTab('pdir')}
-                    className={`relative px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${attachmentsSubTab === 'pdir' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1]'}`}
-                  >
+                  <button onClick={() => setAttachmentsSubTab('pdir')} className={`relative px-5 h-11 text-[14px] font-semibold rounded-t-lg transition-all -mb-px border-b-2 ${attachmentsSubTab === 'pdir' ? 'text-[#0a6ed1] bg-[#ebf5ff] border-[#0a6ed1]' : 'text-[#6a6d70] bg-transparent border-transparent hover:text-[#0a6ed1]'}`}>
                     PDIR Attachment
                     {pdirAttachments.length > 0 && <span className="ml-2 px-1.5 py-0.5 bg-[#107e3e] text-white rounded-full text-[10px] font-bold">{pdirAttachments.length}</span>}
                   </button>
                 </div>
-
                 {attachmentsSubTab === 'general' ? (
-                  <AttachmentsPanel
-                    kind="general" items={generalAttachments}
-                    onUpload={(att, errMsg) => {
-                      if (errMsg) { setModal({ kind: 'error', title: 'Upload rejected', message: errMsg, primaryLabel: 'OK', onPrimary: () => setModal(null) }); return }
-                      setGeneralAttachments(prev => [...prev, att])
-                    }}
-                    onRemove={(id) => setGeneralAttachments(prev => prev.filter(a => a.id !== id))}
-                  />
+                  <AttachmentsPanel kind="general" items={generalAttachments}
+                    onUpload={(att, errMsg) => { if (errMsg) { setModal({ kind: 'error', title: 'Upload rejected', message: errMsg, primaryLabel: 'OK', onPrimary: () => setModal(null) }); return } setGeneralAttachments(prev => [...prev, att]) }}
+                    onRemove={(id) => setGeneralAttachments(prev => prev.filter(a => a.id !== id))} />
                 ) : (
-                  <AttachmentsPanel
-                    kind="pdir" items={pdirAttachments}
-                    onUpload={(att, errMsg) => {
-                      if (errMsg) { setModal({ kind: 'error', title: 'Upload rejected', message: errMsg, primaryLabel: 'OK', onPrimary: () => setModal(null) }); return }
-                      setPdirAttachments(prev => [...prev, att])
-                    }}
-                    onRemove={(id) => setPdirAttachments(prev => prev.filter(a => a.id !== id))}
-                  />
+                  <AttachmentsPanel kind="pdir" items={pdirAttachments}
+                    onUpload={(att, errMsg) => { if (errMsg) { setModal({ kind: 'error', title: 'Upload rejected', message: errMsg, primaryLabel: 'OK', onPrimary: () => setModal(null) }); return } setPdirAttachments(prev => [...prev, att]) }}
+                    onRemove={(id) => setPdirAttachments(prev => prev.filter(a => a.id !== id))} />
                 )}
               </div>
             )}

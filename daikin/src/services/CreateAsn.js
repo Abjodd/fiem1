@@ -124,7 +124,7 @@ export const createAsnService = {
     const d = json.d
     if (!d) throw new Error('No data returned for PO: ' + poNo)
     const header = mapHeader(d)
-    return { header, items: header.items }
+    return { header, items: header.items.filter(i => parseFloat(i.avlAsnQty || 0) > 0) }
   },
 
   /**

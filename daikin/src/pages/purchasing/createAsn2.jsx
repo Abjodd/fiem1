@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { createAsnApi, authConfig } from '../../services/CreateAsnSch.js'
+import { uploadAllAttachments } from '../../services/UploadAttachment.js'
 import { useUser } from '../../context/UserContext.jsx'
 
 // ═══════════════════════════════════════════════════════════════
@@ -48,7 +49,15 @@ function ReadonlyVal({ value, accent }) {
     <span className={`text-[13px] font-semibold truncate ${accent ? 'text-[#0a6ed1]' : 'text-[#32363a]'}`}>{value}</span>
   )
 }
-
+function getAvlAsnQtyError(item) {
+  const avl = parseFloat(item.avlAsnQty || 0)
+  const created = parseFloat(item.asnCreated || 0)
+  const total = parseFloat(item.totalQty || 0)
+  if (isNaN(avl) || isNaN(created) || isNaN(total)) return null
+  if (avl < 0) return 'Cannot be negative.'
+  if (created + avl > total) return `exceeds Total Qty (${total}).`
+  return null
+}
 // ═══════════════════════════════════════════════════════════════
 // TAX MISMATCH TOGGLE
 // ═══════════════════════════════════════════════════════════════
@@ -113,8 +122,8 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
     if (missing) { setError('Every batch row needs a Batch/Heat Code and a positive Quantity.'); return }
     if (!isMatch) {
       setError(isOver
-        ? `Sum of batch quantities (${total}) exceeds Avl. ASN Qty (${target}) by ${(total - target).toFixed(2)} ${item.totalUnit}.`
-        : `Sum of batch quantities (${total}) is less than Avl. ASN Qty (${target}). Short by ${remaining.toFixed(2)} ${item.totalUnit}.`)
+        ? `Sum of batch quantities (${total}) exceeds Permissible ASN Qty (${target}) by ${(total - target).toFixed(2)} ${item.totalUnit}.`
+        : `Sum of batch quantities (${total}) is less than Permissible ASN Qty (${target}). Short by ${remaining.toFixed(2)} ${item.totalUnit}.`)
       return
     }
     onSave(item.itemNo, rows.map(r => ({ ...r, quantity: parseFloat(r.quantity) })))
@@ -135,7 +144,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
               <span>{item.materialName}</span>
             </div>
             <div className="text-[12px] text-[#6a6d70] mt-0.5">
-              Item {item.itemNo} &middot; Avl. ASN Qty: <strong className="text-[#32363a]">{target} {item.totalUnit}</strong>
+              Item {item.itemNo} &middot; Permissible ASN Qty: <strong className="text-[#32363a]">{target} {item.totalUnit}</strong>
               {item.packingMaterialQty && <> &middot; Max batches: <strong className="text-[#32363a]">{item.packingMaterialQty}</strong></>}
             </div>
           </div>
@@ -233,6 +242,7 @@ function ConfirmationModal({ open, kind, title, message, details, primaryLabel, 
     success: { ring: '#107e3e', soft: '#e8f5ec', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg> },
     error:   { ring: '#cc1c14', soft: '#fce8e6', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg> },
     confirm: { ring: '#0a6ed1', soft: '#ebf5ff', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg> },
+    warning: { ring: '#b45309', soft: '#fef7e6', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> },
   }[kind] || { ring: '#0a6ed1', soft: '#ebf5ff', icon: null }
 
   return (
@@ -277,7 +287,6 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <span className="px-2 py-0.5 bg-[#ebf5ff] text-[#0a6ed1] rounded-full text-[11px] font-bold">Item {item.ebelp} / Sch {item.schLine}</span>
-          <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">{item.storageLocation}</span>
           {isZeroQty && <span className="px-2 py-0.5 bg-[#fce8e6] text-[#cc1c14] rounded text-[11px] font-semibold">No qty</span>}
         </div>
         <button onClick={() => setExpanded(e => !e)} className="text-[#6a6d70] flex-shrink-0 p-1" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -287,7 +296,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
 
       <div className="flex border-t border-[#f0f0f0] text-center">
         {[
-          { label: 'Avl. ASN', value: `${item.avlAsnQty} ${item.totalUnit}` },
+          { label: 'Permissible ASN', value: `${item.avlAsnQty} ${item.totalUnit}` },
           { label: 'Net Price', value: `₹${item.netPrice}` },
           { label: 'Shipment', value: item.shipmentDate },
         ].map((s, i) => (
@@ -314,10 +323,15 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
               </span>
             )}
           </button>
+          {!isZeroQty && parseInt(item.packingMaterialQty, 10) > 0 && batchCount === 0 && isSelected && (
+              <p className="text-[11px] font-semibold text-[#cc1c14] mt-1">
+                ⚠ Split batch required before creating ASN
+              </p>
+            )}
 
           <div className="grid grid-cols-2 gap-2 mb-4">
             {[
-              { label: 'PO Item / Sch Line', value: `${item.ebelp} / ${item.schLine}` },
+              { label: 'Sch Line', value: `${item.ebelp} / ${item.schLine}` },
               { label: 'Total Qty', value: `${item.totalQty} ${item.totalUnit}` },
               { label: 'Conf. Qty', value: `${item.confQty} ${item.confUnit}` },
               { label: 'Delivered Qty (Menge)', value: `${item.deliveredQty} ${item.deliveredUnit}` },
@@ -332,9 +346,26 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
           </div>
 
           <div className="mb-3">
-            <label className="block text-[12px] font-semibold text-[#374151] mb-1">Avl. ASN Qty</label>
-            <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} disabled={isZeroQty} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all disabled:bg-[#f5f5f5] disabled:cursor-not-allowed" />
-          </div>
+          <label className="block text-[12px] font-semibold text-[#374151] mb-1">
+            Permissible ASN Qty
+          </label>
+          <input
+            type="text"
+            value={item.avlAsnQty}
+            onChange={e => onUpdate('avlAsnQty', e.target.value)}
+            disabled={isZeroQty}
+            className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all disabled:bg-[#f5f5f5] disabled:cursor-not-allowed ${
+              getAvlAsnQtyError(item)
+                ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
+                : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
+            }`}
+          />
+          {getAvlAsnQtyError(item) && (
+            <p className="text-[11px] text-[#cc1c14] font-semibold mt-1">
+              {getAvlAsnQtyError(item)}
+            </p>
+          )}
+        </div>
           <div className="mb-3">
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">FG Stock</label>
             <input type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} onWheel={e => e.target.blur()} placeholder="0"
@@ -367,19 +398,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
               <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Type of Packaging</label>
-              <select value={item.packagingType} onChange={e => onUpdate('packagingType', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
-                <option value="">Select</option>
-                {packagingTypes.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Total Qty / Packaging</label>
-              <input type="text" value={item.qtyPerPackaging} onChange={e => onUpdate('qtyPerPackaging', e.target.value)} placeholder="0" className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
-            </div>
-          </div>
+          
           <div className="mb-3">
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">PDIR No.</label>
             <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
@@ -421,7 +440,6 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {isZeroQty && <span className="px-2 py-0.5 bg-[#fce8e6] text-[#cc1c14] rounded text-[11px] font-semibold">No qty available</span>}
-          <span className="px-2 py-0.5 bg-[#f0f4f8] text-[#32363a] rounded text-[11px] font-semibold">{item.storageLocation}</span>
           <span className="text-[11px] text-[#6a6d70]">Ship: <strong className="text-[#32363a]">{item.shipmentDate}</strong></span>
           <span className="text-[11px] text-[#6a6d70]">SPQ: <strong className="text-[#32363a]">{item.spq}</strong></span>
         </div>
@@ -434,8 +452,23 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
           <Field label="Conf. Qty"><ReadonlyVal value={`${item.confQty} ${item.confUnit}`} /></Field>
           <Field label="Delivered Qty"><ReadonlyVal value={`${item.deliveredQty} ${item.deliveredUnit}`} /></Field>
           <Field label="ASN Created"><ReadonlyVal value={item.asnCreated} /></Field>
-          <Field label="Avl. ASN Qty">
-            <input type="text" value={item.avlAsnQty} onChange={e => onUpdate('avlAsnQty', e.target.value)} disabled={isZeroQty} className={inputCls + ' font-semibold text-[#0a6ed1] disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
+          <Field label="Permissible ASN Qty">
+            <input
+              type="text"
+              value={item.avlAsnQty}
+              onChange={e => onUpdate('avlAsnQty', e.target.value)}
+              disabled={isZeroQty}
+              className={
+                inputCls +
+                ' font-semibold text-[#0a6ed1] disabled:bg-[#f5f5f5] disabled:cursor-not-allowed' +
+                (getAvlAsnQtyError(item) ? ' border-[#cc1c14] ring-1 ring-[#cc1c14]/30' : '')
+              }
+            />
+            {getAvlAsnQtyError(item) && (
+              <span className="text-[10px] text-[#cc1c14] font-semibold leading-tight">
+                {getAvlAsnQtyError(item)}
+              </span>
+            )}
           </Field>
           <Field label="FG Stock">
             <input type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} onWheel={e => e.target.blur()} placeholder="0" disabled={isZeroQty}
@@ -511,29 +544,43 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
 function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
   const inputRef = useRef(null)
 
-  const handleSelect = async (e) => {
+  const handleSelect = (e) => {
     const files = Array.from(e.target.files)
     for (const file of files) {
       if (!isAllowedFile(file)) { onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`); continue }
-      try { const att = await createAsnApi.uploadAttachment('draft', file, kind); onUpload(att) } catch (err) { console.error(err) }
+      onUpload({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        name: file.name,
+        size: file.size,
+        kind,
+        _file: file,
+      })
     }
     e.target.value = ''
   }
 
-  const handleDrop = async (e) => {
+  const handleDrop = (e) => {
     e.preventDefault()
     const files = Array.from(e.dataTransfer.files)
     for (const file of files) {
       if (!isAllowedFile(file)) { onUpload(null, `"${file.name}" is not allowed. Only PDF / Excel (.pdf, .xls, .xlsx).`); continue }
-      const att = await createAsnApi.uploadAttachment('draft', file, kind)
-      onUpload(att)
+      onUpload({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        name: file.name,
+        size: file.size,
+        kind,
+        _file: file,
+      })
     }
   }
 
   return (
     <div className="bg-white border border-[#e5e5e5] rounded-xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
-        <h3 className="text-[18px] font-bold text-[#32363a]">{kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})</h3>
+        <div>
+          <h3 className="text-[18px] font-bold text-[#32363a]">{kind === 'pdir' ? 'PDIR Attachments' : 'General Attachments'} ({items.length})</h3>
+          <p className="text-[12px] text-[#6a6d70] mt-0.5">Files will be uploaded to SAP after ASN is created</p>
+        </div>
         <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 px-4 h-9 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98] transition-all">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Add
@@ -543,8 +590,8 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
       {items.length === 0 ? (
         <div onDragOver={e => e.preventDefault()} onDrop={handleDrop} className="py-20 flex flex-col items-center text-center">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" className="mb-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
-          <h4 className="text-[18px] font-semibold text-[#32363a] mb-1">No files found.</h4>
-          <p className="text-[13px] text-[#6a6d70]">Drop files or use the "+" button for pending upload</p>
+          <h4 className="text-[18px] font-semibold text-[#32363a] mb-1">No files added yet.</h4>
+          <p className="text-[13px] text-[#6a6d70]">Drop files here or click Add. They will be uploaded when you create the ASN.</p>
         </div>
       ) : (
         <div className="divide-y divide-[#f0f0f0]">
@@ -556,7 +603,7 @@ function AttachmentsPanel({ kind, items, onUpload, onRemove }) {
                 </div>
                 <div>
                   <div className="text-[14px] font-semibold text-[#32363a]">{att.name}</div>
-                  <div className="text-[12px] text-[#6a6d70]">{(att.size / 1024).toFixed(1)} KB</div>
+                  <div className="text-[12px] text-[#6a6d70]">{(att.size / 1024).toFixed(1)} KB · Pending upload</div>
                 </div>
               </div>
               <button onClick={() => onRemove(att.id)} className="w-8 h-8 flex items-center justify-center text-[#cc1c14] hover:bg-[#fce8e6] rounded transition-colors">
@@ -590,7 +637,7 @@ export default function CreateASN2({ agreement: propAgreement }) {
 
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [storageSearch, setStorageSearch] = useState('')
+  // const [storageSearch, setStorageSearch] = useState('')
   const [materialSearch, setMaterialSearch] = useState('')
 
   const [items, setItems] = useState([])
@@ -685,7 +732,7 @@ const handleGo = async () => {
   setItemsError(null)
   try {
     const asnItems = await createAsnApi.getEligibleItems({
-      scheduleNo: agreement.id, fromDate, toDate, storageLocation: storageSearch
+      scheduleNo: agreement.id, fromDate, toDate
     })
     setItems(prev => {
       const prevMap = Object.fromEntries(prev.map(i => [i.itemNo, i]))
@@ -709,7 +756,7 @@ const handleGo = async () => {
   } catch (err) { setItemsError(err.message) }
   finally { setItemsLoading(false) }
 }
-  const handleClear = () => { setFromDate(''); setToDate(''); setMaterialSearch(''); setStorageSearch('') }
+  const handleClear = () => { setFromDate(''); setToDate(''); setMaterialSearch('') }
 
   const calcInvoiceValue = () =>
     items.filter(i => selectedItemNos.includes(i.itemNo))
@@ -721,16 +768,19 @@ const handleGo = async () => {
     if (selectedItemNos.length === 0) errors.push('Select at least one item to create ASN.')
     if (!invoiceNumber) errors.push('Invoice Number is required.')
     if (generalAttachments.length === 0) errors.push('At least one General Attachment is required.')
+    
     const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
     selectedItems.forEach(it => {
       const avl = parseFloat(it.avlAsnQty || 0)
       if (avl === 0) { errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): Available ASN Qty is 0.`); return }
+      const avlErr = getAvlAsnQtyError(it)
+      if (avlErr) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): ${avlErr}`)
       const fgVal = parseFloat(it.fgStock)
       if (it.fgStock === '' || isNaN(fgVal)) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): FG Stock is required.`)
       else if (fgVal <= avl) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${avl}).`)
       if (it.batches && it.batches.length > 0) {
         const sum = it.batches.reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
-        if (Math.abs(sum - avl) > 0.0001) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): batch quantity sum (${sum}) does not match Avl. ASN Qty (${avl}).`)
+        if (Math.abs(sum - avl) > 0.0001) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): batch quantity sum (${sum}) does not match Permissible ASN Qty (${avl}).`)
         const bad = it.batches.find(b => !b.batchCode || !b.quantity)
         if (bad) errors.push(`Item ${it.ebelp} / Sch ${it.schLine}: incomplete batch row.`)
       }
@@ -745,6 +795,7 @@ const handleGo = async () => {
       return
     }
     const selectedItems = items.filter(i => selectedItemNos.includes(i.itemNo))
+    const totalFiles = generalAttachments.length + pdirAttachments.length
     setModal({
       kind: 'confirm', title: 'Create ASN?', message: 'Please review the details below before submitting.',
       details: (
@@ -773,13 +824,50 @@ const handleGo = async () => {
         generalAttachmentIds: generalAttachments.map(a => a.id),
         pdirAttachmentIds: pdirAttachments.map(a => a.id),
       })
+
+      const asnNum  = result.asnNum  || ''
+      const fisYear = result.fisYear || String(new Date().getFullYear())
+
+      // ← upload attachments after ASN is created
+      let uploadResult = { uploaded: 0, failed: [] }
+      const totalFiles = generalAttachments.length + pdirAttachments.length
+      if (totalFiles > 0 && asnNum) {
+        uploadResult = await uploadAllAttachments({
+          asnNum,
+          fisYear,
+          generalAttachments,
+          pdirAttachments,
+        })
+      }
+
+      const someUploadsFailed = uploadResult.failed.length > 0
       setModal({
-        kind: 'success', title: 'ASN created successfully', message: result.message,
+        kind: someUploadsFailed ? 'warning' : 'success',
+        title: someUploadsFailed ? 'ASN created — some attachments failed' : 'ASN created successfully',
+        message: someUploadsFailed
+          ? `ASN ${asnNum} was created but ${uploadResult.failed.length} file(s) could not be uploaded. You may need to attach them manually.`
+          : 'Your ASN has been submitted and all attachments uploaded successfully.',
         details: (
           <div className="space-y-1.5">
-            <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{result.asnNum}{result.fisYear ? '/' + result.fisYear : ''}</strong></div>
+            <div className="flex justify-between"><span className="text-[#6a6d70]">ASN Number</span><strong className="text-[#0a6ed1]">{asnNum}{fisYear ? '/' + fisYear : ''}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">Agreement</span><strong>{agreement.id}</strong></div>
             <div className="flex justify-between"><span className="text-[#6a6d70]">Items</span><strong>{selectedItems.length}</strong></div>
+          {totalFiles > 0 && (
+              <div className="flex justify-between">
+                <span className="text-[#6a6d70]">Attachments uploaded</span>
+                <strong className={uploadResult.failed.length > 0 ? 'text-[#b45309]' : 'text-[#107e3e]'}>
+                  {uploadResult.uploaded} / {totalFiles}
+                </strong>
+              </div>
+            )}
+            {uploadResult.failed.length > 0 && (
+              <div className="pt-1 border-t border-[#e5e5e5]">
+                <div className="text-[11px] text-[#cc1c14] font-semibold mb-1">Failed uploads:</div>
+                {uploadResult.failed.map((f, i) => (
+                  <div key={i} className="text-[11px] text-[#cc1c14]">• {f.name}: {f.error}</div>
+                ))}
+              </div>
+            )}
           </div>
         ),
         primaryLabel: 'Done', onPrimary: () => { setModal(null); navigate(-1) },
@@ -884,7 +972,7 @@ const handleGo = async () => {
                       <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Item / Sch</th>
                       <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Material</th>
                       <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Net Price</th>
-                      <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Avl. ASN Qty</th>
+                      <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Permissible ASN Qty</th>
                       <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">SPQ</th>
                       <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Batches</th>
                       <th className="text-left font-semibold py-3 px-4 text-[12px] uppercase tracking-wider">Value</th>
@@ -979,13 +1067,6 @@ const handleGo = async () => {
                 <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Enter Materials</label>
                 <div className="relative">
                   <input type="text" value={materialSearch} onChange={e => setMaterialSearch(e.target.value)} placeholder="Search materials" className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-3 text-[#6a6d70]"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-                </div>
-              </div>
-              <div className="col-span-2 md:col-span-3">
-                <label className="block text-[12px] text-[#6a6d70] mb-1.5 font-semibold">Enter Storage Location (comma-separated)</label>
-                <div className="relative">
-                  <input type="text" value={storageSearch} onChange={e => setStorageSearch(e.target.value)} placeholder="e.g. RM01, RM02" className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-3 top-3 text-[#6a6d70]"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
                 </div>
               </div>
