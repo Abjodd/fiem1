@@ -106,6 +106,8 @@ const canGateReport = (tracking) =>
 
 const canGateIn = (tracking) =>
   tlStep(tracking.timeline, 'gate_reporting') && !tlStep(tracking.timeline, 'gate_entry_in')
+const canGateOut = (tracking) =>
+  tlStep(tracking.timeline, 'gate_entry_in') && !tlStep(tracking.timeline, 'gate_entry_out')
 
 // ═══════════════════════════════════════════════════════════════
 // TRACKING POPUP
@@ -379,6 +381,7 @@ export default function GateInGateOut() {
   const [errorOpen, setErrorOpen]           = useState(false)
   const [gateRepLoading, setGateRepLoading] = useState(false)
   const [gateInLoading, setGateInLoading]   = useState(false)
+  const [gateOutLoading, setGateOutLoading] = useState(false)
   const [asnPopup, setAsnPopup]             = useState(null)
 
   // ── Load tracking data ────────────────────────────────────────
@@ -478,10 +481,28 @@ export default function GateInGateOut() {
       setGateInLoading(false)
     }
   }
+  const handleGateOut = async () => {
+  if (!tracking) return
+  setGateOutLoading(true)
+  try {
+    await gateEntryApi.processGateOut(tracking.trackingNo, tracking.year)
+    setSuccessMsg('Gate Out processed successfully.')
+    setSuccessOpen(true)
+    await refreshTracking(tracking.trackingNo, tracking.year)
+  } catch (err) {
+    console.error('[handleGateOut]', err)
+    setErrorMsg(err.message || 'Gate Out failed. Please try again.')
+    setErrorOpen(true)
+  } finally {
+    setGateOutLoading(false)
+  }
+}
 
   // Derived button visibility
   const showGateReport = tracking ? canGateReport(tracking) : false
   const showGateIn     = tracking ? canGateIn(tracking)     : false
+  // Update derived flags (near showGateReport / showGateIn):
+  const showGateOut = tracking ? canGateOut(tracking) : false
 
   // ═══════════════════════════════════════════════════════════════
   // TIMELINE TAB
@@ -787,7 +808,7 @@ export default function GateInGateOut() {
         )}
       </div>
 
-      {t && (showGateReport || showGateIn) && (
+      {t && (showGateReport || showGateIn || showGateOut) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#e5e5e5] px-4 sm:px-6 py-3 flex items-center gap-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
 
           {showGateReport && (
@@ -825,6 +846,24 @@ export default function GateInGateOut() {
               {gateInLoading ? 'Processing…' : 'Gate In'}
             </button>
           )}
+          {/* Add inside the fixed bottom bar div, after the Gate In button: */}
+{showGateOut && (
+  <button
+    onClick={handleGateOut}
+    disabled={gateOutLoading}
+    className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#cc1c14] rounded-lg hover:bg-[#a61710] transition-all shadow-sm disabled:opacity-60"
+  >
+    {gateOutLoading
+      ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+      : (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+        </svg>
+      )
+    }
+    {gateOutLoading ? 'Processing…' : 'Gate Out'}
+  </button>
+)}
         </div>
       )}
     </PageLayout>

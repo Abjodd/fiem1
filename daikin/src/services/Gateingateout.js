@@ -12,7 +12,7 @@ const num = (v) => parseFloat(String(v ?? '0').trim()) || 0
 // ── Date / Time helpers ───────────────────────────────────────
 export const fromSapDateDisplay = (sapDate) => {
   if (!sapDate || sapDate === '00000000') return ''
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const y = sapDate.slice(0, 4)
   const m = parseInt(sapDate.slice(4, 6), 10) - 1
   const d = parseInt(sapDate.slice(6, 8), 10)
@@ -22,7 +22,7 @@ export const fromSapDateDisplay = (sapDate) => {
 const formatTimestamp = (sapDate, sapTime) => {
   if (!sapDate || sapDate === '00000000') return null
   if (!sapTime || sapTime === '000000') return fromSapDateDisplay(sapDate)
-  return `${sapDate.slice(6,8)}.${sapDate.slice(4,6)}.${sapDate.slice(0,4)} ${sapTime.slice(0,2)}:${sapTime.slice(2,4)}`
+  return `${sapDate.slice(6, 8)}.${sapDate.slice(4, 6)}.${sapDate.slice(0, 4)} ${sapTime.slice(0, 2)}:${sapTime.slice(2, 4)}`
 }
 
 const TRANS_MODE = { '01': 'By Road', '02': 'By Air', '03': 'By Rail', '04': 'By Sea' }
@@ -33,8 +33,8 @@ const resolveStatus = (code, text) => {
   const t = (text || '').toLowerCase()
   let color = 'gray'
   if (t.includes('transit') || t.includes('shipped') || t.includes('entry')) color = 'blue'
-  else if (t.includes('reported') || t.includes('reached'))                  color = 'orange'
-  else if (t.includes('received') || t.includes('completed'))                color = 'green'
+  else if (t.includes('reported') || t.includes('reached')) color = 'orange'
+  else if (t.includes('received') || t.includes('completed')) color = 'green'
   return { label, color }
 }
 
@@ -80,68 +80,68 @@ const buildTimeline = (d) => [
 
 // ── ASN mapper ────────────────────────────────────────────────
 const mapAsn = (raw) => ({
-  asnId:          `${str(raw.Asn)}/${str(raw.AsnYear)}`,
-  asnNum:         str(raw.Asn),
-  asnYear:        str(raw.AsnYear),
+  asnId: `${str(raw.Asn)}/${str(raw.AsnYear)}`,
+  asnNum: str(raw.Asn),
+  asnYear: str(raw.AsnYear),
   totalLineItems: parseInt(str(raw.ItmCount) || '0', 10),
-  ibdNumber:      str(raw.IbdNo),
-  doc103Number:   str(raw.Doc103No),
-  plant:          str(raw.Plant),
-  invoiceNumber:  str(raw.Invoice_Num),
-  invoiceAmount:  num(raw.Price),
-  invoiceDate:    fromSapDateDisplay(str(raw.Invoice_Date)),
-  currency:       str(raw.Curr) || 'INR',
+  ibdNumber: str(raw.IbdNo),
+  doc103Number: str(raw.Doc103No),
+  plant: str(raw.Plant),
+  invoiceNumber: str(raw.Invoice_Num),
+  invoiceAmount: num(raw.Price),
+  invoiceDate: fromSapDateDisplay(str(raw.Invoice_Date)),
+  currency: str(raw.Curr) || 'INR',
 })
 
 // ── ASN item mapper ───────────────────────────────────────────
 const mapAsnItem = (raw) => ({
-  asnNum:       str(raw.AsnNum),
-  fisYear:      str(raw.FisYear),
-  item:         str(raw.Item),
-  material:     str(raw.Matnr),
+  asnNum: str(raw.AsnNum),
+  fisYear: str(raw.FisYear),
+  item: str(raw.Item),
+  material: str(raw.Matnr),
   materialDesc: str(raw.Maktx),
-  quantity:     num(raw.Menge),
-  unit:         str(raw.Meins),
-  price:        num(raw.Netpr),
+  quantity: num(raw.Menge),
+  unit: str(raw.Meins),
+  price: num(raw.Netpr),
   perUnitPrice: num(raw.PerUnitPrice),
-  currency:     str(raw.Currency) || 'INR',
-  hsnCode:      str(raw.HsnCode),
+  currency: str(raw.Currency) || 'INR',
+  hsnCode: str(raw.HsnCode),
 })
 
 // ── Header mapper ─────────────────────────────────────────────
 const mapHeader = (d) => {
   const status = resolveStatus(d.Status, d.StatusText)
   return {
-    id:                      `${str(d.TrackNo)}/${str(d.Year)}`,
-    trackingNo:              str(d.TrackNo),
-    year:                    str(d.Year),
-    status:                  status.label,
-    statusCode:              str(d.Status),
-    statusColor:             status.color,
-    statusText:              str(d.StatusText),
-    transporter:             str(d.Transporter),
-    driverName:              str(d.Person),
-    contact:                 str(d.Contact),
-    transportMode:           TRANS_MODE[str(d.Mode)] || str(d.Mode),
-    vehicleRegNo:            str(d.RegNum),
-    vendor:                  `${str(d.Vendor)}, ${str(d.Name)}`,
-    vendorName:              str(d.Name),
-    vendorCode:              str(d.Vendor),
-    date:                    fromSapDateDisplay(d.CreateDate),
-    etaDate:                 fromSapDateDisplay(d.Eta),
-    ewayBillNo:              str(d.EwayBill),
-    ewayBillDate:            fromSapDateDisplay(d.EwayBillDate),
+    id: `${str(d.TrackNo)}/${str(d.Year)}`,
+    trackingNo: str(d.TrackNo),
+    year: str(d.Year),
+    status: status.label,
+    statusCode: str(d.Status),
+    statusColor: status.color,
+    statusText: str(d.StatusText),
+    transporter: str(d.Transporter),
+    driverName: str(d.Person),
+    contact: str(d.Contact),
+    transportMode: TRANS_MODE[str(d.Mode)] || str(d.Mode),
+    vehicleRegNo: str(d.RegNum),
+    vendor: `${str(d.Vendor)}, ${str(d.Name)}`,
+    vendorName: str(d.Name),
+    vendorCode: str(d.Vendor),
+    date: fromSapDateDisplay(d.CreateDate),
+    etaDate: fromSapDateDisplay(d.Eta),
+    ewayBillNo: str(d.EwayBill),
+    ewayBillDate: fromSapDateDisplay(d.EwayBillDate),
     pollutionCertApplicable: str(d.Pollution_crtapp) || 'No',
-    safetyEquipments:        str(d.Safetyeqp) === 'Yes' ? 'Yes' : 'No',
-    safetyGuardForMaterial:  str(d.Safetygudmat) === 'Yes' ? 'Yes' : 'No',
-    totalAsnAmount:          num(d.Totalasnamt),
-    gateOutFlag:             str(d.GateOutFlag),
-    mblnr:                   str(d.Mblnr),
-    mjahr:                   str(d.Mjahr),
-    timeline:                buildTimeline(d),
-    asns:                    (d.HeaderAsnNav?.results || []).map(mapAsn),
-    rpmIn:                   d.HeaderRpmInNav?.results || [],
-    rpmOut:                  d.HeaderRpmOutNav?.results || [],
+    safetyEquipments: str(d.Safetyeqp) === 'Yes' ? 'Yes' : 'No',
+    safetyGuardForMaterial: str(d.Safetygudmat) === 'Yes' ? 'Yes' : 'No',
+    totalAsnAmount: num(d.Totalasnamt),
+    gateOutFlag: str(d.GateOutFlag),
+    mblnr: str(d.Mblnr),
+    mjahr: str(d.Mjahr),
+    timeline: buildTimeline(d),
+    asns: (d.HeaderAsnNav?.results || []).map(mapAsn),
+    rpmIn: d.HeaderRpmInNav?.results || [],
+    rpmOut: d.HeaderRpmOutNav?.results || [],
   }
 }
 
@@ -188,11 +188,13 @@ async function odata(path) {
   return res.json()
 }
 
+
+
 // ── CSRF token fetch ──────────────────────────────────────────
 async function fetchCsrfToken() {
-  const res = await fetch(`${SRV}/$metadata`, {  
+  const res = await fetch(`${SRV}/$metadata`, {
     method: 'GET',
-    headers: { ...getHeaders(), 'X-CSRF-Token': 'Fetch' }, 
+    headers: { ...getHeaders(), 'X-CSRF-Token': 'Fetch' },
     credentials: 'include',
   })
   const token = res.headers.get('X-CSRF-Token') || ''
@@ -204,8 +206,10 @@ async function fetchCsrfToken() {
 async function odataWriteWithToken(token, path, payload, method) {
   const res = await fetch(`${SRV}${path}`, {
     method,
-    headers: { ...getHeaders(), 'Content-Type': 'application/json',
-      'X-CSRF-Token': token, },
+    headers: {
+      ...getHeaders(), 'Content-Type': 'application/json',
+      'X-CSRF-Token': token,
+    },
     credentials: 'include',
     body: JSON.stringify(payload),
   })
@@ -230,7 +234,7 @@ export const gateEntryApi = {
 
   // ── READ: full header with nav expansions ───────────────────
   async getTracking(trackNo, year) {
-    const key  = buildKey(trackNo, year)
+    const key = buildKey(trackNo, year)
     const data = await odata(
       `/GateEntryHeaderSet(${key})?$expand=HeaderAsnNav,HeaderRpmInNav,HeaderRpmOutNav`
     )
@@ -241,14 +245,14 @@ export const gateEntryApi = {
   // ── READ: ASN summary rows for a tracking entry ─────────────
   async getAsnData(trackNo, year) {
     const filter = encodeURIComponent(`TrackNo eq '${trackNo}' and Year eq '${year}'`)
-    const data   = await odata(`/ASNDataSet?$filter=${filter}`)
+    const data = await odata(`/ASNDataSet?$filter=${filter}`)
     return (data.d?.results || []).map(mapAsnItem)
   },
 
   // ── READ: line items for one ASN ────────────────────────────
   async getAsnItems(asnNum, fisYear) {
     const filter = encodeURIComponent(`AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`)
-    const data   = await odata(`/AsnItemSet?$filter=${filter}`)
+    const data = await odata(`/AsnItemSet?$filter=${filter}`)
     return (data.d?.results || []).map(mapAsnItem)
   },
 
@@ -288,8 +292,9 @@ export const gateEntryApi = {
       )
     }
 
+
     const headerKey = buildKey(trackNo, year)
-    const asnKey    = `AsnNum='${asnNum}',FisYear='${asnYear}',Bwart=''`
+    const asnKey = `AsnNum='${asnNum}',FisYear='${asnYear}',Bwart=''`
 
     const token = await fetchCsrfToken()
 
@@ -303,11 +308,11 @@ export const gateEntryApi = {
       token,
       `/ASNHeaderSet(${asnKey})`,
       {
-        AsnNum:       asnNum,
-        FisYear:      asnYear,
-        TrackingNo:   trackNo,
+        AsnNum: asnNum,
+        FisYear: asnYear,
+        TrackingNo: trackNo,
         TrackingYear: year,
-        Lfsnr:        'TRD',
+        Lfsnr: 'TRD',
       },
       'PUT'
     )
@@ -315,9 +320,17 @@ export const gateEntryApi = {
     // Step 2: GET — read the generated gate number and reference doc
     const numData = await odata(`/GateNumberSet(${headerKey})`)
     return {
-      Gno:      str(numData.d?.Gno      || ''),
+      Gno: str(numData.d?.Gno || ''),
       Mblnr103: str(numData.d?.Mblnr103 || ''),
     }
+  },
+  async processGateOut(trackNo, year) {
+    const key = buildKey(trackNo, year)
+    return odataWrite(
+      `/GateEntryHeaderSet(${key})`,
+      { TrackNo: trackNo, Year: year },
+      'PATCH'
+    )
   },
 }
 
