@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
 import { gateEntryApi, authConfig } from '../../services/Gateingateout.js'
 import { useUser } from '../../context/UserContext.jsx'
@@ -42,7 +43,8 @@ const TABS = [
   },
 ]
 
-// gate_reporting removed from display — backend logic/calls unchanged
+// gate_reporting removed from DISPLAY — backend logic/calls unchanged
+// Only 5 steps shown (gate_reporting hidden from timeline UI)
 const TIMELINE_STEPS = [
   {
     key: 'created',
@@ -108,7 +110,7 @@ const canGateIn = (tracking) =>
 // ═══════════════════════════════════════════════════════════════
 // TRACKING POPUP
 // ═══════════════════════════════════════════════════════════════
-function TrackingPopup({ onSubmit, userLoading }) {
+function TrackingPopup({ onSubmit, onCancel, userLoading }) {
   const [combined, setCombined] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -184,7 +186,14 @@ function TrackingPopup({ onSubmit, userLoading }) {
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-[#e5e5e5] flex justify-end">
+        <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="px-5 h-10 text-[14px] font-semibold text-[#6a6d70] border border-[#d9d9d9] rounded-lg hover:bg-[#f5f6f7] transition-all disabled:opacity-60"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleSubmit}
             disabled={loading || userLoading}
@@ -360,6 +369,7 @@ export default function GateInGateOut() {
   const { loginId, loginType, loading: userLoading } = useUser()
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
+  const navigate = useNavigate()
   const [tracking, setTracking]             = useState(null)
   const [showLookup, setShowLookup]         = useState(true)
   const [activeTab, setActiveTab]           = useState('timeline')
@@ -376,6 +386,11 @@ export default function GateInGateOut() {
     setTracking(data)
     setShowLookup(false)
     setActiveTab('timeline')
+  }
+
+  // ── Cancel / navigate back from popup ────────────────────────
+  const handlePopupCancel = () => {
+    navigate(-1)
   }
 
   // ── Reset to lookup screen ────────────────────────────────────
@@ -658,7 +673,13 @@ export default function GateInGateOut() {
         .anim-fade { animation: fadeIn .3s ease-out both }
       `}</style>
 
-      {showLookup && <TrackingPopup onSubmit={handleLoaded} userLoading={userLoading} />}
+      {showLookup && (
+        <TrackingPopup
+          onSubmit={handleLoaded}
+          onCancel={handlePopupCancel}
+          userLoading={userLoading}
+        />
+      )}
       {asnPopup   && <AsnItemsPopup asnNum={asnPopup.asnNum} fisYear={asnPopup.fisYear} onClose={() => setAsnPopup(null)} />}
       {successOpen && <SuccessDialog message={successMsg} onClose={() => setSuccessOpen(false)} />}
       {errorOpen   && <ErrorDialog   message={errorMsg}   onClose={() => setErrorOpen(false)}   />}
