@@ -42,6 +42,7 @@ const TABS = [
   },
 ]
 
+// gate_reporting removed from display — backend logic/calls unchanged
 const TIMELINE_STEPS = [
   {
     key: 'created',
@@ -61,15 +62,6 @@ const TIMELINE_STEPS = [
         <rect x="1" y="3" width="15" height="13" rx="1"/>
         <path d="M16 8h4l3 3v5h-7V8z"/>
         <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'gate_reporting',
-    label: 'Gate Reporting',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
       </svg>
     ),
   },
@@ -393,8 +385,6 @@ export default function GateInGateOut() {
   }
 
   // ── Re-fetch after every write ────────────────────────────────
-  // Returns the fresh tracking object so callers can use it immediately
-  // (e.g. handleGateIn needs the fresh header to pass into processGateIn).
   const refreshTracking = async (trackNo, year) => {
     try {
       const data = await gateEntryApi.getTracking(trackNo, year)
@@ -402,7 +392,7 @@ export default function GateInGateOut() {
       try { summaryItems = await gateEntryApi.getAsnData(trackNo, year) } catch { /* non-fatal */ }
       const fresh = { ...data, summaryItems }
       setTracking(fresh)
-      return fresh                   // ← FIX: return so caller can use it
+      return fresh
     } catch (err) {
       console.error('[refreshTracking] failed:', err)
       return null
@@ -428,14 +418,6 @@ export default function GateInGateOut() {
   }
 
   // ── Gate In ───────────────────────────────────────────────────
-  //
-  // FIX: Before calling processGateIn, we re-fetch the header from SAP
-  // so the guard inside processGateIn always sees real current status —
-  // not whatever was loaded when the page first opened.
-  //
-  // This is critical: the Gate In button may have appeared based on
-  // stale state. The re-fetch is the source of truth.
-  //
   const handleGateIn = async () => {
     if (!tracking) return
 
@@ -448,8 +430,6 @@ export default function GateInGateOut() {
 
     setGateInLoading(true)
     try {
-      // FIX: Always re-fetch before Gate In — do NOT rely on state from initial load.
-      // This ensures the guard in processGateIn checks real SAP status.
       const freshHeader = await refreshTracking(tracking.trackingNo, tracking.year)
 
       if (!freshHeader) {
@@ -458,14 +438,12 @@ export default function GateInGateOut() {
         return
       }
 
-      // FIX: Pass freshHeader into processGateIn — the service no longer
-      // uses `this.getTracking()` internally (broken `this` context).
       const result = await gateEntryApi.processGateIn(
         tracking.trackingNo,
         tracking.year,
         firstAsn.asnNum,
         firstAsn.asnYear,
-        freshHeader,             // ← NEW: pass fresh header for guard check
+        freshHeader,
       )
 
       const gno      = result.Gno      || '—'
@@ -475,7 +453,6 @@ export default function GateInGateOut() {
       )
       setSuccessOpen(true)
 
-      // Refresh again so timeline reflects gate_entry_in completion
       await refreshTracking(tracking.trackingNo, tracking.year)
 
     } catch (err) {
@@ -487,7 +464,7 @@ export default function GateInGateOut() {
     }
   }
 
-  // Derived button visibility — recalculated from live timeline every render
+  // Derived button visibility
   const showGateReport = tracking ? canGateReport(tracking) : false
   const showGateIn     = tracking ? canGateIn(tracking)     : false
 
@@ -496,6 +473,7 @@ export default function GateInGateOut() {
   // ═══════════════════════════════════════════════════════════════
   const renderTimeline = () => {
     if (!tracking) return null
+    // Map display steps against full timeline data (gate_reporting still in data, just not displayed)
     const steps = TIMELINE_STEPS.map((s) => {
       const found = tracking.timeline.find((t) => t.key === s.key)
       return { ...s, completed: found?.completed || false, timestamp: found?.timestamp || null }
