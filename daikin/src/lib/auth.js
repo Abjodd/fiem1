@@ -16,8 +16,8 @@ export const PAGE_PERMISSIONS = {
   '/logistics/delivery-schedule':    ['partner'],
   '/asn/asn-report':                 ['partner'],
   '/shipment/advance-shipping-note': ['partner'],
-  '/shipment/goods-movement':        ['partner'],
-  '/shipment/gatein-gateout':        ['partner'],
+  '/shipment/goods-movement':        ['partner', 'employee'],
+  '/shipment/gatein-gateout':        ['partner', 'employee'],
 };
 
 export const canAccess = (role, path) => (PAGE_PERMISSIONS[path] ?? ['employee', 'partner']).includes(role);

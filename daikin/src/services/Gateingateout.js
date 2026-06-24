@@ -151,11 +151,11 @@ const mapHeader = (d) => {
 
 const buildKey = (trackNo, year) => `TrackNo='${trackNo}',Year='${year}'`
 
-const BASE_HEADERS = {
-  Accept:    'application/json',
-      Loginid: authConfig.loginId,
-      Logintype: authConfig.loginType,
-}
+const getHeaders = () => ({
+  Accept: 'application/json',
+  Loginid: authConfig.loginId,
+  Logintype: authConfig.loginType,
+})
 
 // ── SAP error extractor ───────────────────────────────────────
 function extractSapError(responseText, method, status) {
@@ -178,7 +178,7 @@ function extractSapError(responseText, method, status) {
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
     method: 'GET',
-    headers: BASE_HEADERS,
+    headers: getHeaders(),
     credentials: 'include',
   })
   if (!res.ok) {
@@ -190,9 +190,9 @@ async function odata(path) {
 
 // ── CSRF token fetch ──────────────────────────────────────────
 async function fetchCsrfToken() {
-  const res = await fetch(`${SRV}/`, {
+  const res = await fetch(`${SRV}/$metadata`, {  
     method: 'GET',
-    headers: { ...BASE_HEADERS, 'X-CSRF-Token': 'Fetch' },
+    headers: { ...getHeaders(), 'X-CSRF-Token': 'Fetch' }, 
     credentials: 'include',
   })
   const token = res.headers.get('X-CSRF-Token') || ''
@@ -204,11 +204,8 @@ async function fetchCsrfToken() {
 async function odataWriteWithToken(token, path, payload, method) {
   const res = await fetch(`${SRV}${path}`, {
     method,
-    headers: {
-      ...BASE_HEADERS,
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': token,
-    },
+    headers: { ...getHeaders(), 'Content-Type': 'application/json',
+      'X-CSRF-Token': token, },
     credentials: 'include',
     body: JSON.stringify(payload),
   })

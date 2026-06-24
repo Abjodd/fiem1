@@ -4,23 +4,27 @@ const axios = require("axios");
 const app = approuter();
 
 app.beforeRequestHandler.use("/do/logout", (req, res, next) => {
-  // Clear approuter cookies
+  // Clear cookies
   res.setHeader("Set-Cookie", [
     "locationAfterLogin=; Max-Age=0; Path=/; HttpOnly",
     "fragmentAfterLogin=; Max-Age=0; Path=/; HttpOnly",
+    "__VCAP_ID__=; Max-Age=0; Path=/; HttpOnly",
   ]);
 
-  // Both parts come from env vars — nothing hardcoded
-  const idpBaseUrl = process.env.IDP_BASE_URL;       // https://aqzel7fpp.accounts.ondemand.com
-  const appUrl     = process.env.APP_URL;             // https://daikin-...cfapps.ap10.hana.ondemand.com
+  const idpBaseUrl = process.env.IDP_BASE_URL;
+  const appUrl = process.env.APP_URL;
 
-  const logoutUrl = `${idpBaseUrl}/oauth2/logout?post_logout_redirect_uri=${appUrl}/`;
+  // Let XSUAA know too, then chain to IDP logout
+  const postLogoutUri = encodeURIComponent(appUrl + '/');
+  const idpLogoutUrl = `${idpBaseUrl}/oauth2/logout?post_logout_redirect_uri=${postLogoutUri}`;
+
+  // Redirect through XSUAA logout first, then to IDP
+  const xsuaaLogoutUrl = process.env.XSUAA_URL + `/logout.do?returnTo=${encodeURIComponent(idpLogoutUrl)}`;
 
   res.statusCode = 302;
-  res.setHeader("Location", logoutUrl);
+  res.setHeader("Location", xsuaaLogoutUrl);
   res.end();
 });
-
 app.beforeRequestHandler.use("/scim-proxy", async (req, res, next) => {
   try {
     const email = req.query["email"];

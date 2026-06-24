@@ -254,7 +254,8 @@ function buildEditPayload(agreementId, lifnr, item) {
     unitprice:  String(item.unitPrice  ?? 0),   // ← ADD
     indicator:  item.indicator ?? '',            // ← ADD
     status:     item.status    ?? '',            // ← ADD
-    date:       item.date      ?? '',            // ← ADD
+    date:       item.date      ?? '', 
+    edit:       'X',           // ← ADD
     editSet:    { results: [childRow] },
   }
 }

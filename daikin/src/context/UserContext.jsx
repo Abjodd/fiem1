@@ -12,27 +12,29 @@ export function UserProvider({ children }) {
   const [error, setError]         = useState(null)
 
   useEffect(() => {
-    getUserAttributes()
-      .then(response => {
-        const userData = response.data
+  setUser(null)      // ← add
+  setLoading(true)   // ← add
+  getUserAttributes()
+    .then(response => {
+      const userData = response.data
 
-        const id   = userData.login_name?.[0] || ''
-        const type = userData.type?.[0]        || ''
+      const id   = userData.login_name?.[0] || ''
+      const type = userData.type?.[0]        || ''
 
-        const sapLoginType = type === 'employee' ? 'E' : 'P'
-        const userRole     = type === 'employee' ? 'employee' : 'partner' 
+      const sapLoginType = type === 'employee' ? 'E' : 'P'
+      const userRole     = type === 'employee' ? 'employee' : 'partner'
 
-        setUser(userData)
-        setRole(userRole)       
-        setLoginId(id)
-        setLoginType(sapLoginType)
-      })
-      .catch(err => {
-        console.error('UserContext: failed to load user attributes', err)
-        setError(err.message)
-      })
-      .finally(() => setLoading(false))
-  }, [])
+      setUser(userData)
+      setRole(userRole)
+      setLoginId(id)
+      setLoginType(sapLoginType)
+    })
+    .catch(err => {
+      console.error('UserContext: failed to load user attributes', err)
+      setError(err.message)
+    })
+    .finally(() => setLoading(false))
+}, [])
 
   return (
     // ← ADD role to the value
