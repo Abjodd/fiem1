@@ -516,7 +516,19 @@ export default function GoodsMovement() {
   const tabContent = { timeline: renderTimeline, asn: renderAsn, update: renderUpdate }
 
   if (showCreateMovement) {
-    return <CreateMovement editData={editTrackingData} onBack={() => { setShowCreateMovement(false); setEditTrackingData(null) }} />
+    return <CreateMovement
+  editData={editTrackingData}
+  onBack={(newTrackingId) => {
+    setShowCreateMovement(false)
+    setEditTrackingData(null)
+    goodsMovementApi.listTrackings({ search: searchQuery })
+      .then(data => {
+        setTrackings(data)
+        if (newTrackingId) setSelectedId(newTrackingId)
+      })
+      .catch(err => console.error(err))
+  }}
+/>
   }
 
   return (
@@ -656,19 +668,21 @@ export default function GoodsMovement() {
       </div>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex justify-end items-center gap-3 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-        <button onClick={handleCreateMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
-          <FilePlus size={15} /> Create
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex justify-between items-center z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+  <button onClick={handleCreateMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+    <FilePlus size={15} /> Create
+  </button>
 
-        {tracking && isYetToShipStatus(tracking.status) && (
-          <>
-            <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>
-            <button onClick={handleEditMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><Edit3 size={15} /> Edit</button>
-            <button onClick={handleCancelMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"><X size={15} /> Cancel</button>
-          </>
-        )}
-      </div>
+  <div className="flex items-center gap-3">
+    {tracking && isYetToShipStatus(tracking.status) && (
+      <>
+        <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>
+        <button onClick={handleEditMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><Edit3 size={15} /> Edit</button>
+        <button onClick={handleCancelMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"><X size={15} /> Cancel</button>
+      </>
+    )}
+  </div>
+</div>
 
       {/* Ship Success Popup */}
       {shipSuccessMsg && (
