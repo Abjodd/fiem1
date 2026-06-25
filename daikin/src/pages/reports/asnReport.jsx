@@ -723,7 +723,7 @@ export default function AsnReport() {
         </div>
 
         {/* ── FOOTER DOWNLOAD ── */}
-        <div className="px-4 sm:px-6 lg:px-10 py-3 flex justify-end flex-shrink-0 border-t border-[#e5e5e5] bg-white">
+        {/* <div className="px-4 sm:px-6 lg:px-10 py-3 flex justify-end flex-shrink-0 border-t border-[#e5e5e5] bg-white">
           <button
             onClick={handleDownload} disabled={!rows.length || exporting}
             className="flex items-center gap-2 px-4 h-9 text-[13px] font-medium text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -734,7 +734,7 @@ export default function AsnReport() {
             }
             {exporting ? 'Downloading…' : 'Download'}
           </button>
-        </div>
+        </div> */}
 
       </div>
     </PageLayout>
