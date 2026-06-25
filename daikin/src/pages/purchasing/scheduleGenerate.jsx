@@ -375,7 +375,8 @@ export default function ScheduleGenerate() {
   const [busy,              setBusy]              = useState(false)
   const [busyLabel,         setBusyLabel]         = useState('')
 
-  const { loginId, loginType, loading: userLoading } = useUser()
+  const { user, loginId, loginType, loading: userLoading } = useUser()
+  const isApprover = user?.Groups?.includes('Approver') || false
 
   useEffect(() => {
     if (userLoading) return
@@ -713,52 +714,58 @@ const handleEdit = async () => {
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                  <div className="flex items-center border border-[#d9d9d9] rounded-lg overflow-hidden bg-white">
-                    <button
-                      onClick={handleWeek}
-                      disabled={weekDisabled}
-                      className={`flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold transition-all disabled:opacity-40
-                        ${allHaveW ? 'bg-[#0a6ed1] text-white' : 'text-[#32363a] hover:bg-[#f5f6f7]'}`}
-                      title={anyHaveD ? 'Selected items are locked to Day mode' : ''}
-                    >
-                      <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center
-                        ${allHaveW ? 'border-white' : 'border-[#0a6ed1]'}`}>
-                        {allHaveW && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  {!isApprover && (
+                    <>
+                      <div className="flex items-center border border-[#d9d9d9] rounded-lg overflow-hidden bg-white">
+                        <button
+                          onClick={handleWeek}
+                          disabled={weekDisabled}
+                          className={`flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold transition-all disabled:opacity-40
+                            ${allHaveW ? 'bg-[#0a6ed1] text-white' : 'text-[#32363a] hover:bg-[#f5f6f7]'}`}
+                          title={anyHaveD ? 'Selected items are locked to Day mode' : ''}
+                        >
+                          <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center
+                            ${allHaveW ? 'border-white' : 'border-[#0a6ed1]'}`}>
+                            {allHaveW && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          Week
+                        </button>
+                        <div className="w-px h-4 bg-[#d9d9d9]" />
+                        <button
+                          onClick={handleDayClick}
+                          disabled={dayDisabled}
+                          className={`flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold transition-all disabled:opacity-40
+                            ${allHaveD ? 'bg-[#0a6ed1] text-white' : 'text-[#32363a] hover:bg-[#f5f6f7]'}`}
+                          title={anyHaveW ? 'Selected items are locked to Week mode' : ''}
+                        >
+                          <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center
+                            ${allHaveD ? 'border-white' : 'border-[#0a6ed1]'}`}>
+                            {allHaveD && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          Day
+                        </button>
                       </div>
-                      Week
-                    </button>
-                    <div className="w-px h-4 bg-[#d9d9d9]" />
+
+                      <button
+                        onClick={handleEdit}
+                        disabled={editDisabled}
+                        className="h-8 px-3 text-[12px] font-semibold text-white bg-[#e76500] rounded-lg hover:bg-[#c55600] transition-all shadow-sm disabled:opacity-40"
+                        title={selArr.length > 0 && !anyHaveInd ? 'Assign Week or Day indicator first' : ''}
+                      >
+                        Edit
+                      </button>
+                    </>
+                  )}
+
+                  {isApprover && (
                     <button
-                      onClick={handleDayClick}
-                      disabled={dayDisabled}
-                      className={`flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold transition-all disabled:opacity-40
-                        ${allHaveD ? 'bg-[#0a6ed1] text-white' : 'text-[#32363a] hover:bg-[#f5f6f7]'}`}
-                      title={anyHaveW ? 'Selected items are locked to Week mode' : ''}
+                      onClick={handleApprove}
+                      disabled={selArr.length === 0 || busy || selArr.some(no => items.find(i => i.itemNo === no)?.status === 'Not Generated')}
+                      className="h-8 px-3 text-[12px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40"
                     >
-                      <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center
-                        ${allHaveD ? 'border-white' : 'border-[#0a6ed1]'}`}>
-                        {allHaveD && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                      Day
+                      {busy && busyLabel === 'Saving…' ? 'Saving…' : 'Approve'}
                     </button>
-                  </div>
-
-                  <button
-                    onClick={handleEdit}
-                    disabled={editDisabled}
-                    className="h-8 px-3 text-[12px] font-semibold text-white bg-[#e76500] rounded-lg hover:bg-[#c55600] transition-all shadow-sm disabled:opacity-40"
-                    title={selArr.length > 0 && !anyHaveInd ? 'Assign Week or Day indicator first' : ''}
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={handleApprove}
-                    disabled={selArr.length === 0 || busy || selArr.some(no => items.find(i => i.itemNo === no)?.status === 'Not Generated')}
-                    className="h-8 px-3 text-[12px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40"
-                  >
-                    {busy && busyLabel === 'Saving…' ? 'Saving…' : 'Approve'}
-                  </button>
+                  )}
                 </div>
               </div>
             </div>
