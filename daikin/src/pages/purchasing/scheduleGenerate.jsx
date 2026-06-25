@@ -521,13 +521,50 @@ export default function ScheduleGenerate() {
     })
   }
 
-  const handleEdit = () => {
-    if (editDisabled) return
-    openScheduleLines(
-      selArr.filter(no => items.find(i => i.itemNo === no)?.indicator),
-      true, 'Edit Schedule Lines', '', undefined,
+const handleEdit = async () => {
+  if (editDisabled || busy) return
+
+  const editableNos = selArr.filter(no => items.find(i => i.itemNo === no)?.indicator)
+  if (editableNos.length === 0) return
+
+  setBusy(true)
+  setBusyLabel('Loading…')
+
+  try {
+    const dayMap = await scheduleGenerateApi.fetchItemDays(
+      agreement.id,
+      supplier.code,
+      editableNos
     )
+
+    const mergedItems = items.map(it => {
+      if (!editableNos.includes(it.itemNo)) return it
+      const key = String(it.itemNo).replace(/^0+/, '')  // normalize key
+      const fetched = dayMap[key]
+      if (!fetched) return it
+      return {
+        ...it,
+        days:       fetched.days,       // 31-element array from mapDayRecord
+        frozenDays: fetched.frozenDays ?? it.frozenDays,
+      }
+    })
+
+    openScheduleLines(
+      editableNos,
+      true,
+      'Edit Schedule Lines',
+      '',
+      undefined,
+      mergedItems,
+    )
+  } catch (err) {
+    console.error('Failed to load schedule lines for edit:', err)
+    alert(`Failed to load saved data: ${err.message}`)
+  } finally {
+    setBusy(false)
+    setBusyLabel('')
   }
+}
 
   const handleApprove = async () => {
     if (selArr.length === 0 || busy) return

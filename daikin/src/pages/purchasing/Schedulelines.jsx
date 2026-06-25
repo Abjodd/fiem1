@@ -141,10 +141,10 @@ function buildInitialLines(itemsData, mode, dayCount, calDays) {
     } else if (mode === 'DAILY') {
       days = allocateByDay(it.totalQuantity, dayCount || 5, calDays)
     } else {
-      days = it.days
-        ? [...it.days].slice(0, calDays.length)
-            .concat(Array(Math.max(0, calDays.length - (it.days.length || 0))).fill(0))
-        : Array(calDays.length).fill(0)
+      // Edit mode: days come from API as 31-element array (day1→index0 … day31→index30)
+      // Map each calDay index directly — calDays[i].dateNum-1 === i, so src[i] is correct
+      const src = Array.isArray(it.days) ? it.days : []
+      days = calDays.map((_, i) => Number(src[i]) || 0)  
     }
     return {
       ...it,
