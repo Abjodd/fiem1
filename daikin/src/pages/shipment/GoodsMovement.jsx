@@ -103,7 +103,7 @@ function SidebarContent({
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto row-stagger">
+      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
         {sidebarCollapsed ? (
           trackings.map((t) => {
             const isSelected = t.id === selectedId
@@ -122,21 +122,23 @@ function SidebarContent({
               const isSelected = t.id === selectedId
               return (
                 <button key={t.id} onClick={() => onSelectTracking(t.id)}
-                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[14px] font-semibold text-[#0a6ed1]">{t.id}</span>
-                  </div>
-                  <div className="text-[13px] text-[#6a6d70] mb-1">{t.transportMode}</div>
-                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70]"><span>{t.date}</span></div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
-                    {t.status && (
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
-                        {t.status}
-                      </span>
-                    )}
-                  </div>
-                </button>
+  className={`w-full text-left px-4 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
+  <div className="flex items-center justify-between mb-1">
+    <span className="text-[14px] font-bold text-[#0a6ed1]">{t.id}</span>
+  </div>
+  <div className="flex items-center justify-between text-[12px] text-[#6a6d70] mb-1">
+    <span>{t.transportMode}</span>
+    <span>{t.date}</span>
+  </div>
+  <div className="flex items-center justify-between">
+    <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
+    {t.status && (
+      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
+        {t.status}
+      </span>
+    )}
+  </div>
+</button>
               )
             })}
             {trackings.length === 0 && (
@@ -148,7 +150,8 @@ function SidebarContent({
           </>
         )}
       </div>
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-end">
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-end flex-shrink-0">
+
         <button onClick={onToggleCollapse}
           className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
@@ -576,7 +579,8 @@ export default function GoodsMovement() {
           </aside>
 
           {/* Desktop sidebar */}
-          <aside data-sidebar className={`hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-[calc(100vh-136px)] sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
+          <aside data-sidebar className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
+
             <SidebarContent {...sidebarProps} />
           </aside>
 
