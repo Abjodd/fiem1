@@ -103,7 +103,7 @@ function SidebarContent({
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto row-stagger">
+      <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
         {sidebarCollapsed ? (
           trackings.map((t) => {
             const isSelected = t.id === selectedId
@@ -122,21 +122,23 @@ function SidebarContent({
               const isSelected = t.id === selectedId
               return (
                 <button key={t.id} onClick={() => onSelectTracking(t.id)}
-                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[14px] font-semibold text-[#0a6ed1]">{t.id}</span>
-                  </div>
-                  <div className="text-[13px] text-[#6a6d70] mb-1">{t.transportMode}</div>
-                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70]"><span>{t.date}</span></div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
-                    {t.status && (
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
-                        {t.status}
-                      </span>
-                    )}
-                  </div>
-                </button>
+  className={`w-full text-left px-4 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
+  <div className="flex items-center justify-between mb-1">
+    <span className="text-[14px] font-bold text-[#0a6ed1]">{t.id}</span>
+  </div>
+  <div className="flex items-center justify-between text-[12px] text-[#6a6d70] mb-1">
+    <span>{t.transportMode}</span>
+    <span>{t.date}</span>
+  </div>
+  <div className="flex items-center justify-between">
+    <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
+    {t.status && (
+      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
+        {t.status}
+      </span>
+    )}
+  </div>
+</button>
               )
             })}
             {trackings.length === 0 && (
@@ -148,7 +150,8 @@ function SidebarContent({
           </>
         )}
       </div>
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-end">
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-end flex-shrink-0">
+
         <button onClick={onToggleCollapse}
           className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
@@ -516,7 +519,19 @@ export default function GoodsMovement() {
   const tabContent = { timeline: renderTimeline, asn: renderAsn, update: renderUpdate }
 
   if (showCreateMovement) {
-    return <CreateMovement editData={editTrackingData} onBack={() => { setShowCreateMovement(false); setEditTrackingData(null) }} />
+    return <CreateMovement
+  editData={editTrackingData}
+  onBack={(newTrackingId) => {
+    setShowCreateMovement(false)
+    setEditTrackingData(null)
+    goodsMovementApi.listTrackings({ search: searchQuery })
+      .then(data => {
+        setTrackings(data)
+        if (newTrackingId) setSelectedId(newTrackingId)
+      })
+      .catch(err => console.error(err))
+  }}
+/>
   }
 
   return (
@@ -564,7 +579,8 @@ export default function GoodsMovement() {
           </aside>
 
           {/* Desktop sidebar */}
-          <aside data-sidebar className={`hidden md:flex flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-[calc(100vh-136px)] sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
+          <aside data-sidebar className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
+
             <SidebarContent {...sidebarProps} />
           </aside>
 
@@ -656,19 +672,21 @@ export default function GoodsMovement() {
       </div>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex justify-end items-center gap-3 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-        <button onClick={handleCreateMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
-          <FilePlus size={15} /> Create
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex justify-between items-center z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+  <button onClick={handleCreateMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+    <FilePlus size={15} /> Create
+  </button>
 
-        {tracking && isYetToShipStatus(tracking.status) && (
-          <>
-            <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>
-            <button onClick={handleEditMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><Edit3 size={15} /> Edit</button>
-            <button onClick={handleCancelMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"><X size={15} /> Cancel</button>
-          </>
-        )}
-      </div>
+  <div className="flex items-center gap-3">
+    {tracking && isYetToShipStatus(tracking.status) && (
+      <>
+        <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>
+        <button onClick={handleEditMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><Edit3 size={15} /> Edit</button>
+        <button onClick={handleCancelMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"><X size={15} /> Cancel</button>
+      </>
+    )}
+  </div>
+</div>
 
       {/* Ship Success Popup */}
       {shipSuccessMsg && (

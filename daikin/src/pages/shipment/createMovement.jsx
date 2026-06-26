@@ -278,23 +278,27 @@ export default function CreateMovement({ editData = null, onBack = null, onNavig
       }
     } catch (err) {
       console.error(err)
-      setSubmitError(`Failed to ${isEditMode ? 'update' : 'create'} movement. Please try again.`)
+      const asnMatch = (err.message || '').match(/ASN\s+(\S+)\s+already tagged to tracking number\s+(\S+)/i)
+if (asnMatch) {
+  setErrors(e => ({ ...e, asnNums: `ASN ${asnMatch[1]} is already used in tracking ${asnMatch[2]}. Remove it and choose a different ASN.` }))
+} else {
+  setSubmitError(err.message || `Failed to ${isEditMode ? 'update' : 'create'} movement. Please try again.`)
+}
     } finally {
       setSubmitting(false)
     }
   }
 
   // OK on success popup
-  const handleSuccessOk = () => {
-    const id = successTrackingId
-    setSuccessTrackingId(null)
-    if (successIsEdit) {
-      // Go back to goods movement list — edit is done
-      goBack()
-    } else {
-      goToTracking(id)
-    }
+const handleSuccessOk = () => {
+  const id = successTrackingId
+  setSuccessTrackingId(null)
+  if (onBack) {
+    onBack(id)
+  } else {
+    goToTracking(id)
   }
+}
 
   const handleReset = () => {
     setForm(editData ? trackingToForm(editData) : INITIAL_FORM)

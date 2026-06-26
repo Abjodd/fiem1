@@ -358,7 +358,25 @@ export const scheduleGenerateApi = {
   },
 
 
-  
+  async fetchItemDays(agreementId, lifnr, itemNos) {
+  if (USE_MOCK) {
+    await new Promise(r => setTimeout(r, 200))
+    return {}
+  }
+
+  const itemsRaw = await odataGet(
+    `/sg_itemSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$format=json`
+  )
+
+  const map = {}
+  ;(itemsRaw.results ?? []).forEach(data => {
+    // day1–day31 are directly on the item record, not nested
+    const itemNo = String(data.itemno).replace(/^0+/, '')
+    if (!itemNos.map(n => String(n).replace(/^0+/, '')).includes(itemNo)) return
+    map[itemNo] = mapDayRecord(data)  // ← pass data directly, not data.daySet
+  })
+  return map
+},
   // ────────────────────────────────────────────────────────────
   // generateWeekSchedule
   // ────────────────────────────────────────────────────────────
