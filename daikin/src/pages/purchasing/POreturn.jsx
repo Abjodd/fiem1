@@ -1,131 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import PageLayout from '../../layouts/PageLayout.jsx'
+import { poReturnApi, authConfig, isPrintEnabled } from '../../services/poReturn.js'
+import { useUser } from '../../context/UserContext.jsx'
 import {
   FileText, Package, Truck, Printer, Search, X, Menu, ChevronLeft,
   Hash, Calendar, Building2, MapPin, Globe, FileBadge, Tag,
 } from 'lucide-react'
-
-// ── Mock Data ──
-const MOCK_DOCUMENTS = [
-  {
-    id: 'DC2611070870',
-    documentDate: '05.06.2026',
-    plantCode: '1007',
-    documentNo: '2400001873',
-    postingDate: '05.06.2026',
-    status: 'Return Not Started',
-    generalData: {
-      poNo: '5500007282',
-      vendCode: '14867',
-      poDate: '26/06/26',
-      vehicleNo: '',
-      grNo: '5001106216',
-      orgInv: '25-26/666',
-      ewayBillNo: '',
-      date: '9/10/2025',
-    },
-    consignee: {
-      name: 'B P Industries',
-      address: '169, SECTOR 6, IMT MANASER, ,Gurgaon-122050',
-      stateCode: '6',
-      state: 'Haryana',
-      country: 'India',
-      gstin: '06AAXFBS545J1ZX',
-    },
-    items: [
-      {
-        itemNo: '10', itemCode: '12000030', itemDesc: 'BMC Lacquor', hsnCode: '32089030',
-        quantity: 60, uom: 'L', ratePerUnit: 240, total: 14400, disc: '', otherCharges: '',
-        taxableValue: 14400, cgstRate: 9, cgstAmount: 1296, sgstRate: 9, sgstAmount: 1296,
-        igstRate: 0, igstAmount: 0,
-      },
-    ],
-    remarks: 'REJ AG INV NO-25-26/666/BP IND / LINE REJ',
-    totalValueInWords: 'Sixteen Thousand Nine hundred ninety two rupees',
-    cgst: 1296, sgst: 1296, igst: 0, totalValue: 14400, grandTotal: 16992,
-  },
-  {
-    id: 'DC2611070888',
-    documentDate: '03.06.2026',
-    plantCode: '1007',
-    documentNo: '2400001850',
-    postingDate: '03.06.2026',
-    status: 'Return Not Started',
-    generalData: {
-      poNo: '5500007100',
-      vendCode: '14820',
-      poDate: '15/06/26',
-      vehicleNo: 'HR26AB1234',
-      grNo: '5001106100',
-      orgInv: '25-26/500',
-      ewayBillNo: 'EWB123456',
-      date: '8/10/2025',
-    },
-    consignee: {
-      name: 'Sharma Enterprises',
-      address: '45, Industrial Area, Phase 2, Chandigarh-160002',
-      stateCode: '3',
-      state: 'Punjab',
-      country: 'India',
-      gstin: '03BBBPS1234H1ZX',
-    },
-    items: [
-      {
-        itemNo: '10', itemCode: '11000020', itemDesc: 'Epoxy Resin 500ml', hsnCode: '39071000',
-        quantity: 120, uom: 'EA', ratePerUnit: 180, total: 21600, disc: '', otherCharges: '',
-        taxableValue: 21600, cgstRate: 9, cgstAmount: 1944, sgstRate: 9, sgstAmount: 1944,
-        igstRate: 0, igstAmount: 0,
-      },
-      {
-        itemNo: '20', itemCode: '11000025', itemDesc: 'Hardener 250ml', hsnCode: '39071100',
-        quantity: 120, uom: 'EA', ratePerUnit: 90, total: 10800, disc: '', otherCharges: '',
-        taxableValue: 10800, cgstRate: 9, cgstAmount: 972, sgstRate: 9, sgstAmount: 972,
-        igstRate: 0, igstAmount: 0,
-      },
-    ],
-    remarks: 'QUALITY REJECTION - DAMAGED GOODS',
-    totalValueInWords: 'Thirty Eight Thousand Two hundred thirty two rupees',
-    cgst: 2916, sgst: 2916, igst: 0, totalValue: 32400, grandTotal: 38232,
-  },
-  {
-    id: 'DC2611070912',
-    documentDate: '01.06.2026',
-    plantCode: '1009',
-    documentNo: '2400001900',
-    postingDate: '01.06.2026',
-    status: 'Return Started',
-    generalData: {
-      poNo: '5500007350',
-      vendCode: '14900',
-      poDate: '01/06/26',
-      vehicleNo: 'DL01XY5678',
-      grNo: '5001106350',
-      orgInv: '25-26/800',
-      ewayBillNo: 'EWB789012',
-      date: '5/10/2025',
-    },
-    consignee: {
-      name: 'Patel Trading Co.',
-      address: 'Plot 12, GIDC Estate, Vadodara-390010',
-      stateCode: '24',
-      state: 'Gujarat',
-      country: 'India',
-      gstin: '24CCCPT9876G1ZX',
-    },
-    items: [
-      {
-        itemNo: '10', itemCode: '13000010', itemDesc: 'Polyurethane Coating', hsnCode: '32091000',
-        quantity: 200, uom: 'KG', ratePerUnit: 320, total: 64000, disc: '', otherCharges: '',
-        taxableValue: 64000, cgstRate: 18, cgstAmount: 11520, sgstRate: 18, sgstAmount: 11520,
-        igstRate: 0, igstAmount: 0,
-      },
-    ],
-    remarks: 'REJ DAMAGED IN TRANSIT - CLAIM RAISED',
-    totalValueInWords: 'Eighty Seven Thousand Forty rupees',
-    cgst: 11520, sgst: 11520, igst: 0, totalValue: 64000, grandTotal: 87040,
-  },
-]
 
 // ── Number to words (Indian numbering system) ──
 const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
@@ -155,11 +36,6 @@ const amountToWords = (amount) => {
 }
 
 // ── Status helpers ──
-const isPrintEnabled = (status) => {
-  if (!status) return false
-  const s = status.toLowerCase()
-  return s.includes('return started') && !s.includes('not started')
-}
 const statusStyle = (printOk) =>
   printOk ? 'text-[#107e3e] bg-[#e8f5ec]' : 'text-[#e76500] bg-[#fff3e8]'
 const statusDotColor = (printOk) => (printOk ? '#107e3e' : '#e76500')
@@ -492,7 +368,8 @@ function DeliveryChallanPrint({ doc }) {
 // ═══════════════════════════════════════════════════════════════
 function SidebarContent({
   documents, totalCount, selectedId, searchQuery, sidebarCollapsed,
-  onSelectDocument, onSearchChange, onToggleCollapse,
+  onSelectDocument, onSearchChange, onToggleCollapse, selectedBtnRef,
+  listLoading, listError,
 }) {
   return (
     <>
@@ -535,54 +412,67 @@ function SidebarContent({
       </div>
 
       <div className="flex-1 overflow-y-auto row-stagger">
-        {sidebarCollapsed ? (
-          documents.map((doc) => {
-            const isSelected = doc.id === selectedId
-            return (
-              <button
-                key={doc.id}
-                onClick={() => onSelectDocument(doc.id)}
-                title={doc.id}
-                className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
-              >
-                <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>
-                  {doc.id.slice(-3)}
-                </span>
-              </button>
-            )
-          })
-        ) : (
-          <>
-            {documents.map((doc) => {
+        {listLoading && documents.length === 0 && (
+          <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70]">
+            <div className="w-8 h-8 border-2 border-[#0a6ed1] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            Loading…
+          </div>
+        )}
+        {listError && (
+          <div className="px-4 py-3 text-[13px] text-[#cc1c14] bg-[#fce8e6] border-b border-[#fad6d3]">{listError}</div>
+        )}
+        {!listLoading && !listError && (
+          sidebarCollapsed ? (
+            documents.map((doc) => {
               const isSelected = doc.id === selectedId
-              const printOk = isPrintEnabled(doc.status)
               return (
                 <button
                   key={doc.id}
+                  ref={isSelected ? selectedBtnRef : null}
                   onClick={() => onSelectDocument(doc.id)}
-                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
+                  title={doc.id}
+                  className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[14px] font-bold text-[#0a6ed1]">{doc.id}</span>
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${statusStyle(printOk)}`}>
-                      {printOk ? 'Started' : 'Not Started'}
-                    </span>
-                  </div>
-                  <div className="text-[13px] text-[#6a6d70] mb-1">Doc: {doc.documentNo}</div>
-                  <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
-                    <span>Plant {doc.plantCode}</span>
-                    <span>{doc.documentDate}</span>
-                  </div>
+                  <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>
+                    {doc.id.slice(-3)}
+                  </span>
                 </button>
               )
-            })}
-            {documents.length === 0 && (
-              <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
-                <Search size={36} className="mx-auto mb-2 opacity-40" />
-                No documents found
-              </div>
-            )}
-          </>
+            })
+          ) : (
+            <>
+              {documents.map((doc) => {
+                const isSelected = doc.id === selectedId
+                const printOk = isPrintEnabled(doc.status)
+                return (
+                  <button
+                    key={doc.id}
+                    ref={isSelected ? selectedBtnRef : null}
+                    onClick={() => onSelectDocument(doc.id)}
+                    className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[14px] font-bold text-[#0a6ed1]">{doc.id}</span>
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${statusStyle(printOk)}`}>
+                        {printOk ? 'Started' : 'Not Started'}
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-[#6a6d70] mb-1">Doc: {doc.documentNo}</div>
+                    <div className="flex items-center justify-between text-[13px] text-[#6a6d70]">
+                      <span>Plant {doc.plantCode}</span>
+                      <span>{doc.documentDate}</span>
+                    </div>
+                  </button>
+                )
+              })}
+              {documents.length === 0 && (
+                <div className="px-4 py-12 text-center text-[13px] text-[#6a6d70] anim-fade">
+                  <Search size={36} className="mx-auto mb-2 opacity-40" />
+                  No documents found
+                </div>
+              )}
+            </>
+          )
         )}
       </div>
 
@@ -612,25 +502,78 @@ function InfoField({ label, value }) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function ReturnPOMatdoc() {
-  const [selectedId, setSelectedId] = useState(MOCK_DOCUMENTS[0].id)
+  const { loginId, loginType, loading: userLoading } = useUser()
+  authConfig.loginId = loginId
+  authConfig.loginType = loginType
+
+  const [documents, setDocuments] = useState([])
+  const [listLoading, setListLoading] = useState(false)
+  const [listError, setListError] = useState(null)
+
+  const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem('dc_selected_id') || null)
+  const [selectedDoc, setSelectedDoc] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState(null)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('general')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [printLoading, setPrintLoading] = useState(false)
+  const selectedBtnRef = useRef(null)
 
-  const selectedDoc = useMemo(
-    () => MOCK_DOCUMENTS.find((d) => d.id === selectedId) || null,
-    [selectedId]
-  )
+  // ── fetch sidebar list ──
+  useEffect(() => {
+    if (userLoading) return
+    if (!loginId || !loginType) return
+
+    let cancelled = false
+    setListLoading(true); setListError(null)
+    poReturnApi.listHeaders()
+      .then((data) => { if (!cancelled) setDocuments(data) })
+      .catch((err) => { if (!cancelled) setListError(err.message) })
+      .finally(() => { if (!cancelled) setListLoading(false) })
+    return () => { cancelled = true }
+  }, [userLoading, loginId, loginType])
+
+  // ── pick a default selection once list loads ──
+  useEffect(() => {
+    if (!selectedId && documents.length > 0) {
+      const saved = sessionStorage.getItem('dc_selected_id')
+      const exists = saved && documents.some((d) => d.id === saved)
+      setSelectedId(exists ? saved : documents[0].id)
+    }
+  }, [documents, selectedId])
+
+  useEffect(() => {
+    if (selectedId) sessionStorage.setItem('dc_selected_id', selectedId)
+  }, [selectedId])
+
+  // ── fetch full document detail on selection ──
+  useEffect(() => {
+    let cancelled = false
+    if (!selectedId) { setSelectedDoc(null); return }
+    setDetailLoading(true); setDetailError(null)
+    poReturnApi.getDocumentDetail(selectedId)
+      .then((data) => { if (!cancelled) setSelectedDoc(data) })
+      .catch((err) => { if (!cancelled) setDetailError(err.message) })
+      .finally(() => { if (!cancelled) setDetailLoading(false) })
+    return () => { cancelled = true }
+  }, [selectedId])
+
+  useEffect(() => {
+    if (selectedBtnRef.current) {
+      selectedBtnRef.current.scrollIntoView({ block: 'nearest', behavior: documents.length > 0 ? 'smooth' : 'auto' })
+    }
+  }, [selectedId, documents])
 
   const filteredDocs = useMemo(() => {
-    if (!searchQuery.trim()) return MOCK_DOCUMENTS
+    if (!searchQuery.trim()) return documents
     const q = searchQuery.trim().toUpperCase()
-    return MOCK_DOCUMENTS.filter(
-      (d) => d.id.toUpperCase().includes(q) || d.documentNo.includes(q) || d.plantCode.includes(q)
+    return documents.filter(
+      (d) => d.id.toUpperCase().includes(q) || d.documentNo.toUpperCase().includes(q) || d.plantCode.includes(q)
     )
-  }, [searchQuery])
+  }, [documents, searchQuery])
 
   useEffect(() => {
     if (!mobileSidebarOpen) return
@@ -663,13 +606,16 @@ export default function ReturnPOMatdoc() {
 
   const sidebarProps = {
     documents: filteredDocs,
-    totalCount: MOCK_DOCUMENTS.length,
+    totalCount: documents.length,
     selectedId,
     searchQuery,
     sidebarCollapsed,
     onSelectDocument: handleSelectDocument,
     onSearchChange: setSearchQuery,
     onToggleCollapse: () => setSidebarCollapsed((c) => !c),
+    selectedBtnRef,
+    listLoading,
+    listError,
   }
 
   const doc = selectedDoc
@@ -789,7 +735,7 @@ export default function ReturnPOMatdoc() {
               </div>
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">Total Value (in words)</div>
-                <div className="text-[13px] font-semibold text-[#32363a] italic mt-1">{amountToWords(doc.grandTotal)}</div>
+                <div className="text-[13px] font-semibold text-[#32363a] italic mt-1">{doc.totalValueInWords || amountToWords(doc.grandTotal)}</div>
               </div>
             </div>
             <div className="px-5 py-5">
@@ -868,7 +814,20 @@ export default function ReturnPOMatdoc() {
           </aside>
 
           <main className="flex-1 bg-white overflow-y-auto anim-slide-r min-w-0 h-full">
-            {doc && (
+            {detailLoading && (
+              <div className="flex flex-col items-center justify-center h-64 gap-2">
+                <div className="w-10 h-10 border-2 border-[#0a6ed1] border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!detailLoading && detailError && (
+              <div className="flex flex-col items-center justify-center h-64 text-[#cc1c14] gap-2">
+                <FileText size={32} className="opacity-50" />
+                <span className="text-[14px]">{detailError}</span>
+              </div>
+            )}
+
+            {!detailLoading && !detailError && doc && (
               <>
                 <div className="sticky top-0 z-20 bg-white">
                   <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
@@ -962,7 +921,7 @@ export default function ReturnPOMatdoc() {
               </>
             )}
 
-            {!doc && (
+            {!detailLoading && !detailError && !doc && (
               <div className="flex flex-col items-center justify-center h-64 text-[#6a6d70] anim-fade">
                 <FileText size={48} className="mb-3 opacity-30" strokeWidth={1.5} />
                 <span className="text-[14px]">Select a document from the list</span>
