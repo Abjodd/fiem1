@@ -433,7 +433,7 @@ export default function PurchaseOrder() {
   const [agreements,          setAgreements]          = useState([])
   const [listLoading,         setListLoading]         = useState(false)
   const [listError,           setListError]           = useState(null)
-  const [selectedAgreementId, setSelectedAgreementId] = useState(null)
+  const [selectedAgreementId, setSelectedAgreementId] = useState(() => sessionStorage.getItem('po_selected_id') || null)
   const [agreement,           setAgreement]           = useState(null)
   const [detailLoading,       setDetailLoading]       = useState(false)
   const [detailError,         setDetailError]         = useState(null)
@@ -467,9 +467,18 @@ export default function PurchaseOrder() {
   return () => { cancelled = true }
 }, [userLoading, loginId, loginType]) 
 
-  useEffect(() => {
-    if (!selectedAgreementId && agreements.length > 0) setSelectedAgreementId(agreements[0].id)
-  }, [agreements, selectedAgreementId])
+useEffect(() => {
+  if (!selectedAgreementId && agreements.length > 0) {
+    const saved = sessionStorage.getItem('po_selected_id')
+    const exists = saved && agreements.some(a => a.id === saved)
+    const id = exists ? saved : agreements[0].id
+    setSelectedAgreementId(id)
+  }
+}, [agreements, selectedAgreementId])
+
+useEffect(() => {
+  if (selectedAgreementId) sessionStorage.setItem('po_selected_id', selectedAgreementId)
+}, [selectedAgreementId])
 
   useEffect(() => {
     let cancelled = false
@@ -482,9 +491,11 @@ export default function PurchaseOrder() {
     return () => { cancelled = true }
   }, [selectedAgreementId])
 
-  useEffect(() => {
-    if (selectedBtnRef.current) selectedBtnRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [selectedAgreementId])
+useEffect(() => {
+  if (selectedBtnRef.current) {
+    selectedBtnRef.current.scrollIntoView({ block: 'nearest', behavior: agreements.length > 0 ? 'smooth' : 'auto' })
+  }
+}, [selectedAgreementId, agreements])
 
   useEffect(() => {
     const handler = (e) => { if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false) }

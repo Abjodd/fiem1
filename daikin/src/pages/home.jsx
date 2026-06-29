@@ -11,7 +11,7 @@ function Home() {
 
     if (error) {
       console.error("AUTH ERROR:", error);
-      navigate("/login");
+      // navigate("/login");
       return;
     }
 

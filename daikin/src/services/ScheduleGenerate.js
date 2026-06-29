@@ -63,6 +63,8 @@ function mapHeader(d) {
     companyCode: d.compcode,
     plant:       d.plant,
     plantName:   d.plant,
+    lifnr:       d.lifnr,
+    vendor:      d.name,
   }
 }
 
@@ -260,7 +262,7 @@ function buildEditPayload(agreementId, lifnr, item) {
   }
 }
 
-function buildApprovePayload(agreementId, lifnr, item) {
+function buildSendForApprovalPayload(agreementId, lifnr, item) {
   const childRow = {
     agreement:  agreementId,
     itemno:     item.itemNo,
@@ -269,7 +271,6 @@ function buildApprovePayload(agreementId, lifnr, item) {
     status:     item.status    ?? '',
     appflag:    'X',
   }
-
   return {
     agreement:  agreementId,
     lifnr,
@@ -283,6 +284,23 @@ function buildApprovePayload(agreementId, lifnr, item) {
     status:     item.status    ?? '',
     date:       item.date      ?? '',
     approveSet: { results: [childRow] },
+  }
+}
+
+function buildApprovePayload(agreementId, lifnr, item) {
+  return {
+    agreement:  agreementId,
+    lifnr:      lifnr,
+    itemno:     item.itemNo,
+    sapcode:    item.sapCode,
+    desc:       item.description ?? '',
+    hsn:        item.hsnCode     ?? '',
+    totalsch:   String(item.totalQuantity),
+    unitprice:  String(item.unitPrice  ?? 0),
+    indicator:  item.indicator ?? '',
+    status:     item.status    ?? '',
+    date:       item.date      ?? '',
+    appflag:    'Y',
   }
 }
 
@@ -319,6 +337,55 @@ export const scheduleGenerateApi = {
     const data = await odataGet('/f4supplierSet?$format=json')
     const results = data.results ?? []
     return results.map(d => ({ lifnr: d.lifnr, name: d.name }))
+  },
+
+  // ────────────────────────────────────────────────────────────
+  // listAgreements (NEW — for Approver Sidebar)
+  // ────────────────────────────────────────────────────────────
+  async listAgreements({ search = '', plants = [] } = {}) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      let rows = Object.values(MOCK_SUPPLIERS).flatMap(s => 
+        s.agreements.map(a => ({ ...a, lifnr: s.code, vendor: s.name }))
+      )
+      return rows
+    }
+
+    const data = await odataGet('/sg_headerSet?$format=json')
+    let rows = (data.results ?? []).map(mapHeader)
+    
+    const q = search.trim().toLowerCase()
+    if (q) {
+      rows = rows.filter(a =>
+        a.id.toLowerCase().includes(q) ||
+        (a.vendor || '').toLowerCase().includes(q) ||
+        (a.lifnr || '').toLowerCase().includes(q) ||
+        a.plant.toLowerCase().includes(q)
+      )
+    }
+    if (plants.length) rows = rows.filter(a => plants.includes(a.plant))
+    return rows
+  },
+
+  // ────────────────────────────────────────────────────────────
+  // getAgreementDetails (NEW — for Approver Sidebar selection)
+  // ────────────────────────────────────────────────────────────
+  async getAgreementDetails(agreementId, lifnr, isApprover = false) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      const s = MOCK_SUPPLIERS[lifnr.toUpperCase()]
+      if (!s) return null
+      const ag = s.agreements.find(a => a.id === agreementId)
+      if (!ag) return null
+      return { id: agreementId, items: ag.items.map(it => ({ ...it })) }
+    }
+
+    const endpoint = isApprover ? '/approveSet' : '/sg_itemSet'
+    const itemsRaw = await odataGet(
+      `${endpoint}?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$format=json`
+    )
+    const items = (itemsRaw.results ?? []).map(mapItem)
+    return { id: agreementId, items }
   },
 
   // ────────────────────────────────────────────────────────────
@@ -425,18 +492,31 @@ export const scheduleGenerateApi = {
   return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
 },
 
-async approveSchedule(agreementId, lifnr, itemsData) {
+  async sendForApproval(agreementId, lifnr, itemsData) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 300))
+      return { success: true }
+    }
+    await Promise.all(
+      itemsData.map(item =>
+        odataPost('/sg_itemSet', buildSendForApprovalPayload(agreementId, lifnr, item))
+      )
+    )
+    return { success: true }
+  },
+
+  async approveSchedule(agreementId, lifnr, itemsData) {
   if (USE_MOCK) {
     await new Promise(r => setTimeout(r, 300))
     console.log('[mock] approveSchedule', agreementId, itemsData.map(i => i.itemNo))
     return { success: true }
   }
 
-  await Promise.all(
-    itemsData.map(item =>
-      odataPost('/sg_itemSet', buildApprovePayload(agreementId, lifnr, item))
+    await Promise.all(
+      itemsData.map(item =>
+        odataPost('/approveSet', buildApprovePayload(agreementId, lifnr, item))
+      )
     )
-  )
   return { success: true }
 },
 }
