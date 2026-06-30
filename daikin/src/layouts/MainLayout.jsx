@@ -5,6 +5,7 @@ import { NAV_MODULES } from '../router/index.jsx'
 import TileGrid from '../components/TileGrid.jsx'
 import { getVisibleModules } from '../lib/auth.js' 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useUser } from '../context/UserContext.jsx'
 
 const MOD_ICONS = {
   operations: (
@@ -646,9 +647,9 @@ const CSS = `
 
 export default function MainLayout() {
   const location = useLocation()
-  const user = JSON.parse(localStorage.getItem('daikin_user') || 'null')
-const visibleModules = useMemo(() => getVisibleModules(user?.role, NAV_MODULES), [user?.role])
-const [activeModule, setActiveModule] = useState(visibleModules[0]?.id)
+  const { role, loading } = useUser()
+  const visibleModules = useMemo(() => getVisibleModules(role, NAV_MODULES), [role])
+  const [activeModule, setActiveModule] = useState(visibleModules[0]?.id)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const sectionRefs = useRef({})
   const pillItemRefs = useRef({})
@@ -656,6 +657,12 @@ const [activeModule, setActiveModule] = useState(visibleModules[0]?.id)
   const scrollAreaRef = useRef(null)
   const isScrollingTo = useRef(false)
   const scrollTimer = useRef(null)
+
+  useEffect(() => {
+  if (!activeModule && visibleModules.length) {
+    setActiveModule(visibleModules[0].id)
+  }
+}, [visibleModules, activeModule])
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : ''
@@ -757,6 +764,7 @@ const [activeModule, setActiveModule] = useState(visibleModules[0]?.id)
     scrollArea.scrollTo({ top, behavior: 'smooth' })
     scrollTimer.current = setTimeout(() => { isScrollingTo.current = false }, 900)
   }, [])
+  if (loading) return null 
 
   return (
     <>
