@@ -428,13 +428,15 @@ const handleSuccessOk = () => {
                       >
                         {a.asnId}
                         {a.asnYear && <span className="text-[#6a6d70] font-normal">/{a.asnYear}</span>}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAsn(a.asnId, a.asnYear)}
-                          className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-[#cc1c14] hover:text-white text-[#6a6d70] transition-all"
-                        >
-                          <X size={10} />
-                        </button>
+                        {!isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAsn(a.asnId, a.asnYear)}
+                            className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-[#cc1c14] hover:text-white text-[#6a6d70] transition-all"
+                          >
+                            <X size={10} />
+                          </button>
+                        )}
                       </span>
                     ))}
                   </div>
@@ -442,9 +444,12 @@ const handleSuccessOk = () => {
                 <button
                   type="button"
                   onClick={() => setAsnLookupOpen(true)}
-                  className={`flex items-center gap-2 h-10 px-3 w-full text-[14px] border rounded-lg transition-all ${errors.asnNums
-                    ? 'border-[#cc1c14] text-[#cc1c14] bg-[#fff9f9] hover:bg-[#fce8e6]'
-                    : 'border-[#d9d9d9] text-[#0a6ed1] bg-white hover:border-[#0a6ed1] hover:bg-[#f0f7ff]'
+                  disabled={isEditMode}
+                  className={`flex items-center gap-2 h-10 px-3 w-full text-[14px] border rounded-lg transition-all ${isEditMode
+                    ? 'border-[#d9d9d9] text-[#b0b3b8] bg-[#f5f6f7] cursor-not-allowed'
+                    : errors.asnNums
+                      ? 'border-[#cc1c14] text-[#cc1c14] bg-[#fff9f9] hover:bg-[#fce8e6]'
+                      : 'border-[#d9d9d9] text-[#0a6ed1] bg-white hover:border-[#0a6ed1] hover:bg-[#f0f7ff]'
                     }`}
                 >
                   <Plus size={15} />
@@ -544,7 +549,6 @@ const handleSuccessOk = () => {
                 value={form.transporterName}
                 onChange={(e) => updateField('transporterName', e.target.value)}
                 placeholder="e.g. BNE, DHL, Bluedart"
-                readOnly={isEditMode}
                 className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.transporterName
                   ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
                   : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'
@@ -558,7 +562,6 @@ const handleSuccessOk = () => {
                 type="text"
                 value={form.driverName}
                 onChange={(e) => updateField('driverName', e.target.value)}
-                 readOnly={isEditMode}
                 placeholder="Enter driver's name"
                 className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.driverName
                   ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20'
@@ -578,7 +581,6 @@ const handleSuccessOk = () => {
                     e.target.value.replace(/\D/g, '').slice(0, 10)
                   )
                 }
-                readOnly={isEditMode}
                 placeholder="10-digit phone number"
                 maxLength={10}
                 className={`w-full h-10 px-3 text-[14px] border rounded-lg bg-white focus:outline-none focus:ring-2 transition-all ${errors.contactNumber

@@ -183,7 +183,7 @@ export default function GoodsMovement() {
 
   // Update modal (In Transit / Shipped)
   const [updateModalOpen, setUpdateModalOpen] = useState(false)
-  const [updateForm, setUpdateForm] = useState({ asn: '', asnId: '', vehicleNumber: '', invoiceNumber: '' })
+  const [updateForm, setUpdateForm] = useState({ asn: '', asnId: '', vehicleNumber: '', invoiceNumber: '', lrNum: '', finalTransporterName: '' })
   const [updateSaving, setUpdateSaving] = useState(false)
   const [updateError, setUpdateError] = useState('')
 
@@ -346,6 +346,8 @@ export default function GoodsMovement() {
       asnId:         firstAsn?.asnId || '',
       vehicleNumber: tracking.vehicleRegNo || '',
       invoiceNumber: firstAsn?.invoiceNumber || '',
+      lrNum: tracking.lrNum || '',
+      finalTransporterName: tracking.finalTransporterName || '',
     })
     setUpdateError(''); setUpdateModalOpen(true)
   }
@@ -361,7 +363,12 @@ export default function GoodsMovement() {
       await goodsMovementApi.updateInTransitShipment(
         tracking.trackingNo,
         updateForm.asnId || updateForm.asn,
-        { vehicleNumber: updateForm.vehicleNumber, invoiceNumber: updateForm.invoiceNumber }
+        { 
+          vehicleNumber: updateForm.vehicleNumber, 
+          invoiceNumber: updateForm.invoiceNumber,
+          lrNum: updateForm.lrNum,
+          finalTransporterName: updateForm.finalTransporterName
+        }
       )
       const updated = await goodsMovementApi.getTracking(tracking.id)
       setTracking(updated)
@@ -509,6 +516,8 @@ export default function GoodsMovement() {
               <div><div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">ASN</div><div className="text-[14px] font-semibold text-[#0a6ed1] mt-1">{tracking.asns?.[0]?.asnId || '—'}</div></div>
               <div><div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">Vehicle Number</div><div className="text-[14px] font-semibold text-[#32363a] mt-1">{tracking.vehicleRegNo || '—'}</div></div>
               <div><div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">Invoice Number</div><div className="text-[14px] font-semibold text-[#32363a] mt-1">{tracking.asns?.[0]?.invoiceNumber || '—'}</div></div>
+              <div><div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">LR No.</div><div className="text-[14px] font-semibold text-[#32363a] mt-1">{tracking.lrNum || '—'}</div></div>
+              <div className="sm:col-span-2"><div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">Final Transporter Name</div><div className="text-[14px] font-semibold text-[#32363a] mt-1">{tracking.finalTransporterName || '—'}</div></div>
             </div>
           </div>
         </div>
@@ -708,14 +717,14 @@ export default function GoodsMovement() {
 
       {/* Update Shipment Modal (In Transit) */}
       {updateModalOpen && tracking && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 anim-overlay">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center px-4 anim-overlay mt-16 sm:mt-0">
           <div className="absolute inset-0 bg-black/40" onClick={closeUpdateModal} />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[560px] anim-modal">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[560px] max-h-[85vh] flex flex-col anim-modal">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5] flex-shrink-0">
               <div><div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold">Tracking No</div><div className="text-[16px] font-bold text-[#32363a] mt-0.5">{tracking.id}</div></div>
               <button onClick={closeUpdateModal} className="w-9 h-9 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all"><X size={17} /></button>
             </div>
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">ASN <span className="text-[#cc1c14]">*</span></label>
                 <div className="relative">
@@ -735,9 +744,19 @@ export default function GoodsMovement() {
                 <input type="text" value={updateForm.invoiceNumber} onChange={(e) => setUpdateForm(f => ({ ...f, invoiceNumber: e.target.value }))} placeholder="e.g. INB867"
                   className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
               </div>
+              <div>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">LR No.</label>
+                <input type="text" value={updateForm.lrNum} onChange={(e) => setUpdateForm(f => ({ ...f, lrNum: e.target.value }))} placeholder="Enter LR Number"
+                  className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+              </div>
+              <div>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Final Transporter Name</label>
+                <input type="text" value={updateForm.finalTransporterName} onChange={(e) => setUpdateForm(f => ({ ...f, finalTransporterName: e.target.value }))} placeholder="Enter Final Transporter Name"
+                  className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+              </div>
               {updateError && <div className="text-[13px] text-[#cc1c14] bg-[#fce8e6] border border-[#f5b3ae] rounded-lg px-3 py-2">{updateError}</div>}
             </div>
-            <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
+            <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2 flex-shrink-0">
               <button onClick={closeUpdateModal} disabled={updateSaving} className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all disabled:opacity-60">Cancel</button>
               <button onClick={handleUpdateSave} disabled={updateSaving} className="flex items-center gap-1.5 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100">
                 <Save size={14} /> {updateSaving ? 'Saving…' : 'Save'}

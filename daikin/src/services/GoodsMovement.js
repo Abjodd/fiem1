@@ -169,6 +169,8 @@ const mapHeader = (d, year) => {
     shipment:   d.Shipment || '',
     txn:        d.Txn || '',
     invoiceNum: d.InvoiceNum || '',
+    lrNum: d.LRNO || d.InvoiceNum || '',
+    finalTransporterName: d.FINALTRANS || d.FinalTransporter || '',
 
     // Timeline
     timeline: buildTimeline(d),
@@ -322,6 +324,8 @@ export const goodsMovementApi = {
   TRACK:     trackNo,
   INVNO:     payload.invoiceNumber || '',
   TRANSPORT: payload.vehicleNumber || '',
+  LRNO:      payload.lrNum || '',
+  FINALTRANS: payload.finalTransporterName || '',
 }
     return odataWrite(`/Invoice_Transporter_editSet(${key})`, body, 'PUT')
   },
