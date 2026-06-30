@@ -29,3 +29,11 @@ export const saveUser = (user) => localStorage.setItem('daikin_user', JSON.strin
 //   return user ? JSON.parse(user) : null;
 // };
 // export const logout   = ()     => localStorage.removeItem('daikin_user');
+export const getVisibleModules = (role, NAV_MODULES) => {
+  return NAV_MODULES
+    .map((mod) => ({
+      ...mod,
+      tiles: mod.tiles.filter((tile) => canAccess(role, tile.path)),
+    }))
+    .filter((mod) => mod.tiles.length > 0)
+}

@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+
 import { useLocation } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-import { NAV_MODULES } from '../router/index.jsx'
+import { NAV_MODULES } from '../router/index.jsx' 
 import TileGrid from '../components/TileGrid.jsx'
+import { getVisibleModules } from '../lib/auth.js' 
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 
 const MOD_ICONS = {
   operations: (
@@ -644,7 +646,9 @@ const CSS = `
 
 export default function MainLayout() {
   const location = useLocation()
-  const [activeModule, setActiveModule] = useState(NAV_MODULES[0]?.id)
+  const user = JSON.parse(localStorage.getItem('daikin_user') || 'null')
+const visibleModules = useMemo(() => getVisibleModules(user?.role, NAV_MODULES), [user?.role])
+const [activeModule, setActiveModule] = useState(visibleModules[0]?.id)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const sectionRefs = useRef({})
   const pillItemRefs = useRef({})
@@ -717,7 +721,7 @@ export default function MainLayout() {
       { root: scrollArea, rootMargin: '-160px 0px -25% 0px', threshold: 0 }
     )
 
-    NAV_MODULES.forEach((mod) => {
+    visibleModules.forEach((mod) => {
       const el = sectionRefs.current[mod.id]
       if (el) { el.dataset.moduleId = mod.id; obs.observe(el) }
     })
@@ -765,7 +769,7 @@ export default function MainLayout() {
 
         <nav className="ml-pillnav" aria-label="Module navigation">
           <div className="ml-pill-scroll" ref={pillScrollRef}>
-            {NAV_MODULES.map((mod) => (
+            {visibleModules.map((mod) => (
               <button
                 key={mod.id}
                 ref={(el) => (pillItemRefs.current[mod.id] = el)}
@@ -820,7 +824,7 @@ export default function MainLayout() {
 
           <div className="ml-drawer-body">
             <div className="ml-drawer-group">All Modules</div>
-            {NAV_MODULES.map((mod) => (
+            {visibleModules.map((mod) => (
               <button
                 key={mod.id}
                 type="button"
@@ -848,7 +852,7 @@ export default function MainLayout() {
         <div className="ml-body">
           <div className="ml-scroll" ref={scrollAreaRef}>
             <main className="ml-main">
-              {NAV_MODULES.map((mod) => (
+              {visibleModules.map((mod) => (
                 <section
                   key={mod.id}
                   id={`section-${mod.id}`}
@@ -881,7 +885,7 @@ export default function MainLayout() {
         </div>
 
         <nav className="ml-mobile-nav" aria-label="Module navigation (mobile)">
-          {NAV_MODULES.map((mod) => (
+          {visibleModules.map((mod) => (
             <button
               key={mod.id}
               type="button"
