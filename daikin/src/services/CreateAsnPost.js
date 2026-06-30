@@ -55,7 +55,7 @@ export function buildAsnPayload({ poNo, invoice, selectedItems, header = {} }) {
     Lgort:           str(it.storageLocation),
     Matnr:           str(it.materialNumber),
     Maktx:           str(it.materialName),
-    Menge:           str(it.avlAsnQty),
+    Menge:           str(it.confQty),
     Meins:           str(it.totalUnit),
     Netpr:           str(it.netPrice),
     NetprVen:        str(it.supplierNetPrice),

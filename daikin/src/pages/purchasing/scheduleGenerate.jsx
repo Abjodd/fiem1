@@ -11,10 +11,9 @@ const formatSapDate = (v) => {
   if (s.length !== 8) return s
   return `${s.slice(6, 8)}.${s.slice(4, 6)}.${s.slice(0, 4)}`
 }
+const withKeys = (arr) => arr.map(it => ({ ...it, _key: `${it.itemNo}-${it.sapCode}` }))
 
-// ═══════════════════════════════════════════════════════════════
-// F4 SUPPLIER PICKER  (value help modal)
-// ═══════════════════════════════════════════════════════════════
+
 function F4SupplierPicker({ onSelect, onClose }) {
   const [suppliers, setSuppliers] = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -385,28 +384,28 @@ export default function ScheduleGenerate() {
     const restore = location.state?.restoreData
     if (!ret && !restore) return
     if (restore?.supplier && restore?.agreement) {
-      setSupplier(restore.supplier)
-      setAgreement(restore.agreement)
-      setShowSupplierPopup(false)
-      if (ret) {
-        const { savedLines, pendingIndicator } = ret
-        const baseItems = restore.agreement.items.map(it => ({ ...it }))
-        setItems(baseItems.map(it => {
-          const saved = savedLines?.find(sl => sl.itemNo === it.itemNo)
-          if (!saved) return it
-          return {
-            ...it,
-            days:       [...saved.days],
-            frozenDays: saved.frozenDays ?? it.frozenDays,
-            status:     'In Draft',
-            ...(pendingIndicator ? { indicator: pendingIndicator } : {}),
-          }
-        }))
-      } else {
-        setItems(restore.agreement.items.map(it => ({ ...it })))
-        setSelectedItems(new Set())
+  setSupplier(restore.supplier)
+  setAgreement(restore.agreement)
+  setShowSupplierPopup(false)
+  if (ret) {
+    const { savedLines, pendingIndicator } = ret
+    const baseItems = restore.agreement.items.map(it => ({ ...it }))
+    setItems(withKeys(baseItems.map(it => {
+      const saved = savedLines?.find(sl => sl.itemNo === it.itemNo)
+      if (!saved) return it
+      return {
+        ...it,
+        days:       [...saved.days],
+        frozenDays: saved.frozenDays ?? it.frozenDays,
+        status:     'In Draft',
+        ...(pendingIndicator ? { indicator: pendingIndicator } : {}),
       }
-    }
+    })))
+  } else {
+    setItems(withKeys(restore.agreement.items.map(it => ({ ...it }))))
+    setSelectedItems(new Set())
+  }
+}
     navigate(location.pathname, { replace: true, state: {} })
   }, [location.state?.returnData, location.state?.restoreData]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -416,7 +415,7 @@ export default function ScheduleGenerate() {
     if (supp.agreements.length > 0) {
       const ag = supp.agreements[0]
       setAgreement(ag)
-      setItems(ag.items.map(it => ({ ...it })))
+      setItems(withKeys(ag.items.map(it => ({ ...it }))))
       setSelectedItems(new Set())
     }
   }
@@ -462,168 +461,167 @@ export default function ScheduleGenerate() {
   }, [filterOpen])
 
   const handleSelectAgreement = async (id, lifnr, vendorName, agInfo) => {
-    setSelectedAgreementId(id)
-    setMobileSidebarOpen(false)
-    setItems([])
-    setSelectedItems(new Set())
-    setBusy(true)
-    setBusyLabel('Loading items…')
-    try {
-      const details = await scheduleGenerateApi.getAgreementDetails(id, lifnr, isApprover)
-      if (details) {
-        setSupplier({ code: lifnr, name: vendorName, agreements: [details] })
-        setAgreement(agInfo || { id })
-        setItems(details.items || [])
-      }
-    } catch (err) {
-      console.error(err)
-      setSidebarError(err.message)
-    } finally {
-      setBusy(false)
-      setBusyLabel('')
+  setSelectedAgreementId(id)
+  setMobileSidebarOpen(false)
+  setItems([])
+  setSelectedItems(new Set())
+  setBusy(true)
+  setBusyLabel('Loading items…')
+  try {
+    const details = await scheduleGenerateApi.getAgreementDetails(id, lifnr, isApprover)
+    if (details) {
+      setSupplier({ code: lifnr, name: vendorName, agreements: [details] })
+      setAgreement(agInfo || { id })
+      setItems(withKeys(details.items || []))
     }
+  } catch (err) {
+    console.error(err)
+    setSidebarError(err.message)
+  } finally {
+    setBusy(false)
+    setBusyLabel('')
   }
+}
+  const toggleItem = key => setSelectedItems(prev => {
+  const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n
+})
+const toggleAll = () =>
+  setSelectedItems(selectedItems.size === items.length
+    ? new Set()
+    : new Set(items.map(i => i._key)))
 
-  const toggleItem = itemNo => setSelectedItems(prev => {
-    const n = new Set(prev); n.has(itemNo) ? n.delete(itemNo) : n.add(itemNo); return n
-  })
-  const toggleAll = () =>
-    setSelectedItems(selectedItems.size === items.length
-      ? new Set()
-      : new Set(items.map(i => i.itemNo)))
-
-  const selArr     = Array.from(selectedItems)
-  const allHaveW   = selArr.length > 0 && selArr.every(no => items.find(i => i.itemNo === no)?.indicator === 'W')
-  const allHaveD   = selArr.length > 0 && selArr.every(no => items.find(i => i.itemNo === no)?.indicator === 'D')
-  const anyHaveD   = selArr.some(no => items.find(i => i.itemNo === no)?.indicator === 'D')
-  const anyHaveW   = selArr.some(no => items.find(i => i.itemNo === no)?.indicator === 'W')
-  const anyHaveInd = selArr.some(no => items.find(i => i.itemNo === no)?.indicator)
+const selArr     = Array.from(selectedItems)
+const allHaveW   = selArr.length > 0 && selArr.every(k => items.find(i => i._key === k)?.indicator === 'W')
+const allHaveD   = selArr.length > 0 && selArr.every(k => items.find(i => i._key === k)?.indicator === 'D')
+const anyHaveD   = selArr.some(k => items.find(i => i._key === k)?.indicator === 'D')
+const anyHaveW   = selArr.some(k => items.find(i => i._key === k)?.indicator === 'W')
+const anyHaveInd = selArr.some(k => items.find(i => i._key === k)?.indicator)
 
   const weekDisabled = selArr.length === 0 || anyHaveD || busy
   const dayDisabled  = selArr.length === 0 || anyHaveW || busy
   const editDisabled = selArr.length === 0 || !anyHaveInd || busy
 
-  const openScheduleLines = (selectedItemNos, editable, title, mode, pendingIndicator, overrideItems) => {
-    const itemsForLines = (overrideItems ?? items).filter(it => selectedItemNos.includes(it.itemNo))
-    navigate('/purchasing/schedule-lines', {
-      state: {
-        selectedItemNos,
-        editable,
-        title,
-        mode,
-        pendingIndicator,
-        agreementId:   agreement.id,
-        supplierCode:  supplier.code,
-        supplierName:  supplier.name,
-        plantName:     agreement.plantName,
-        companyCode:   agreement.companyCode,
-        agreementDate: formatSapDate(agreement.date),
-        itemsData:     itemsForLines,
-        supplierFull:  supplier,
-        agreementFull: agreement,
-      },
-    })
-  }
-
+  const openScheduleLines = (selectedKeys, editable, title, mode, pendingIndicator, overrideItems) => {
+  const itemsForLines = (overrideItems ?? items).filter(it => selectedKeys.includes(it._key))
+  navigate('/purchasing/schedule-lines', {
+    state: {
+      selectedItemNos: itemsForLines.map(it => it.itemNo),
+      editable,
+      title,
+      mode,
+      pendingIndicator,
+      agreementId:   agreement.id,
+      supplierCode:  supplier.code,
+      supplierName:  supplier.name,
+      plantName:     agreement.plantName,
+      companyCode:   agreement.companyCode,
+      agreementDate: formatSapDate(agreement.date),
+      itemsData:     itemsForLines,
+      supplierFull:  supplier,
+      agreementFull: agreement,
+    },
+  })
+}
   const handleWeek = () => {
-    if (weekDisabled) return
-    const itemsWithDays = items
-      .filter(it => selArr.includes(it.itemNo))
-      .map(it => ({ ...it, days: generateDays(it.totalQuantity, 'week', null), indicator: 'W' }))
-    openScheduleLines(selArr, true, 'Schedule Lines — Week', 'WEEKLY', 'W', itemsWithDays)
-  }
+  if (weekDisabled) return
+  const itemsWithDays = items
+    .filter(it => selArr.includes(it._key))
+    .map(it => ({ ...it, days: generateDays(it.totalQuantity, 'week', null), indicator: 'W' }))
+  openScheduleLines(selArr, true, 'Schedule Lines — Week', 'WEEKLY', 'W', itemsWithDays)
+}
 
   const handleDayClick = () => { if (!dayDisabled) setShowDayPopup(true) }
 
-  const handleDayGenerate = (dayCount) => {
-    setShowDayPopup(false)
-    const itemsWithDays = items
-      .filter(it => selArr.includes(it.itemNo))
-      .map(it => ({ ...it, days: generateDays(it.totalQuantity, 'day', dayCount), indicator: 'D' }))
-    navigate('/purchasing/schedule-lines', {
-      state: {
-        selectedItemNos:  selArr,
-        editable:         true,
-        title:            `Schedule Lines — Day (${dayCount})`,
-        mode:             'DAILY',
-        dayCount,
-        pendingIndicator: 'D',
-        agreementId:      agreement.id,
-        supplierCode:     supplier.code,
-        supplierName:     supplier.name,
-        plantName:        agreement.plantName,
-        companyCode:      agreement.companyCode,
-        agreementDate:    agreement.date,
-        itemsData:        itemsWithDays,
-        supplierFull:     supplier,
-        agreementFull:    agreement,
-      },
-    })
-  }
+ const handleDayGenerate = (dayCount) => {
+  setShowDayPopup(false)
+  const itemsWithDays = items
+    .filter(it => selArr.includes(it._key))
+    .map(it => ({ ...it, days: generateDays(it.totalQuantity, 'day', dayCount), indicator: 'D' }))
+  navigate('/purchasing/schedule-lines', {
+    state: {
+      selectedItemNos:  itemsWithDays.map(it => it.itemNo),
+      editable:         true,
+      title:            `Schedule Lines — Day (${dayCount})`,
+      mode:             'DAILY',
+      dayCount,
+      pendingIndicator: 'D',
+      agreementId:      agreement.id,
+      supplierCode:     supplier.code,
+      supplierName:     supplier.name,
+      plantName:        agreement.plantName,
+      companyCode:      agreement.companyCode,
+      agreementDate:    agreement.date,
+      itemsData:        itemsWithDays,
+      supplierFull:     supplier,
+      agreementFull:    agreement,
+    },
+  })
+}
 
   const handleEdit = async () => {
-    if (editDisabled || busy) return
-    const editableNos = selArr.filter(no => items.find(i => i.itemNo === no)?.indicator)
-    if (editableNos.length === 0) return
-    setBusy(true)
-    setBusyLabel('Loading…')
-    try {
-      const dayMap = await scheduleGenerateApi.fetchItemDays(agreement.id, supplier.code, editableNos)
-      const mergedItems = items.map(it => {
-        if (!editableNos.includes(it.itemNo)) return it
-        const key     = String(it.itemNo).replace(/^0+/, '')
-        const fetched = dayMap[key]
-        if (!fetched) return it
-        return { ...it, days: fetched.days, frozenDays: fetched.frozenDays ?? it.frozenDays }
-      })
-      openScheduleLines(editableNos, true, 'Edit Schedule Lines', '', undefined, mergedItems)
-    } catch (err) {
-      console.error('Failed to load schedule lines for edit:', err)
-      alert(`Failed to load saved data: ${err.message}`)
-    } finally {
-      setBusy(false)
-      setBusyLabel('')
-    }
+  if (editDisabled || busy) return
+  const editableKeys = selArr.filter(k => items.find(i => i._key === k)?.indicator)
+  if (editableKeys.length === 0) return
+  setBusy(true)
+  setBusyLabel('Loading…')
+  try {
+    const editableNos = editableKeys.map(k => items.find(i => i._key === k)?.itemNo)
+    const dayMap = await scheduleGenerateApi.fetchItemDays(agreement.id, supplier.code, editableNos)
+    const mergedItems = items.map(it => {
+      if (!editableKeys.includes(it._key)) return it
+      const key     = String(it.itemNo).replace(/^0+/, '')
+      const fetched = dayMap[key]
+      if (!fetched) return it
+      return { ...it, days: fetched.days, frozenDays: fetched.frozenDays ?? it.frozenDays }
+    })
+    openScheduleLines(editableKeys, true, 'Edit Schedule Lines', '', undefined, mergedItems)
+  } catch (err) {
+    console.error('Failed to load schedule lines for edit:', err)
+    alert(`Failed to load saved data: ${err.message}`)
+  } finally {
+    setBusy(false)
+    setBusyLabel('')
   }
+}
 
   const handleSendForApproval = async () => {
-    if (selArr.length === 0 || busy) return
-    setBusy(true); setBusyLabel('Sending…')
-    try {
-      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-      await scheduleGenerateApi.sendForApproval(agreement.id, supplier.code, selectedItemData)
-      setItems(prev => prev.map(it => {
-        if (!selectedItems.has(it.itemNo)) return it
-        if (it.status === 'In Draft') return { ...it, status: 'Sent for approval' }
-        return it
-      }))
-    } catch (err) {
-      console.error('sendForApproval error:', err)
-      alert(`Send for approval failed: ${err.message}`)
-    } finally {
-      setBusy(false); setBusyLabel('')
-    }
+  if (selArr.length === 0 || busy) return
+  setBusy(true); setBusyLabel('Sending…')
+  try {
+    const selectedItemData = items.filter(it => selArr.includes(it._key))
+    await scheduleGenerateApi.sendForApproval(agreement.id, supplier.code, selectedItemData)
+    setItems(prev => prev.map(it => {
+      if (!selectedItems.has(it._key)) return it
+      if (it.status === 'In Draft') return { ...it, status: 'Sent for approval' }
+      return it
+    }))
+  } catch (err) {
+    console.error('sendForApproval error:', err)
+    alert(`Send for approval failed: ${err.message}`)
+  } finally {
+    setBusy(false); setBusyLabel('')
   }
+}
 
-  const handleApprove = async () => {
-    if (selArr.length === 0 || busy) return
-    setBusy(true); setBusyLabel('Saving…')
-    try {
-      const selectedItemData = items.filter(it => selArr.includes(it.itemNo))
-      await scheduleGenerateApi.approveSchedule(agreement.id, supplier.code, selectedItemData)
-      setItems(prev => prev.map(it => {
-        if (!selectedItems.has(it.itemNo)) return it
-        if (it.status === 'In Draft')          return { ...it, status: 'Sent for approval' }
-        if (it.status === 'Sent for approval') return { ...it, status: 'Approved' }
-        return it
-      }))
-    } catch (err) {
-      console.error('approveSet error:', err)
-      alert(`Approval failed: ${err.message}`)
-    } finally {
-      setBusy(false); setBusyLabel('')
-    }
+const handleApprove = async () => {
+  if (selArr.length === 0 || busy) return
+  setBusy(true); setBusyLabel('Saving…')
+  try {
+    const selectedItemData = items.filter(it => selArr.includes(it._key))
+    await scheduleGenerateApi.approveSchedule(agreement.id, supplier.code, selectedItemData)
+    setItems(prev => prev.map(it => {
+      if (!selectedItems.has(it._key)) return it
+      if (it.status === 'In Draft')          return { ...it, status: 'Sent for approval' }
+      if (it.status === 'Sent for approval') return { ...it, status: 'Approved' }
+      return it
+    }))
+  } catch (err) {
+    console.error('approveSet error:', err)
+    alert(`Approval failed: ${err.message}`)
+  } finally {
+    setBusy(false); setBusyLabel('')
   }
+}
 
   // ── Shared table JSX ──────────────────────────────────────────
   const ItemsTable = () => (
@@ -651,13 +649,13 @@ export default function ScheduleGenerate() {
           </thead>
           <tbody className="row-stagger">
             {items.map(item => {
-              const checked = selectedItems.has(item.itemNo)
+              const checked = selectedItems.has(item._key)
               return (
-                <tr key={item.itemNo} onClick={() => toggleItem(item.itemNo)}
+                <tr key={item._key} onClick={() => toggleItem(item._key)}
                   className={`border-b border-[#f0f0f0] transition-colors cursor-pointer
                     ${checked ? 'bg-[#ebf5ff]' : 'hover:bg-[#ebf5ff]/40'}`}>
                   <td className="py-3 px-3 text-center border-r border-[#f0f0f0]" onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={checked} onChange={() => toggleItem(item.itemNo)}
+                  <input type="checkbox" checked={checked} onChange={() => toggleItem(item._key)}
                       className="accent-[#0a6ed1] w-4 h-4 cursor-pointer" />
                   </td>
                   <td className="py-3 px-3 text-center font-semibold text-[#32363a] border-r border-[#f0f0f0]">{item.itemNo}</td>
@@ -931,9 +929,9 @@ export default function ScheduleGenerate() {
                 </button>
                 <button
                   onClick={handleSendForApproval}
-                  disabled={selArr.length === 0 || busy || selArr.some(no => items.find(i => i.itemNo === no)?.status !== 'In Draft')}
+                  disabled={selArr.length === 0 || busy || selArr.some(k => items.find(i => i._key === k)?.status !== 'In Draft')}
                   className="h-8 px-3 text-[12px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40"
-                  title={selArr.some(no => items.find(i => i.itemNo === no)?.status !== 'In Draft') ? 'Can only send items that are In Draft' : ''}
+                  title={selArr.some(k => items.find(i => i._key === k)?.status !== 'In Draft') ? 'Can only send items that are In Draft' : ''}
                 >
                   {busy && busyLabel === 'Sending…' ? 'Sending…' : 'Send for approval'}
                 </button>
@@ -942,7 +940,7 @@ export default function ScheduleGenerate() {
             {isApprover && (
               <button
                 onClick={handleApprove}
-                disabled={selArr.length === 0 || busy || selArr.some(no => { const s = items.find(i => i.itemNo === no)?.status; return s === 'Not Generated' || s === 'In Draft' || s === 'Approved' })}
+                disabled={selArr.length === 0 || busy || selArr.some(k => { const s = items.find(i => i._key === k)?.status; return s === 'Not Generated' || s === 'In Draft' || s === 'Approved' })}
                 className="h-8 px-3 text-[12px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-sm disabled:opacity-40"
               >
                 {busy && busyLabel === 'Saving…' ? 'Saving…' : 'Approve'}

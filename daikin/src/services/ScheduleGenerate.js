@@ -287,20 +287,20 @@ function buildSendForApprovalPayload(agreementId, lifnr, item) {
   }
 }
 
-function buildApprovePayload(agreementId, lifnr, item) {
+function buildHeaderApprovePayload(agreementId, lifnr, itemsData) {
+  const approveSetResults = itemsData.map(item => ({
+    agreement:  agreementId,
+    itemno:     item.itemNo,
+    sapcode:    item.sapCode,
+    indicator:  item.indicator ?? '',
+    status:     item.status    ?? '',
+    appflag:    'Y',
+  }))
+
   return {
     agreement:  agreementId,
     lifnr:      lifnr,
-    itemno:     item.itemNo,
-    sapcode:    item.sapCode,
-    desc:       item.description ?? '',
-    hsn:        item.hsnCode     ?? '',
-    totalsch:   String(item.totalQuantity),
-    unitprice:  String(item.unitPrice  ?? 0),
-    indicator:  item.indicator ?? '',
-    status:     item.status    ?? '',
-    date:       item.date      ?? '',
-    appflag:    'Y',
+    approveSet: { results: approveSetResults },
   }
 }
 
@@ -506,19 +506,15 @@ export const scheduleGenerateApi = {
   },
 
   async approveSchedule(agreementId, lifnr, itemsData) {
-  if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 300))
-    console.log('[mock] approveSchedule', agreementId, itemsData.map(i => i.itemNo))
-    return { success: true }
-  }
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 300))
+      console.log('[mock] approveSchedule', agreementId, itemsData.map(i => i.itemNo))
+      return { success: true }
+    }
 
-    await Promise.all(
-      itemsData.map(item =>
-        odataPost('/approveSet', buildApprovePayload(agreementId, lifnr, item))
-      )
-    )
-  return { success: true }
-},
+    await odataPost('/sg_headerSet', buildHeaderApprovePayload(agreementId, lifnr, itemsData))
+    return { success: true }
+  },
 }
 
 export default scheduleGenerateApi

@@ -11,18 +11,23 @@ export function UserProvider({ children }) {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
 
-  useEffect(() => {
-  setUser(null)      // ← add
-  setLoading(true)   // ← add
+useEffect(() => {
+  setUser(null)
+  setLoading(true)
   getUserAttributes()
     .then(response => {
       const userData = response.data
 
-      const id   = userData.login_name?.[0] || ''
-      const type = userData.type?.[0]        || ''
+      const email     = userData.email           || ''
+      const loginName = userData.login_name?.[0]  || ''
+      const type       = userData.type?.[0]       || ''
+      const groups     = userData.Groups || []
 
-      const sapLoginType = type === 'employee' ? 'E' : 'P'
-      const userRole     = type === 'employee' ? 'employee' : 'partner'
+      const isApprover = groups.includes('Approver')
+
+      const id            = isApprover ? email : loginName
+      const sapLoginType  = type === 'employee' ? 'E' : 'P'
+      const userRole      = type === 'employee' ? 'employee' : 'partner'
 
       setUser(userData)
       setRole(userRole)
