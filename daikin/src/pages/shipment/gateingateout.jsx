@@ -705,9 +705,7 @@ export default function GateInGateOut() {
       {successOpen && <SuccessDialog message={successMsg} onClose={() => setSuccessOpen(false)} />}
       {errorOpen   && <ErrorDialog   message={errorMsg}   onClose={() => setErrorOpen(false)}   />}
 
-      <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70]">
-        Company Code: <strong className="text-[#32363a]">DSAL (Daikin Airconditioning India Private Limited)</strong>
-      </div>
+      
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-136px)]">
         {t ? (

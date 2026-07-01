@@ -240,7 +240,7 @@ function buildDeepPayload(agreementId, lifnr, item, mode) {
 }
 
 function buildEditPayload(agreementId, lifnr, item) {
-  const childRow = { agreement: agreementId }
+  const childRow = { agreement: agreementId, flag: 'X' }
   item.days.forEach((val, idx) => {
     childRow[`day${idx + 1}`] = String(val)
   })
