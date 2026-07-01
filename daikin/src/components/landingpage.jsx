@@ -691,7 +691,7 @@ export default function DaikinPortal() {
                                             style={{ background: t.iconDot, boxShadow: `0 0 10px ${t.iconDot}66` }} />
                                     </div>
                                     <span className="font-mono text-xs tracking-wider" style={{ color: t.cardNum }}>
-                                        / {String(i + 1).padStart(2, '0')}
+                                        {String(i + 1).padStart(2, '0')}
                                     </span>
                                 </div>
 

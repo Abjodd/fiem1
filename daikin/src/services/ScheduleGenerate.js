@@ -69,6 +69,14 @@ function mapHeader(d) {
 }
 
 function mapItem(d) {
+  const days = []
+  for (let i = 1; i <= 31; i++) {
+    days.push(Number(d[`day${i}`]) || 0)
+  }
+  const frozenDays = [d.fn1, d.fn2, d.fn3]
+    .filter(Boolean)
+    .map(Number)
+
   return {
     itemNo:        d.itemno,
     sapCode:       d.sapcode,
@@ -79,17 +87,21 @@ function mapItem(d) {
     indicator:     d.indicator || '',
     status:        d.status   || 'Not Generated',
     date:          d.date     || '',
-    days:          new Array(31).fill(0),
-    frozenDays:    [],
+    days,
+    frozenDays,
   }
 }
 
 function mapDayRecord(d) {
+  const src = (d.editSet && d.editSet.results && d.editSet.results.length > 0)
+    ? d.editSet.results[0]
+    : d
+
   const days = []
   for (let i = 1; i <= 31; i++) {
-    days.push(Number(d[`day${i}`]) || 0)
+    days.push(Number(src[`day${i}`]) || 0)
   }
-  const frozenDays = [d.fn1, d.fn2, d.fn3]
+  const frozenDays = [src.fn1, src.fn2, src.fn3]
     .filter(Boolean)
     .map(Number)
 
@@ -432,18 +444,39 @@ export const scheduleGenerateApi = {
   }
 
   const itemsRaw = await odataGet(
-    `/sg_itemSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$format=json`
+    `/sg_itemSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$expand=editSet&$format=json`
   )
 
   const map = {}
   ;(itemsRaw.results ?? []).forEach(data => {
     // day1–day31 are directly on the item record, not nested
-    const itemNo = String(data.itemno).replace(/^0+/, '')
-    if (!itemNos.map(n => String(n).replace(/^0+/, '')).includes(itemNo)) return
+    const itemNo = String(data.itemno).trim().replace(/^0+/, '')
+    const cleanItemNos = itemNos.map(n => String(n).trim().replace(/^0+/, ''))
+    if (!cleanItemNos.includes(itemNo)) return
     map[itemNo] = mapDayRecord(data)  // ← pass data directly, not data.daySet
   })
   return map
 },
+
+  async fetchItemDaysApprover(agreementId, lifnr, itemNos) {
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      return {}
+    }
+
+    const itemsRaw = await odataGet(
+      `/sg_itemSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$format=json`
+    )
+
+    const map = {}
+    ;(itemsRaw.results ?? []).forEach(data => {
+      const itemNo = String(data.itemno).trim().replace(/^0+/, '')
+      const cleanItemNos = itemNos.map(n => String(n).trim().replace(/^0+/, ''))
+      if (!cleanItemNos.includes(itemNo)) return
+      map[itemNo] = mapDayRecord(data)
+    })
+    return map
+  },
   // ────────────────────────────────────────────────────────────
   // generateWeekSchedule
   // ────────────────────────────────────────────────────────────

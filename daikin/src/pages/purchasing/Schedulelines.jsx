@@ -566,28 +566,30 @@ const handleClose = () => {
         </div>
 
         {/* ── Sticky bottom bar — Save only ── */}
-        <div className="flex-shrink-0 bg-white border-t border-[#e5e5e5] shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-          {overLines.length > 0 && (
-            <div className="flex items-center gap-2 px-6 py-2.5 bg-[#fce8e6] border-b border-[#f5c6c2]">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-              </svg>
-              <span className="text-[12px] text-[#cc1c14] font-semibold">
-                {overLines.length} item{overLines.length > 1 ? 's' : ''} exceed Total Qty — reduce allocation before saving
-              </span>
+        {editable && (
+          <div className="flex-shrink-0 bg-white border-t border-[#e5e5e5] shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
+            {overLines.length > 0 && (
+              <div className="flex items-center gap-2 px-6 py-2.5 bg-[#fce8e6] border-b border-[#f5c6c2]">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                </svg>
+                <span className="text-[12px] text-[#cc1c14] font-semibold">
+                  {overLines.length} item{overLines.length > 1 ? 's' : ''} exceed Total Qty — reduce allocation before saving
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-end px-4 sm:px-8 lg:px-12 py-3">
+              <button
+                onClick={handleSave}
+                disabled={!canSave}
+                className="flex items-center gap-2 px-7 h-10 text-[14px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                {saving ? 'Saving…' : 'Save'}
+              </button>
             </div>
-          )}
-          <div className="flex items-center justify-end px-4 sm:px-8 lg:px-12 py-3">
-            <button
-              onClick={handleSave}
-              disabled={!canSave}
-              className="flex items-center gap-2 px-7 h-10 text-[14px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-              {saving ? 'Saving…' : 'Save'}
-            </button>
           </div>
-        </div>
+        )}
 
       </div>
     </PageLayout>

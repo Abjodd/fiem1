@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 
 import ProtectedRoute from './components/ProtectedRoute.jsx'
-import LoginPage from './pages/LoginPage.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
 import LandingPage from './components/landingpage.jsx'
 import Home from './pages/Home.jsx'
@@ -9,6 +8,7 @@ import POreturn from './pages/purchasing/POreturn.jsx'
 import './app.css'
 import SRlineitem from './pages/purchasing/SRlineitem.jsx'
 import POlineitem from './pages/purchasing/POlineitem.jsx'
+
 // Purchasing
 import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
 import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
@@ -42,19 +42,8 @@ export default function App() {
   return (
     <Routes>
 
-      {/* Redirect index.html */}
-      <Route
-        path="/index.html"
-        element={<Navigate to="/" replace />}
-      />
-
-      {/* SAP Auth Check */}
+      {/* SAP Auth Check - main entry point / login */}
       <Route path="/" element={<Home />} />
-      {/* for arbeel  local testing*/}
-      {/* <Route path="/" element={<Navigate to="/landing" replace />} /> */}
-
-      {/* Manual Login */}
-      <Route path="/login" element={<LoginPage />} />
 
       {/* Landing */}
       <Route
@@ -112,6 +101,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/purchasing/po-lineitem"
         element={
@@ -138,6 +128,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/purchasing/sr-lineitem"
         element={
@@ -145,7 +136,8 @@ export default function App() {
             <SRlineitem />
           </ProtectedRoute>
         }
-      />  
+      />
+
       <Route
         path="/purchasing/schedule-lines"
         element={
@@ -154,6 +146,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/purchasing/poreturn"
         element={
@@ -240,11 +233,8 @@ export default function App() {
         }
       />
 
-      {/* Fallback */}
-      <Route
-        path="*"
-        element={<Navigate to="/" replace />}
-      />
+      {/* Fallback — any unmatched route goes to main login/auth check */}
+      <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
   )

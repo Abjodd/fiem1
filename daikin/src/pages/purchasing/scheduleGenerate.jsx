@@ -386,6 +386,7 @@ export default function ScheduleGenerate() {
     if (restore?.supplier && restore?.agreement) {
   setSupplier(restore.supplier)
   setAgreement(restore.agreement)
+  setSelectedAgreementId(restore.agreement.id)
   setShowSupplierPopup(false)
   if (ret) {
     const { savedLines, pendingIndicator } = ret
@@ -518,7 +519,7 @@ const anyHaveInd = selArr.some(k => items.find(i => i._key === k)?.indicator)
       agreementDate: formatSapDate(agreement.date),
       itemsData:     itemsForLines,
       supplierFull:  supplier,
-      agreementFull: agreement,
+      agreementFull: { ...agreement, items },
     },
   })
 }
@@ -569,7 +570,7 @@ const anyHaveInd = selArr.some(k => items.find(i => i._key === k)?.indicator)
     const dayMap = await scheduleGenerateApi.fetchItemDays(agreement.id, supplier.code, editableNos)
     const mergedItems = items.map(it => {
       if (!editableKeys.includes(it._key)) return it
-      const key     = String(it.itemNo).replace(/^0+/, '')
+      const key     = String(it.itemNo).trim().replace(/^0+/, '')
       const fetched = dayMap[key]
       if (!fetched) return it
       return { ...it, days: fetched.days, frozenDays: fetched.frozenDays ?? it.frozenDays }
@@ -623,6 +624,26 @@ const handleApprove = async () => {
   }
 }
 
+  const handleViewItem = async (e, item) => {
+    e.stopPropagation()
+    if (busy) return
+    setBusy(true)
+    setBusyLabel('Loading…')
+    try {
+      const dayMap = await scheduleGenerateApi.fetchItemDaysApprover(agreement.id, supplier.code, [item.itemNo])
+      const key = String(item.itemNo).trim().replace(/^0+/, '')
+      const fetched = dayMap[key]
+      const mergedItem = fetched ? { ...item, days: fetched.days, frozenDays: fetched.frozenDays ?? item.frozenDays } : item
+      openScheduleLines([item._key], false, 'View Schedule Lines', '', undefined, [mergedItem])
+    } catch (err) {
+      console.error('Failed to load schedule lines for view:', err)
+      alert(`Failed to load data: ${err.message}`)
+    } finally {
+      setBusy(false)
+      setBusyLabel('')
+    }
+  }
+
   // ── Shared table JSX ──────────────────────────────────────────
   const ItemsTable = () => (
     <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-hidden">
@@ -639,8 +660,8 @@ const handleApprove = async () => {
                 />
               </th>
               {['Item No.', 'SAP Code', 'Description', 'HSN Code',
-                'Total Monthly Schedule', 'Unit Price', 'Indicator', 'Status'].map(h => (
-                <th key={h}
+                'Total Monthly Schedule', 'Unit Price', 'Indicator', 'Status', ...(isApprover ? [''] : [])].map((h, i) => (
+                <th key={i}
                   className="text-center font-semibold py-3 px-3 border-b border-r border-[#e5e5e5] uppercase tracking-wider text-[10px] sm:text-[11px] last:border-r-0">
                   {h}
                 </th>
@@ -672,12 +693,25 @@ const handleApprove = async () => {
                         </span>
                       : <span className="text-[#d9d9d9]">—</span>}
                   </td>
-                  <td className="py-3 px-3 text-center">
+                  <td className="py-3 px-3 text-center border-r border-[#f0f0f0] last:border-r-0">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${getStatusStyle(item.status)}`}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getStatusDot(item.status) }} />
                       {item.status}
                     </span>
                   </td>
+                  {isApprover && (
+                    <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => handleViewItem(e, item)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#ebf5ff] transition-colors"
+                        title="View Schedule Lines"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                      </button>
+                    </td>
+                  )}
                 </tr>
               )
             })}

@@ -19,6 +19,32 @@ const isAllowedFile = (file) => {
   return ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_MIME_TYPES.includes(file.type)
 }
 
+const PACKAGING_TYPES = [
+  'HDPE Bags',
+  'Jumbo Bags (FIBC)',
+  'Corrugated Boxes',
+  'Plastic Trays',
+  'ESD Trays',
+  'Thermoformed Trays',
+  'Plastic Crates',
+  'Foldable Plastic Crates',
+  'Tote Boxes',
+  'Bin Boxes',
+  'Wooden Crates',
+  'Steel Crates',
+  'Foam-lined Crates',
+  'Steel Pallets',
+  'Wooden Pallets',
+  'Drums',
+  'Barrels',
+  'IBC Containers',
+  'Metal Racks',
+  'A-frame Racks',
+  'Coil Cradles',
+  'Polybags',
+  'Partition Boxes',
+]
+
 // ═══════════════════════════════════════════════════════════════
 // MOBILE HOOK
 // ═══════════════════════════════════════════════════════════════
@@ -119,7 +145,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
   const handleSave = () => {
     if (rows.length === 0) { onSave(item.itemNo, []); onClose(); return }
     const missing = rows.find(r => !r.batchCode || !r.quantity || parseFloat(r.quantity) <= 0)
-    if (missing) { setError('Every batch row needs a Batch/Heat Code and a positive Quantity.'); return }
+    if (missing) { setError('Every batch row needs a SL No. and a positive Quantity.'); return }
     if (!isMatch) {
       setError(isOver
         ? `Sum of batch quantities (${total}) exceeds Permissible ASN Qty (${target}) by ${(total - target).toFixed(2)} ${item.totalUnit}.`
@@ -137,7 +163,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden anim-pop" onClick={e => e.stopPropagation()}>
         <div className="px-5 sm:px-6 py-4 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Split Batch</div>
+            <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Split Quantity</div>
             <div className="text-[16px] font-bold text-[#32363a] truncate">
               <span className="text-[#0a6ed1]">{item.materialNumber}</span>
               <span className="text-[#6a6d70] font-medium mx-2">·</span>
@@ -168,7 +194,7 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
           <div className="rounded-lg border border-[#e5e5e5] overflow-hidden">
             <div className="flex items-center bg-[#fafbfc] border-b border-[#e5e5e5] text-[#6a6d70] text-[11px] uppercase tracking-wider font-semibold px-3 py-2.5">
               <div className="w-8 flex-shrink-0"></div>
-              <div className="flex-1 px-2">Batch / Heat Code</div>
+              <div className="flex-1 px-2">SL No.</div>
               <div className="w-28 px-2 text-right">Quantity</div>
               <div className="w-8 flex-shrink-0"></div>
             </div>
@@ -315,17 +341,17 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
           >
             <span className="flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v12M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9c0 6-12 0-12 12" /></svg>
-              Split Batch
+              Split Quantity
             </span>
             {batchCount > 0 && (
               <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${batchBalanced ? 'bg-[#e8f5ec] text-[#107e3e]' : 'bg-[#fef7e6] text-[#b45309]'}`}>
-                {batchCount} {batchCount === 1 ? 'batch' : 'batches'}{!batchBalanced ? ' · unbalanced' : ''}
+                {batchCount} {item.packingMaterialType || 'batch'}{batchCount > 1 && item.packingMaterialType ? 's' : ''}{!batchBalanced ? ' · unbalanced' : ' · balanced'}
               </span>
             )}
           </button>
           {!isZeroQty && parseInt(item.packingMaterialQty, 10) > 0 && batchCount === 0 && isSelected && (
               <p className="text-[11px] font-semibold text-[#cc1c14] mt-1">
-                ⚠ Split batch required before creating ASN
+                ⚠ Split quantity required before creating ASN
               </p>
             )}
 
@@ -386,12 +412,11 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
             <div>
               <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Type</label>
               <select value={item.packingMaterialType} onChange={e => onUpdate('packingMaterialType', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
-                <option value="">Select</option>
-                <option value="Trolley">Trolley</option>
-                <option value="Pallet">Pallet</option>
-                <option value="Carton">Carton</option>
-                <option value="Crate">Crate</option>
-              </select>
+              <option value="">Select</option>
+              {(packagingTypes || []).map(pt => (
+                <option key={pt} value={pt}>{pt}</option>
+              ))}
+            </select>
             </div>
             <div>
               <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Qty</label>
@@ -520,13 +545,15 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
                   className={`flex items-center gap-2 px-4 h-8 text-[12px] font-semibold rounded-lg border transition-all ${batchDisabled ? 'opacity-40 cursor-not-allowed text-[#6a6d70] bg-[#f5f5f5] border-[#d9d9d9]' : bc > 0 ? balanced ? 'text-[#107e3e] bg-[#e8f5ec] border-[#107e3e] hover:scale-[1.02] active:scale-[0.98]' : 'text-[#b45309] bg-[#fef7e6] border-[#b45309] hover:scale-[1.02] active:scale-[0.98]' : 'text-white bg-[#0a6ed1] border-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'}`}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v12M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9c0 6-12 0-12 12" /></svg>
-                  Split Batch{bc > 0 ? ` (${bc}/${maxBatches || '?'})` : ' +'}
+                  Split Quantity{bc > 0 ? ` (${bc}/${maxBatches || '?'})` : ' +'}
                 </button>
                 {!isZeroQty && batchDisabled && <span className="text-[11px] text-[#9ca3af]">Enter Packing Material Qty to enable split</span>}
                 {isZeroQty && <span className="text-[11px] text-[#9ca3af]">No deliverable qty — row excluded from ASN</span>}
                 {!batchDisabled && bc > 0 && (
                   <span className={`text-[12px] font-semibold ${balanced ? 'text-[#107e3e]' : 'text-[#b45309]'}`}>
-                    {balanced ? `✓ ${bc} batch${bc > 1 ? 'es' : ''} — balanced` : `⚠ ${bc} batch${bc > 1 ? 'es' : ''} — quantities unbalanced`}
+                    {balanced
+                      ? `✓ ${bc} ${item.packingMaterialType}${bc > 1 && item.packingMaterialType ? 's' : ''} — balanced`
+                      : `⚠ ${bc} ${item.packingMaterialType}${bc > 1 && item.packingMaterialType ? 's' : ''} — quantities unbalanced`}
                   </span>
                 )}
               </>
@@ -645,7 +672,7 @@ export default function CreateASN2({ agreement: propAgreement }) {
   const [itemsError, setItemsError] = useState(null)
   const [selectedItemNos, setSelectedItemNos] = useState([])
   const [pdirOptions, setPdirOptions] = useState([])
-  const [packagingTypes] = useState(['Box', 'Bag', 'Drum', 'Pallet', 'Container', 'Crate', 'Bundle'])
+  const [packagingTypes] = useState(PACKAGING_TYPES)
 
   const [generalAttachments, setGeneralAttachments] = useState([])
   const [pdirAttachments, setPdirAttachments] = useState([])
@@ -994,9 +1021,11 @@ const handleGo = async () => {
                           <td className="py-3 px-4 text-[#32363a]">{item.avlAsnQty} {item.totalUnit}</td>
                           <td className="py-3 px-4 text-[#32363a]">{item.spq}</td>
                           <td className="py-3 px-4">
-                            {bc === 0 ? <span className="text-[12px] text-[#9ca3af]">—</span> : (
-                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${balanced ? 'bg-[#e8f5ec] text-[#107e3e]' : 'bg-[#fef7e6] text-[#b45309]'}`}>{bc} · {balanced ? 'balanced' : 'unbalanced'}</span>
-                            )}
+                           {bc === 0 ? <span className="text-[12px] text-[#9ca3af]">—</span> : (
+                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${balanced ? 'bg-[#e8f5ec] text-[#107e3e]' : 'bg-[#fef7e6] text-[#b45309]'}`}>
+                              {bc} {item.packingMaterialType}{bc > 1 && item.packingMaterialType ? 's' : ''} · {balanced ? 'balanced' : 'unbalanced'}
+                            </span>
+                          )}
                           </td>
                           <td className="py-3 px-4 text-[#32363a] font-semibold">{(parseFloat(item.avlAsnQty || 0) * parseFloat(item.supplierNetPrice || 0)).toFixed(2)}</td>
                         </tr>
