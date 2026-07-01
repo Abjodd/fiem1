@@ -9,7 +9,7 @@
     {
       "source": "^/sap/(.*)$",
       "target": "/sap/$1",
-      "destination": "SuppPro",
+      "destination": "FIEM_dev",
       "csrfProtection": false
     },
     {
