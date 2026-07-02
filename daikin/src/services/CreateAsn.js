@@ -44,7 +44,7 @@ function mapItem(d) {
   const delQty     = num(d.DelQty)
 
   // avlAsnQty = ShortQty (open qty to ship)
-  const avlAsnQty  = str(d.ShortQty) || String(Math.max(0, num(d.Menge) - num(d.Asn_Created)))
+  const avlAsnQty  = String(Math.max(0, num(d.Menge) - num(d.Asn_Created)))
 
   return {
     itemNo:            str(d.Ebelp),
