@@ -8,7 +8,7 @@ export const PAGE_PERMISSIONS = {
   '/purchasing/schedule-release':    ['partner', 'employee','employeeadmin'],
   '/purchasing/purchase-order':      ['partner' , 'employee','employeeadmin'],
   // '/purchasing/po-schedule-report':  ['partner', 'employee','employeeadmin'],
-  '/purchasing/schedule-generate':   ['partner', 'employee','employeeadmin'],
+  '/purchasing/schedule-generate':   [ 'employee','employeeadmin'],
   '/purchasing/create-asn':          ['partner', 'employee','employeeadmin'],
   '/reports/forecast-report':        ['partner','employee',],
   '/reports/vendor-ledger-report':   ['partner','employee','employeeadmin'],
