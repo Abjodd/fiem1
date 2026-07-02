@@ -11,13 +11,11 @@ function Home() {
 
     if (error) {
       console.error("AUTH ERROR:", error);
-      // navigate("/login");
       return;
     }
 
     if (user) {
-      // ✅ Log everything for debugging
-      console.log("SAP USER FULL RESPONSE:", user);
+      
       console.log("Groups:", user.Groups);
       console.log("User Type:", user.type?.[0]);
       console.log("Login Name:", loginId);

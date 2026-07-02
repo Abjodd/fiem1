@@ -4,39 +4,39 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
 import LandingPage from './components/landingpage.jsx'
 import Home from './pages/Home.jsx'
-import POreturn from './pages/purchasing/POreturn.jsx'
+import POreturn from './pages/purchasing/POReturn/POreturn.jsx'
 import './app.css'
-import SRlineitem from './pages/purchasing/SRlineitem.jsx'
-import POlineitem from './pages/purchasing/POlineitem.jsx'
+import SRlineitem from './pages/purchasing/ScheduleRelease/SRlineitem.jsx'
+import POlineitem from './pages/purchasing/PurchaseOrder/POlineitem.jsx'
 
 // Purchasing
-import ScheduleRelease from './pages/purchasing/ScheduleRelease.jsx'
-import PurchaseOrder from './pages/purchasing/PurchaseOrder.jsx'
-import POScheduleReport from './pages/purchasing/POScheduleReport.jsx'
-import ScheduleGenerate from './pages/purchasing/scheduleGenerate.jsx'
+import ScheduleRelease from './pages/purchasing/ScheduleRelease/ScheduleRelease.jsx'
+import PurchaseOrder from './pages/purchasing/PurchaseOrder/PurchaseOrder.jsx'
+import POScheduleReport from './dump/POScheduleReport.jsx'
+import ScheduleGenerate from './pages/purchasing/ScheduleGenerate/scheduleGenerate.jsx'
 
 // Reports
-import ForecastReport from './pages/reports/ForecastReport.jsx'
-import VendorLedgerReport from './pages/reports/VendorLedgerReport.jsx'
+import ForecastReport from './pages/reports/ForecastReport/ForecastReport.jsx'
+import VendorLedgerReport from './pages/reports/VendorLedgerReport/VendorLedgerReport.jsx'
 
 // Goods Receipt
-import GateInMIGO from './pages/reports/GateInMIGO.jsx'
+import GateInMIGO from './pages/reports/GateInMIGO/GateInMIGO.jsx'
 
 // Logistics
-import DeliverySchedule from './pages/reports/DeliverySchedule.jsx'
+import DeliverySchedule from './pages/reports/DeliverySchedule/DeliverySchedule.jsx'
 
 // ASN
-import Asnreport from './pages/reports/asnReport.jsx'
+import Asnreport from './pages/reports/ASNReport/Asnreport.jsx'
 
 // Shipment
-import Advanceshipment from './pages/shipment/Advanceshipment.jsx'
-import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
-import GateInGateOut from './pages/shipment/gateingateout.jsx'
+import Advanceshipment from './pages/shipment/AdvanceShipmentNote/Advanceshipment.jsx'
+import GoodsMovement from './pages/shipment/GoodsMovement/GoodsMovement.jsx'
+import GateInGateOut from './pages/shipment/GateinGateout/gateingateout.jsx'
 
 // Other
-import CreateASN from './pages/purchasing/createASN.jsx'
-import CreateASN2 from './pages/purchasing/createAsn2.jsx'
-import ScheduleLines from './pages/purchasing/Schedulelines.jsx'
+import CreateASN from './pages/purchasing/PurchaseOrder/createASN.jsx'
+import CreateASN2 from './pages/purchasing/ScheduleRelease/createAsn2.jsx'
+import ScheduleLines from './pages/purchasing/ScheduleGenerate/Schedulelines.jsx'
 
 export default function App() {
   return (
@@ -67,7 +67,7 @@ export default function App() {
 
       {/* Purchasing */}
       <Route
-        path="/purchasing/create-asn"
+        path="/purchasing/PurchaseOrder/create-asn"
         element={
           <ProtectedRoute>
             <CreateASN />
@@ -76,7 +76,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/create-asn2"
+        path="/purchasing/ScheduleRelease/create-asn2"
         element={
           <ProtectedRoute>
             <CreateASN2 />
@@ -85,7 +85,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/schedule-release"
+        path="/purchasing/ScheduleRelease/schedule-release"
         element={
           <ProtectedRoute>
             <ScheduleRelease />
@@ -94,7 +94,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/purchase-order"
+        path="/purchasing/PurchaseOrder/purchase-order"
         element={
           <ProtectedRoute>
             <PurchaseOrder />
@@ -103,7 +103,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/po-lineitem"
+        path="/purchasing/PurchaseOrder/po-lineitem"
         element={
           <ProtectedRoute>
             <POlineitem />
@@ -111,17 +111,17 @@ export default function App() {
         }
       />
 
-      <Route
-        path="/purchasing/po-schedule-report"
+      {/* <Route
+        path="/purchasing/PurchaseOrder/po-schedule-report"
         element={
           <ProtectedRoute>
             <POScheduleReport />
           </ProtectedRoute>
         }
-      />
+      /> */}
 
       <Route
-        path="/purchasing/schedule-generate"
+        path="/purchasing/ScheduleGenerate/schedule-generate"
         element={
           <ProtectedRoute>
             <ScheduleGenerate />
@@ -130,7 +130,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/sr-lineitem"
+        path="/purchasing/ScheduleRelease/sr-lineitem"
         element={
           <ProtectedRoute>
             <SRlineitem />
@@ -139,7 +139,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/schedule-lines"
+        path="/purchasing/ScheduleGenerate/schedule-lines"
         element={
           <ProtectedRoute>
             <ScheduleLines />
@@ -148,7 +148,7 @@ export default function App() {
       />
 
       <Route
-        path="/purchasing/poreturn"
+        path="/purchasing/POReturn/poreturn"
         element={
           <ProtectedRoute>
             <POreturn />
@@ -158,7 +158,7 @@ export default function App() {
 
       {/* Reports */}
       <Route
-        path="/reports/forecast-report"
+        path="/reports/ForecastReport/forecast-report"
         element={
           <ProtectedRoute>
             <ForecastReport />
@@ -167,7 +167,7 @@ export default function App() {
       />
 
       <Route
-        path="/reports/vendor-ledger-report"
+        path="/reports/VendorLedgerReport/vendor-ledger-report"
         element={
           <ProtectedRoute>
             <VendorLedgerReport />
@@ -177,7 +177,7 @@ export default function App() {
 
       {/* Goods Receipt */}
       <Route
-        path="/reports/gatein-to-migo"
+        path="/reports/GateinMIGO/gatein-to-migo"
         element={
           <ProtectedRoute>
             <GateInMIGO />
@@ -187,7 +187,7 @@ export default function App() {
 
       {/* Logistics */}
       <Route
-        path="/reports/delivery-schedule"
+        path="/reports/DeliverySchedule/delivery-schedule"
         element={
           <ProtectedRoute>
             <DeliverySchedule />
@@ -197,7 +197,7 @@ export default function App() {
 
       {/* ASN */}
       <Route
-        path="/reports/asn-report"
+        path="/reports/ASNReport/asn-report"
         element={
           <ProtectedRoute>
             <Asnreport />
@@ -207,7 +207,7 @@ export default function App() {
 
       {/* Shipment */}
       <Route
-        path="/shipment/advance-shipping-note"
+        path="/shipment/AdvanceShipmentNote/advance-shipping-note"
         element={
           <ProtectedRoute>
             <Advanceshipment />
@@ -216,7 +216,7 @@ export default function App() {
       />
 
       <Route
-        path="/shipment/goods-movement"
+        path="/shipment/GoodsMovement/goods-movement"
         element={
           <ProtectedRoute>
             <GoodsMovement />
@@ -225,7 +225,7 @@ export default function App() {
       />
 
       <Route
-        path="/shipment/gatein-gateout"
+        path="/shipment/GateinGateout/gatein-gateout"
         element={
           <ProtectedRoute>
             <GateInGateOut />

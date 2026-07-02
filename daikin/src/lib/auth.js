@@ -5,19 +5,19 @@ export const MOCK_USERS = {
 // Map route paths to allowed roles
 export const PAGE_PERMISSIONS = {
   '/landing': ['partner', 'employee', 'employeeadmin'],
-  '/purchasing/schedule-release':    ['partner', 'employee','employeeadmin'],
-  '/purchasing/purchase-order':      ['partner' , 'employee','employeeadmin'],
+  '/purchasing/ScheduleRelease/schedule-release':    ['partner', 'employee','employeeadmin'],
+  '/purchasing/PurchaseOrder/purchase-order':      ['partner' , 'employee','employeeadmin'],
   // '/purchasing/po-schedule-report':  ['partner', 'employee','employeeadmin'],
-  '/purchasing/schedule-generate':   [ 'employee','employeeadmin'],
+  '/purchasing/ScheduleGenerate/schedule-generate':   [ 'employee','employeeadmin'],
   '/purchasing/create-asn':          ['partner', 'employee','employeeadmin'],
-  '/reports/forecast-report':        ['partner','employee',],
-  '/reports/vendor-ledger-report':   ['partner','employee','employeeadmin'],
-  '/goodsreceipt/gatein-to-migo':    ['partner','employee'],
-  '/logistics/delivery-schedule':    ['partner','employee'],
-  '/asn/asn-report':                 ['partner','employee'],
-  '/shipment/advance-shipping-note': ['partner','employee','employeeadmin'],
-  '/shipment/goods-movement':        ['partner','employee','employeeadmin'],
-  '/shipment/gatein-gateout':        [ 'partner','employee','employeeadmin'],
+  '/reports/ForecastReport/forecast-report':        ['partner','employee',],
+  '/reports/VendorLedgerReport/vendor-ledger-report':   ['partner','employee','employeeadmin'],
+  '/reports/GateinGateout/gatein-to-migo':    ['partner','employee'],
+  '/reports/DeliverySchedule/delivery-schedule':    ['partner','employee'],
+  '/reports/ASNReport/asn-report':                 ['partner','employee'],
+  '/shipment/AdvanceShippingNote/advance-shipping-note': ['partner','employee','employeeadmin'],
+  '/shipment/GoodsMovement/goods-movement':        ['partner','employee','employeeadmin'],
+  '/shipment/GateinGateout/gatein-gateout':        [ 'partner','employee','employeeadmin'],
 };
 
 export const canAccess = (role, path) => (PAGE_PERMISSIONS[path] ?? ['employee', 'partner']).includes(role);

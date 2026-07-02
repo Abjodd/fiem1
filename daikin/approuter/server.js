@@ -14,7 +14,6 @@ app.beforeRequestHandler.use("/do/logout", (req, res, next) => {
   const idpBaseUrl = process.env.IDP_BASE_URL;
   const appUrl = process.env.APP_URL;
 
-  // Let XSUAA know too, then chain to IDP logout
   const postLogoutUri = encodeURIComponent(appUrl + '/');
   const idpLogoutUrl = `${idpBaseUrl}/oauth2/logout?post_logout_redirect_uri=${postLogoutUri}`;
 
@@ -50,7 +49,6 @@ app.beforeRequestHandler.use("/scim-proxy", async (req, res, next) => {
       }
     );
 
-    // ✅ Use raw Node.js res — NOT express res.json()
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(response.data));

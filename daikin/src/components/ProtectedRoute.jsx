@@ -1,6 +1,6 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { canAccess } from '../lib/auth';
-import { useUser } from '../context/UserContext';
+import { canAccess } from '../lib/auth.js';
+import { useUser } from '../context/UserContext.jsx';
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap');
