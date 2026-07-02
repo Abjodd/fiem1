@@ -591,11 +591,11 @@ const anyHaveInd = selArr.some(k => items.find(i => i._key === k)?.indicator)
   try {
     const selectedItemData = items.filter(it => selArr.includes(it._key))
     await scheduleGenerateApi.sendForApproval(agreement.id, supplier.code, selectedItemData)
-    setItems(prev => prev.map(it => {
-      if (!selectedItems.has(it._key)) return it
-      if (it.status === 'In Draft') return { ...it, status: 'Sent for approval' }
-      return it
-    }))
+
+    const details = await scheduleGenerateApi.getAgreementDetails(agreement.id, supplier.code, isApprover)
+    if (details) setItems(withKeys(details.items || []))
+
+    setSelectedItems(new Set())
   } catch (err) {
     console.error('sendForApproval error:', err)
     alert(`Send for approval failed: ${err.message}`)
@@ -610,12 +610,21 @@ const handleApprove = async () => {
   try {
     const selectedItemData = items.filter(it => selArr.includes(it._key))
     await scheduleGenerateApi.approveSchedule(agreement.id, supplier.code, selectedItemData)
-    setItems(prev => prev.map(it => {
-      if (!selectedItems.has(it._key)) return it
-      if (it.status === 'In Draft')          return { ...it, status: 'Sent for approval' }
-      if (it.status === 'Sent for approval') return { ...it, status: 'Approved' }
-      return it
-    }))
+
+    // ── Re-fetch header list so the sidebar reflects server truth ──
+    const refreshedAgreements = await scheduleGenerateApi.listAgreements({
+      search: searchQuery,
+      plants: selectedPlants,
+    })
+    setAgreements(refreshedAgreements)
+
+    // ── Re-fetch this agreement's items so statuses/indicators are accurate ──
+    const details = await scheduleGenerateApi.getAgreementDetails(agreement.id, supplier.code, isApprover)
+    if (details) {
+      setItems(withKeys(details.items || []))
+    }
+
+    setSelectedItems(new Set())
   } catch (err) {
     console.error('approveSet error:', err)
     alert(`Approval failed: ${err.message}`)

@@ -471,7 +471,7 @@ export default function GoodsMovement() {
                   <td className="py-4 px-4">
                     <span
                       className="text-[#0a6ed1] font-semibold hover:underline cursor-pointer"
-                      onClick={() => navigate(`/shipment/advance-shipping-note?asn=${asn.asnId}`)}
+                      onClick={() => navigate(`/shipment/AdvanceShipmentNote/advance-shipping-note?asn=${asn.asnId}`)}
                     >
                       {asn.asnId}
                     </span>

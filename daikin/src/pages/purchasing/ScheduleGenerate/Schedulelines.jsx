@@ -1,12 +1,3 @@
-// src/pages/purchasing/ScheduleLinesPage.jsx
-// Route: /purchasing/schedule-lines
-// FIXES:
-// 1. Past dates are no longer blocked — they render as normal editable cells (value 0).
-//    They are visually dimmed (grey header) to indicate they're historical, but users
-//    can still type values into them after Save if needed.
-// 2. allocateByDay / allocateByWeek still skip past dates during auto-allocation
-//    (you don't want new qty dumped into the past), but the cells themselves are open.
-
 import { useState, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageLayout from '../../../layouts/PageLayout.jsx'

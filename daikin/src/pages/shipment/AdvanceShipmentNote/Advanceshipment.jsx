@@ -586,7 +586,7 @@ const handleSuccessDismiss = async () => {
                 <span className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">{label}</span>
                 <span
                   className={`text-[15px] font-semibold ${highlight ? 'text-[#0a6ed1] cursor-pointer hover:underline' : 'text-[#32363a]'}`}
-                  onClick={clickable ? () => navigate(`/shipment/goods-movement?track=${encodeURIComponent(s.trackingNo)}`) : undefined}
+                  onClick={clickable ? () => navigate(`/shipment/GoodsMovement/goods-movement?track=${encodeURIComponent(s.trackingNo)}`) : undefined}
                 >
                   {value}
                 </span>
