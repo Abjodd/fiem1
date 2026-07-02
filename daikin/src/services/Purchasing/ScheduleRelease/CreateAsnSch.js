@@ -124,7 +124,7 @@ function mapAsnItem(d) {
     draftAsnQty:      str(d.Draft_AsnQty || '0'),
     spq:              str(d.SOQ),         // "100.000 " → "100.000"
 
-    avlAsnQty:        menge,              // "10.00 " → "10.00" ✅
+    avlAsnQty:        str(d.asnallowed),
     delQty:           delQty,             // "0.00" stored correctly ✅
     deliveredQty:     delQty,
     deliveredUnit:    str(d.Meins),

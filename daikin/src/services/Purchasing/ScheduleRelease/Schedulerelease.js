@@ -58,7 +58,7 @@ function mapItem(d) {
     deliveredQty: str(d.Delivered_Qty),
     deliveredUnit: str(d.Uom),
     unitPrice: str(d.Netpr),
-    allowedAsnQty: str(d.ansallowed),
+    allowedAsnQty: str(d.asnallowed),
     status: str(d.Confirm_Status) || 'Confirmation Required',
     scheduleLines: [],
   }
