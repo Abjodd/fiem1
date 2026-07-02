@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// Gateingateout.js — Gate In / Gate Out OData Service
-// Service: SUPP_PORTAL_GATE_ENTRY_SRV
-// ═══════════════════════════════════════════════════════════════
-
 const SRV = '/sap/opu/odata/shiv/SUPP_PORTAL_GATE_ENTRY_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
@@ -145,10 +140,6 @@ const mapHeader = (d) => {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// OData transport helpers
-// ═══════════════════════════════════════════════════════════════
-
 const buildKey = (trackNo, year) => `TrackNo='${trackNo}',Year='${year}'`
 
 const getHeaders = () => ({
@@ -188,8 +179,6 @@ async function odata(path) {
   return res.json()
 }
 
-
-
 // ── CSRF token fetch ──────────────────────────────────────────
 async function fetchCsrfToken() {
   const res = await fetch(`${SRV}/$metadata`, {
@@ -227,9 +216,7 @@ async function odataWrite(path, payload, method) {
   return odataWriteWithToken(token, path, payload, method)
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Public API
-// ═══════════════════════════════════════════════════════════════
+
 export const gateEntryApi = {
 
   // ── READ: full header with nav expansions ───────────────────
@@ -257,7 +244,6 @@ export const gateEntryApi = {
   },
 
   // ── WRITE: Gate Reporting ────────────────────────────────────
-  // PATCH → backend sets RepDate/RepTime, moves status to "Gate Reported"
   async processGateReporting(trackNo, year) {
     const key = buildKey(trackNo, year)
     return odataWrite(
@@ -267,20 +253,6 @@ export const gateEntryApi = {
     )
   },
 
-  // ── WRITE: Gate In ───────────────────────────────────────────
-  //
-  // FIX 1: Removed this.getTracking() — `this` is undefined when called as
-  //         gateEntryApi.processGateIn(...). The UI re-fetches and passes
-  //         fresh header in, so the guard check is always reliable.
-  //
-  // FIX 2: freshHeader parameter — caller passes the just-refreshed tracking
-  //         object so we never check stale state from before Gate Reporting.
-  //
-  // Flow:
-  //   Step 1 — PATCH GateEntryHeaderSet  → SAP transitions to "Gate In"
-  //   Step 2 — PUT   ASNHeaderSet        → SAP creates GR document
-  //   Step 3 — GET   GateNumberSet       → reads Gno + Mblnr103
-  //
   async processGateIn(trackNo, year, asnNum, asnYear, freshHeader) {
     const gateReportingDone = freshHeader?.timeline
       ?.find(t => t.key === 'gate_reporting')?.completed
@@ -298,12 +270,6 @@ export const gateEntryApi = {
 
     const token = await fetchCsrfToken()
 
-    // ── REMOVED: PATCH GateEntryHeaderSet ────────────────────────
-    // When status is "Gate Reported", SAP rejects the PATCH with 400.
-    // The PATCH is only for Gate Reporting transition, not Gate In.
-    // Gate In is triggered directly by the PUT on ASNHeaderSet.
-
-    // Step 1: PUT — this is the actual Gate In trigger
     await odataWriteWithToken(
       token,
       `/ASNHeaderSet(${asnKey})`,
@@ -331,7 +297,7 @@ export const gateEntryApi = {
       { TrackNo: trackNo, Year: year },
       'PATCH'
     )
-  },
+  }, 
 }
 
 export default gateEntryApi
