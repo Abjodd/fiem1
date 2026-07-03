@@ -508,11 +508,11 @@ const handleSuccessOk = () => {
                 type="text"
                 value={form.lrNum}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 30)
+                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12)
                   updateField('lrNum', value)
                 }}
                 placeholder="Enter LR Number"
-                maxLength={30}
+                maxLength={12}
                 className="w-full h-10 px-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
               />
             </FieldRow>
