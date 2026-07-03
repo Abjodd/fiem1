@@ -80,7 +80,7 @@ function mapHeader(d) {
       driverName: str(d.NameDrvr),
       contactNumber: str(d.DrvContactNum),
       transporterName: str(d.TransporterName),
-      transportMode: str(d.Transport),
+      transportMode: str(d.TransportMode),
       vehicleRegNo: str(d.VehicleRegNumb),
       creationDate: sapDate(d.CreationDt),
       creationTime: sapTime(d.CreationTime),

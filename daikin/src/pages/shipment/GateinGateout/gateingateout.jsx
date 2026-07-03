@@ -496,7 +496,7 @@ export default function GateInGateOut() {
 }
 
   // Derived button visibility
-  const showGateReport = tracking ? canGateReport(tracking) : false
+  
   const showGateIn     = tracking ? canGateIn(tracking)     : false
   // Update derived flags (near showGateReport / showGateIn):
   const showGateOut = tracking ? canGateOut(tracking) : false
