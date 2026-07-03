@@ -1,9 +1,3 @@
-// src/pages/purchasing/SRlineitem.jsx
-// Route: /purchasing/sr-lineitem
-// Schedule line items for a single agreement item, shown in a calendar grid.
-// Only dates present in the payload are rendered (not full month).
-// Confirmed qty > 0 → green cell. Confirmed qty = 0 → red cell.
-
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageLayout from '../../../layouts/PageLayout.jsx'

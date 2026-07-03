@@ -117,10 +117,12 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!open || !item) return
-    setRows(item.batches && item.batches.length > 0 ? item.batches.map(b => ({ ...b })) : [])
-    setError(null)
-  }, [open, item])
+  if (!open || !item) return
+  setRows(item.batches && item.batches.length > 0
+    ? item.batches.map((b, i) => ({ ...b, batchCode: String(i + 1) }))
+    : [])
+  setError(null)
+}, [open, item])
 
   if (!open || !item) return null
 
@@ -131,21 +133,25 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
   const isOver = total > target
 
   const addRow = () => {
-    const maxBatches = parseInt(item.packingMaterialQty, 10)
-    if (!isNaN(maxBatches) && rows.length >= maxBatches) {
-      setError(`Maximum ${maxBatches} batch rows allowed (matches Packing Material Qty).`)
-      return
-    }
-    setRows([...rows, { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, batchCode: '', quantity: '' }])
-    setError(null)
+  const maxBatches = parseInt(item.packingMaterialQty, 10)
+  if (!isNaN(maxBatches) && rows.length >= maxBatches) {
+    setError(`Maximum ${maxBatches} batch rows allowed (matches Packing Material Qty).`)
+    return
   }
-  const removeRow = (id) => { setRows(rows.filter(r => r.id !== id)); setError(null) }
+  setRows([...rows, { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, batchCode: String(rows.length + 1), quantity: '' }])
+  setError(null)
+}
+  const removeRow = (id) => {
+  setRows(rows.filter(r => r.id !== id).map((r, i) => ({ ...r, batchCode: String(i + 1) })))
+  setError(null)
+}
   const updateRow = (id, field, value) => { setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r)); setError(null) }
 
   const handleSave = () => {
-    if (rows.length === 0) { onSave(item.itemNo, []); onClose(); return }
-    const missing = rows.find(r => !r.batchCode || !r.quantity || parseFloat(r.quantity) <= 0)
-    if (missing) { setError('Every batch row needs a SL No. and a positive Quantity.'); return }
+  if (rows.length === 0) { onSave(item.itemNo, []); onClose(); return }
+  const missing = rows.find(r => !r.quantity || parseFloat(r.quantity) <= 0)
+  if (missing) { setError('Every batch row needs a positive Quantity.'); return }
+  
     if (!isMatch) {
       setError(isOver
         ? `Sum of batch quantities (${total}) exceeds Avl. ASN Qty (${target}) by ${(total - target).toFixed(2)} ${item.totalUnit}.`
@@ -211,7 +217,9 @@ function SplitBatchModal({ open, item, onClose, onSave }) {
                   </button>
                 </div>
                 <div className="flex-1 px-2">
-                  <input type="text" value={r.batchCode} onChange={e => updateRow(r.id, 'batchCode', e.target.value)} placeholder={`Batch ${i + 1}`} className="w-full h-9 px-2.5 text-[13px] border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+                  <div className="w-full h-9 px-2.5 flex items-center text-[13px] font-semibold text-[#32363a] bg-[#f5f6f7] border border-[#e5e5e5] rounded">
+                    {r.batchCode}
+                  </div>
                 </div>
                 <div className="w-28 px-2">
                   <input type="number" min="0" step="1" value={r.quantity} onKeyDown={(e) => { if (e.key === '.' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') { e.preventDefault() } }} onChange={e => { const val = e.target.value.replace(/[^0-9]/g, ''); updateRow(r.id, 'quantity', val) }} onWheel={e => e.target.blur()} placeholder="0" className="w-full h-9 px-2.5 text-[13px] text-right tabular-nums border border-[#d9d9d9] rounded bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />

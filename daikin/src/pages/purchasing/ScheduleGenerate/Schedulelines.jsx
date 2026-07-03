@@ -408,7 +408,7 @@ const handleSave = async () => {
     } else {
       await scheduleGenerateApi.saveScheduleLines(agreementId, supplierCode, displayLines)
     }
-    navigate('/purchasing/schedule-generate', {
+    navigate('/purchasing/ScheduleGenerate/schedule-generate', {
   state: {
     returnData: {
       savedLines:       displayLines,
@@ -429,7 +429,7 @@ const handleSave = async () => {
 
   // REPLACE WITH THIS
 const handleClose = () => {
-  navigate('/purchasing/schedule-generate', {
+  navigate('/purchasing/ScheduleGenerate/schedule-generate', {
     state: {
       restoreData: {
         supplier:  supplierFull,
