@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../../layouts/PageLayout.jsx'
-import { gateEntryApi, authConfig } from '../../../services/Shipment/Gateingateout.js'
+import { gateEntryApi, authConfig } from '../../../services/Shipment/GateinGateout/Gateingateout.js'
 import { useUser } from '../../../context/UserContext.jsx'
 
 
@@ -101,11 +101,8 @@ const TIMELINE_STEPS = [
 // ═══════════════════════════════════════════════════════════════
 const tlStep = (timeline, key) => timeline?.find(t => t.key === key)?.completed || false
 
-const canGateReport = (tracking) =>
-  tlStep(tracking.timeline, 'shipped') && !tlStep(tracking.timeline, 'gate_reporting')
-
 const canGateIn = (tracking) =>
-  tlStep(tracking.timeline, 'gate_reporting') && !tlStep(tracking.timeline, 'gate_entry_in')
+  tlStep(tracking.timeline, 'shipped') && !tlStep(tracking.timeline, 'gate_entry_in')
 const canGateOut = (tracking) =>
   tlStep(tracking.timeline, 'gate_entry_in') && !tlStep(tracking.timeline, 'gate_entry_out')
 
@@ -806,7 +803,7 @@ export default function GateInGateOut() {
         )}
       </div>
 
-      {t && (showGateReport || showGateIn || showGateOut) && (
+      {t && ( showGateIn || showGateOut) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#e5e5e5] px-4 sm:px-6 py-3 flex items-center gap-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
 
           {showGateReport && (
