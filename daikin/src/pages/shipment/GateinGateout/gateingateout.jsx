@@ -806,7 +806,7 @@ export default function GateInGateOut() {
       {t && ( showGateIn || showGateOut) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#e5e5e5] px-4 sm:px-6 py-3 flex items-center gap-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
 
-          {showGateReport && (
+          {/* {showGateReport && (
             <button
               onClick={handleGateReporting}
               disabled={gateRepLoading}
@@ -822,7 +822,7 @@ export default function GateInGateOut() {
               }
               {gateRepLoading ? 'Processing…' : 'Gate Reporting'}
             </button>
-          )}
+          )} */}
 
           {showGateIn && (
             <button

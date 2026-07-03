@@ -23,6 +23,7 @@ async function odataGet(path) {
   return res.json()
 }
 
+const TRANS_MODE = { '01': 'By Road', '02': 'By Air', '03': 'By Ship', '04': 'By Rail' }
 // ── value helpers ──
 const num = (v) => Number(String(v ?? '').trim() || 0)
 const str = (v) => String(v ?? '').trim()
@@ -80,7 +81,7 @@ function mapHeader(d) {
       driverName: str(d.NameDrvr),
       contactNumber: str(d.DrvContactNum),
       transporterName: str(d.TransporterName),
-      transportMode: str(d.TransportMode),
+      transportMode: TRANS_MODE[str(d.TransportMode)] || str(d.TransportMode),
       vehicleRegNo: str(d.VehicleRegNumb),
       creationDate: sapDate(d.CreationDt),
       creationTime: sapTime(d.CreationTime),

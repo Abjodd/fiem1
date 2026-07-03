@@ -254,15 +254,6 @@ export const gateEntryApi = {
   },
 
   async processGateIn(trackNo, year, asnNum, asnYear, freshHeader) {
-    const gateReportingDone = freshHeader?.timeline
-      ?.find(t => t.key === 'gate_reporting')?.completed
-
-    if (!gateReportingDone) {
-      throw new Error(
-        `Gate Reporting must be completed before Gate In. ` +
-        `Current status: "${freshHeader?.statusText || 'Unknown'}"`
-      )
-    }
 
 
     const headerKey = buildKey(trackNo, year)
