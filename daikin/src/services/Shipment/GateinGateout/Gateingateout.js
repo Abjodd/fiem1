@@ -254,17 +254,6 @@ export const gateEntryApi = {
   },
 
   async processGateIn(trackNo, year, asnNum, asnYear, freshHeader) {
-    const gateReportingDone = freshHeader?.timeline
-      ?.find(t => t.key === 'gate_reporting')?.completed
-
-    if (!gateReportingDone) {
-      throw new Error(
-        `Gate Reporting must be completed before Gate In. ` +
-        `Current status: "${freshHeader?.statusText || 'Unknown'}"`
-      )
-    }
-
-
     const headerKey = buildKey(trackNo, year)
     const asnKey = `AsnNum='${asnNum}',FisYear='${asnYear}',Bwart=''`
 
@@ -273,23 +262,13 @@ export const gateEntryApi = {
     await odataWriteWithToken(
       token,
       `/ASNHeaderSet(${asnKey})`,
-      {
-        AsnNum: asnNum,
-        FisYear: asnYear,
-        TrackingNo: trackNo,
-        TrackingYear: year,
-        Lfsnr: 'TRD',
-      },
+      { AsnNum: asnNum, FisYear: asnYear, TrackingNo: trackNo, TrackingYear: year, Lfsnr: 'TRD' },
       'PUT'
     )
 
-    // Step 2: GET — read the generated gate number and reference doc
     const numData = await odata(`/GateNumberSet(${headerKey})`)
-    return {
-      Gno: str(numData.d?.Gno || ''),
-      Mblnr103: str(numData.d?.Mblnr103 || ''),
-    }
-  },
+    return { Gno: str(numData.d?.Gno || ''), Mblnr103: str(numData.d?.Mblnr103 || '') }
+},
   async processGateOut(trackNo, year) {
     const key = buildKey(trackNo, year)
     return odataWrite(
