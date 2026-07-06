@@ -156,6 +156,8 @@ const buildPostBody = (form, { trackNo = '', year = '', txn = '1' } = {}) => {
     TotalAmt:       '',
     FixedBin:       form.fixedBin  || '',
     InvoiceNum:     form.lrNum     || '',
+    lr:             form.lrNum     || '',
+    fname:          form.finaltranspoterName || '',
     HeaderAsnNav:   { results: asnResults },
     HeaderRpmInNav: { results: [] },
   }

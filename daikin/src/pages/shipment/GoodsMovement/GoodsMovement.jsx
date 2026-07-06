@@ -746,7 +746,7 @@ export default function GoodsMovement() {
               </div>
               <div>
                 <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">LR No.</label>
-                <input type="text" value={updateForm.lrNum} onChange={(e) => setUpdateForm(f => ({ ...f, lrNum: e.target.value }))} placeholder="Enter LR Number"
+                <input type="text" maxLength={12} value={updateForm.lrNum} onChange={(e) => setUpdateForm(f => ({ ...f, lrNum: e.target.value }))} placeholder="Enter LR Number"
                   className="w-full h-11 px-3.5 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
               </div>
               <div>
