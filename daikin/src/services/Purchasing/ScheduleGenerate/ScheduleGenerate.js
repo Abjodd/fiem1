@@ -496,25 +496,55 @@ export const scheduleGenerateApi = {
 
 
   async fetchItemDays(agreementId, lifnr, itemNos) {
-  if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 200))
-    return {}
-  }
+    if (USE_MOCK) {
+      await new Promise(r => setTimeout(r, 200))
+      return {}
+    }
 
-  const itemsRaw = await odataGet(
-    `/sg_itemSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$expand=editSet&$format=json`
-  )
-
-  const map = {}
-  ;(itemsRaw.results ?? []).forEach(data => {
-    // day1–day31 are directly on the item record, not nested
-    const itemNo = String(data.itemno).trim().replace(/^0+/, '')
+    const map = {}
     const cleanItemNos = itemNos.map(n => String(n).trim().replace(/^0+/, ''))
-    if (!cleanItemNos.includes(itemNo)) return
-    map[itemNo] = mapDayRecord(data)  // ← pass data directly, not data.daySet
-  })
-  return map
-},
+    
+    await Promise.all(
+      cleanItemNos.map(async (itemNo) => {
+        // Backend expects 5-digit padded item number for the filter
+        const formattedItemNo = String(itemNo).padStart(5, '0')
+        
+        try {
+          const itemsRaw = await odataGet(
+            `/editSet?$filter=agreement eq '${agreementId}' and itemno eq '${formattedItemNo}'&$format=json`
+          )
+          
+          const results = itemsRaw.results ?? []
+          if (results.length > 0) {
+            const days = new Array(31).fill(0)
+            
+            results.forEach(row => {
+              const rowDays = extractDaysFromRow(row)
+              rowDays.forEach((val, i) => {
+                if (val > 0) days[i] = val
+              })
+            })
+            
+            const first = results[0]
+            const frozenDays = [first.fn1, first.fn2, first.fn3]
+              .filter(Boolean)
+              .map(Number)
+              
+            map[itemNo] = {
+              days,
+              frozenDays,
+              // Keeping backward compatibility format
+              totalQuantity: Number(first.totalsch) || 0,
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch editSet for item ${itemNo}:`, err)
+        }
+      })
+    )
+    
+    return map
+  },
 
   async fetchItemDaysApprover(agreementId, lifnr, itemNos) {
     if (USE_MOCK) {

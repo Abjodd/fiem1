@@ -8,7 +8,7 @@ const SA_ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
  * SAP requires a valid X-CSRF-Token for all POST requests.
  */
 async function fetchCsrfToken() {
-  const res = await fetch(`${SA_ODATA_BASE}/AsnAttachementSet`, {
+  const res = await fetch(`${SA_ODATA_BASE}/`, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
