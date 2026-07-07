@@ -520,7 +520,14 @@ const handleSuccessDismiss = async () => {
                       {item.deliveryDate}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-[#32363a] font-semibold">{item.material}</td>
+                  <td className="py-4 px-4 text-[#32363a] font-semibold">
+                    {item.material}
+                    {item.materialCode && (
+                      <div className="text-[12px] text-[#6b7280] font-normal mt-0.5">
+                        {item.materialCode}
+                      </div>
+                    )}
+                  </td>
                   <td className="py-4 px-4">
                     <span className="font-bold text-[15px] text-[#32363a]">{item.quantity}</span>{' '}
                     <span className="text-[#6a6d70] text-[13px]">{item.unit}</span>

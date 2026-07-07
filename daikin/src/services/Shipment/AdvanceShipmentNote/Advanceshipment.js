@@ -96,6 +96,7 @@ function mapItem(d) {
   return {
     deliveryDate: sapDate(d.Delv_dt),
     material: str(d.Mat_txt) || str(d.Material),
+    materialCode: str(d.Material),
     quantity: num(d.Quantity),
     unit: str(d.Unit),
     amount: num(d.Net_price),
@@ -246,6 +247,7 @@ export const asnApi = {
           headers: { Accept: mime || 'application/octet-stream',
                       Loginid: authConfig.loginId,
           Logintype: authConfig.loginType,
+          slug: `${asnNum}/${fisYear}/${name}`
            },
           credentials: 'include',
         })
@@ -269,6 +271,7 @@ export const asnApi = {
           headers: { Accept: mime || 'application/octet-stream',
                       Loginid: authConfig.loginId,
           Logintype: authConfig.loginType,
+          slug: `${asnNum}/${fisYear}/${name}`
            },
           credentials: 'include',
         })
