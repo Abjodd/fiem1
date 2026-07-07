@@ -254,15 +254,22 @@ export const gateEntryApi = {
   },
 
   async processGateIn(trackNo, year, asnNum, asnYear, freshHeader) {
-    const headerKey = buildKey(trackNo, year)
-    const asnKey = `AsnNum='${asnNum}',FisYear='${asnYear}',Bwart=''`
+  const headerKey = buildKey(trackNo, year)
+  const asnKey = `AsnNum='${asnNum}',FisYear='${asnYear}',Bwart=''`
 
-    const token = await fetchCsrfToken()
+  // Fetch current ASN header entity first, same pattern as Gate Out
+  const current = await odata(`/ASNHeaderSet(${asnKey})`)
+  const d = current?.d
+  if (!d) throw new Error('Could not load ASN header before Gate In')
 
-    await odataWriteWithToken(
-      token,
-      `/ASNHeaderSet(${asnKey})`,
-      { AsnNum: asnNum, FisYear: asnYear, TrackingNo: trackNo, TrackingYear: year, Lfsnr: 'TRD' },
+  const token = await fetchCsrfToken()
+
+  await odataWriteWithToken(
+    token,
+    `/ASNHeaderSet`,   // collection-level, no key
+    {
+      __metadata: d.__metadata,
+      AsnNum: d.AsnNum, FisYear: d.FisYear, TrackingNo: d.TrackingNo, TrackingYear: d.TrackingYear, Lfsnr: 'TRD' },
       'POST'
     )
 
@@ -272,9 +279,7 @@ export const gateEntryApi = {
   async processGateOut(trackNo, year) {
   const key = buildKey(trackNo, year)
 
-  // Fetch the current full entity first — Gate Out needs the complete
-  // record round-tripped back with GateOutFlag set, not a partial patch
-  const current = await odata(`/GateEntryHeaderSet(${key})`)
+  const current = await odata(`/GateEntryHeaderSet(${key})?$expand=HeaderAsnNav,HeaderRpmInNav,HeaderRpmOutNav`)
   const d = current?.d
   if (!d) throw new Error('Could not load current gate entry before Gate Out')
 
@@ -282,8 +287,9 @@ export const gateEntryApi = {
 
   return odataWriteWithToken(
     token,
-    `/GateEntryHeaderSet(${key})`,
+    `/GateEntryHeaderSet`,
     {
+      __metadata: d.__metadata,
       TrackNo: d.TrackNo,
       Year: d.Year,
       Vendor: d.Vendor,
@@ -318,6 +324,9 @@ export const gateEntryApi = {
       Pollution_crtapp: d.Pollution_crtapp,
       EwayBillDate: d.EwayBillDate,
       GateOutFlag: 'X',
+      HeaderAsnNav: { results: d.HeaderAsnNav?.results || [] },
+      HeaderRpmInNav: { results: d.HeaderRpmInNav?.results || [] },
+      HeaderRpmOutNav: { results: d.HeaderRpmOutNav?.results || [] },
     },
     'POST'
   )
