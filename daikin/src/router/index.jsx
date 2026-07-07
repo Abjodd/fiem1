@@ -86,7 +86,7 @@ export const NAV_MODULES = [
       {
         id:'gatein-to-migo',
         label:'Gate-In to MIGO Report', 
-        path: '/reports/GateinGateout/gatein-to-migo',
+        path: '/reports/GateinMIGO/gatein-to-migo',
         icon: 'gate-migo',
         cover: import.meta.env.BASE_URL + 'images/Gate_IN_MIGO.png',
       },

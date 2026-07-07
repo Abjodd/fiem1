@@ -1,5 +1,5 @@
 // src/services/poReturn.js
-const BASE = '/sap/opu/odata/shiv/ZDEBIT_PO_SRV'
+const BASE = '/sap/opu/odata/SAP/ZDEBIT_PO_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
 // ─── SAP date helpers ───────────────────────────────────────────

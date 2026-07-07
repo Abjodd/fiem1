@@ -101,11 +101,8 @@ const TIMELINE_STEPS = [
 // ═══════════════════════════════════════════════════════════════
 const tlStep = (timeline, key) => timeline?.find(t => t.key === key)?.completed || false
 
-const canGateReport = (tracking) =>
-  tlStep(tracking.timeline, 'shipped') && !tlStep(tracking.timeline, 'gate_reporting')
-
 const canGateIn = (tracking) =>
-  tlStep(tracking.timeline, 'gate_reporting') && !tlStep(tracking.timeline, 'gate_entry_in')
+  tlStep(tracking.timeline, 'shipped') && !tlStep(tracking.timeline, 'gate_entry_in')
 const canGateOut = (tracking) =>
   tlStep(tracking.timeline, 'gate_entry_in') && !tlStep(tracking.timeline, 'gate_entry_out')
 
@@ -379,7 +376,7 @@ export default function GateInGateOut() {
   const [successOpen, setSuccessOpen]       = useState(false)
   const [errorMsg, setErrorMsg]             = useState('')
   const [errorOpen, setErrorOpen]           = useState(false)
-  const [gateRepLoading, setGateRepLoading] = useState(false)
+  // const [gateRepLoading, setGateRepLoading] = useState(false)
   const [gateInLoading, setGateInLoading]   = useState(false)
   const [gateOutLoading, setGateOutLoading] = useState(false)
   const [asnPopup, setAsnPopup]             = useState(null)
@@ -418,69 +415,62 @@ export default function GateInGateOut() {
   }
 
   // ── Gate Reporting ────────────────────────────────────────────
-  const handleGateReporting = async () => {
-    if (!tracking) return
-    setGateRepLoading(true)
-    try {
-      await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
-      setSuccessMsg('Gate reporting processed successfully.')
-      setSuccessOpen(true)
-      await refreshTracking(tracking.trackingNo, tracking.year)
-    } catch (err) {
-      console.error('[handleGateReporting]', err)
-      setErrorMsg(err.message || 'Gate Reporting failed. Please try again.')
-      setErrorOpen(true)
-    } finally {
-      setGateRepLoading(false)
-    }
-  }
+  // const handleGateReporting = async () => {
+  //   if (!tracking) return
+  //   setGateRepLoading(true)
+  //   try {
+  //     await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
+  //     setSuccessMsg('Gate reporting processed successfully.')
+  //     setSuccessOpen(true)
+  //     await refreshTracking(tracking.trackingNo, tracking.year)
+  //   } catch (err) {
+  //     console.error('[handleGateReporting]', err)
+  //     setErrorMsg(err.message || 'Gate Reporting failed. Please try again.')
+  //     setErrorOpen(true)
+  //   } finally {
+  //     setGateRepLoading(false)
+  //   }
+  // }
 
   // ── Gate In ───────────────────────────────────────────────────
   const handleGateIn = async () => {
-    if (!tracking) return
+  if (!tracking) return
 
-    const firstAsn = tracking.asns?.[0]
-    if (!firstAsn?.asnNum || !firstAsn?.asnYear) {
-      setErrorMsg('No ASN found for this tracking entry. Cannot process Gate In.')
+  const firstAsn = tracking.asns?.[0]
+  if (!firstAsn?.asnNum || !firstAsn?.asnYear) {
+    setErrorMsg('No ASN found for this tracking entry. Cannot process Gate In.')
+    setErrorOpen(true)
+    return
+  }
+
+  setGateInLoading(true)
+  try {
+    await gateEntryApi.processGateReporting(tracking.trackingNo, tracking.year)
+
+    const freshHeader = await refreshTracking(tracking.trackingNo, tracking.year)
+    if (!freshHeader) {
+      setErrorMsg('Could not verify current status. Please refresh and try again.')
       setErrorOpen(true)
       return
     }
 
-    setGateInLoading(true)
-    try {
-      const freshHeader = await refreshTracking(tracking.trackingNo, tracking.year)
+    const result = await gateEntryApi.processGateIn(
+      tracking.trackingNo, tracking.year, firstAsn.asnNum, firstAsn.asnYear, freshHeader,
+    )
 
-      if (!freshHeader) {
-        setErrorMsg('Could not verify current status. Please refresh and try again.')
-        setErrorOpen(true)
-        return
-      }
-
-      const result = await gateEntryApi.processGateIn(
-        tracking.trackingNo,
-        tracking.year,
-        firstAsn.asnNum,
-        firstAsn.asnYear,
-        freshHeader,
-      )
-
-      const gno      = result.Gno      || '—'
-      const mblnr103 = result.Mblnr103 || '—'
-      setSuccessMsg(
-        `Gate In processed and gate entry number ${gno} generated successfully for Reference document Number: ${mblnr103}`
-      )
-      setSuccessOpen(true)
-
-      await refreshTracking(tracking.trackingNo, tracking.year)
-
-    } catch (err) {
-      console.error('[handleGateIn]', err)
-      setErrorMsg(err.message || 'Gate In failed. Please try again.')
-      setErrorOpen(true)
-    } finally {
-      setGateInLoading(false)
-    }
+    const gno = result.Gno || '—'
+    const mblnr103 = result.Mblnr103 || '—'
+    setSuccessMsg(`Gate In processed and gate entry number ${gno} generated successfully for Reference document Number: ${mblnr103}`)
+    setSuccessOpen(true)
+    await refreshTracking(tracking.trackingNo, tracking.year)
+  } catch (err) {
+    console.error('[handleGateIn]', err)
+    setErrorMsg(err.message || 'Gate In failed. Please try again.')
+    setErrorOpen(true)
+  } finally {
+    setGateInLoading(false)
   }
+}
   const handleGateOut = async () => {
   if (!tracking) return
   setGateOutLoading(true)
@@ -499,7 +489,7 @@ export default function GateInGateOut() {
 }
 
   // Derived button visibility
-  const showGateReport = tracking ? canGateReport(tracking) : false
+  
   const showGateIn     = tracking ? canGateIn(tracking)     : false
   // Update derived flags (near showGateReport / showGateIn):
   const showGateOut = tracking ? canGateOut(tracking) : false
@@ -806,10 +796,10 @@ export default function GateInGateOut() {
         )}
       </div>
 
-      {t && (showGateReport || showGateIn || showGateOut) && (
+      {t && (showGateIn || showGateOut) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#e5e5e5] px-4 sm:px-6 py-3 flex items-center gap-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
 
-          {showGateReport && (
+          {/* {showGateReport && (
             <button
               onClick={handleGateReporting}
               disabled={gateRepLoading}
@@ -825,7 +815,7 @@ export default function GateInGateOut() {
               }
               {gateRepLoading ? 'Processing…' : 'Gate Reporting'}
             </button>
-          )}
+          )} */}
 
           {showGateIn && (
             <button
