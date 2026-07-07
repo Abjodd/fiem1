@@ -263,20 +263,65 @@ export const gateEntryApi = {
       token,
       `/ASNHeaderSet(${asnKey})`,
       { AsnNum: asnNum, FisYear: asnYear, TrackingNo: trackNo, TrackingYear: year, Lfsnr: 'TRD' },
-      'PUT'
+      'POST'
     )
 
     const numData = await odata(`/GateNumberSet(${headerKey})`)
     return { Gno: str(numData.d?.Gno || ''), Mblnr103: str(numData.d?.Mblnr103 || '') }
 },
   async processGateOut(trackNo, year) {
-    const key = buildKey(trackNo, year)
-    return odataWrite(
-      `/GateEntryHeaderSet(${key})`,
-      { TrackNo: trackNo, Year: year },
-      'PATCH'
-    )
-  }, 
+  const key = buildKey(trackNo, year)
+
+  // Fetch the current full entity first — Gate Out needs the complete
+  // record round-tripped back with GateOutFlag set, not a partial patch
+  const current = await odata(`/GateEntryHeaderSet(${key})`)
+  const d = current?.d
+  if (!d) throw new Error('Could not load current gate entry before Gate Out')
+
+  const token = await fetchCsrfToken()
+
+  return odataWriteWithToken(
+    token,
+    `/GateEntryHeaderSet(${key})`,
+    {
+      TrackNo: d.TrackNo,
+      Year: d.Year,
+      Vendor: d.Vendor,
+      Name: d.Name,
+      RegNum: d.RegNum,
+      Transporter: d.Transporter,
+      Person: d.Person,
+      Contact: d.Contact,
+      Mode: d.Mode,
+      CreateDate: d.CreateDate,
+      CreateTime: d.CreateTime,
+      ShipDate: d.ShipDate,
+      ShipTime: d.ShipTime,
+      InDate: d.InDate,
+      InTime: d.InTime,
+      RepDate: d.RepDate,
+      RepTime: d.RepTime,
+      GrDate: d.GrDate,
+      GrTime: d.GrTime,
+      GrEndDate: d.GrEndDate,
+      GrEndTime: d.GrEndTime,
+      OutDate: d.OutDate,
+      OutTime: d.OutTime,
+      Eta: d.Eta,
+      Status: d.Status,
+      Mblnr: d.Mblnr,
+      Mjahr: d.Mjahr,
+      EwayBill: d.EwayBill,
+      Safetygudmat: d.Safetygudmat,
+      Safetyeqp: d.Safetyeqp,
+      Totalasnamt: d.Totalasnamt,
+      Pollution_crtapp: d.Pollution_crtapp,
+      EwayBillDate: d.EwayBillDate,
+      GateOutFlag: 'X',
+    },
+    'POST'
+  )
+},
 }
 
 export default gateEntryApi
