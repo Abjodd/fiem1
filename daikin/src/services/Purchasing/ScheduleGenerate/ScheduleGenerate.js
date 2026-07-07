@@ -68,11 +68,27 @@ function mapHeader(d) {
   }
 }
 
-function mapItem(d) {
-  const days = []
-  for (let i = 1; i <= 31; i++) {
-    days.push(Number(d[`day${i}`]) || 0)
+function extractDaysFromRow(d) {
+  const days = new Array(31).fill(0)
+  const qty = Number(d.day1) || 0
+  const dateStr = d.date || ''
+  
+  // If vertical format (has date and qty in day1)
+  if (dateStr && dateStr.length === 8 && qty > 0) {
+    const dayNum = parseInt(dateStr.substring(0, 2), 10)
+    if (dayNum >= 1 && dayNum <= 31) {
+      days[dayNum - 1] = qty
+    }
+  } else {
+    // Horizontal fallback
+    for (let i = 1; i <= 31; i++) {
+      days[i - 1] = Number(d[`day${i}`]) || 0
+    }
   }
+  return days
+}
+
+function mapItem(d) {
   const frozenDays = [d.fn1, d.fn2, d.fn3]
     .filter(Boolean)
     .map(Number)
@@ -87,21 +103,26 @@ function mapItem(d) {
     indicator:     d.indicator || '',
     status:        d.status   || 'Not Generated',
     date:          d.date     || '',
-    days,
+    days:          extractDaysFromRow(d),
     frozenDays,
   }
 }
 
 function mapDayRecord(d) {
   const src = (d.editSet && d.editSet.results && d.editSet.results.length > 0)
-    ? d.editSet.results[0]
-    : d
+    ? d.editSet.results
+    : [d]
 
-  const days = []
-  for (let i = 1; i <= 31; i++) {
-    days.push(Number(src[`day${i}`]) || 0)
-  }
-  const frozenDays = [src.fn1, src.fn2, src.fn3]
+  const days = new Array(31).fill(0)
+  src.forEach(row => {
+    const rowDays = extractDaysFromRow(row)
+    rowDays.forEach((val, i) => {
+      if (val > 0) days[i] = val
+    })
+  })
+
+  const first = src[0] || d
+  const frozenDays = [first.fn1, first.fn2, first.fn3]
     .filter(Boolean)
     .map(Number)
 
@@ -223,9 +244,24 @@ const MOCK_F4_SUPPLIERS = Object.values(MOCK_SUPPLIERS).map(s => ({
 
 
 function buildDeepPayload(agreementId, lifnr, item, mode) {
-  const childRow = { agreement: agreementId }
+  const today = new Date()
+  const year = String(today.getFullYear())
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+
+  const results = []
   item.days.forEach((val, idx) => {
-    childRow[`day${idx + 1}`] = String(val)
+    const numVal = Number(val) || 0
+    // For CREATE/GENERATE, only send if allotted > 0
+    if (numVal > 0) {
+      const dayStr = String(idx + 1).padStart(2, '0')
+      results.push({
+        //agreement: agreementId,
+        itemno:    item.itemNo,
+        //sapcode:   item.sapCode,
+        day1:      String(numVal),
+        date:      `${dayStr}${month}${year}`,
+      })
+    }
   })
 
   const payload = {
@@ -236,25 +272,47 @@ function buildDeepPayload(agreementId, lifnr, item, mode) {
     desc:       item.description ?? '',
     hsn:        item.hsnCode     ?? '',
     totalsch:   String(item.totalQuantity),
-    unitprice:  String(item.unitPrice  ?? 0),   // ← ADD
-    indicator:  item.indicator ?? '',            // ← ADD
-    status:     item.status    ?? '',            // ← ADD
-    date:       item.date      ?? '',            // ← ADD
+    unitprice:  String(item.unitPrice  ?? 0),
+    indicator:  item.indicator ?? '',
+    status:     item.status    ?? '',
+    date:       item.date      ?? '',
   }
 
   if (mode === 'WEEKLY') {
-    payload.weekSet = { results: [childRow] }
+    payload.weekSet = { results }
   } else if (mode === 'DAILY') {
-    payload.daySet  = { results: [childRow] }
+    payload.daySet  = { results }
   }
 
   return payload
 }
 
 function buildEditPayload(agreementId, lifnr, item) {
-  const childRow = { agreement: agreementId, flag: 'X' }
+  const today = new Date()
+  const year = String(today.getFullYear())
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+
+  const results = []
+  
+  // Use originalDays to detect what was deleted
+  const original = item.originalDays || []
+  
   item.days.forEach((val, idx) => {
-    childRow[`day${idx + 1}`] = String(val)
+    const numVal = Number(val) || 0
+    const origVal = Number(original[idx]) || 0
+    
+    // Send if currently allotted, OR if it was previously allotted but is now 0 (deleted)
+    if (numVal > 0 || (numVal === 0 && origVal > 0)) {
+      const dayStr = String(idx + 1).padStart(2, '0')
+      results.push({
+        agreement: agreementId,
+        itemno:    item.itemNo,
+        sapcode:   item.sapCode,
+        day1:      String(numVal),
+        date:      `${dayStr}${month}${year}`,
+        flag:      'X',
+      })
+    }
   })
 
   return {
@@ -265,12 +323,12 @@ function buildEditPayload(agreementId, lifnr, item) {
     desc:       item.description ?? '',
     hsn:        item.hsnCode     ?? '',
     totalsch:   String(item.totalQuantity),
-    unitprice:  String(item.unitPrice  ?? 0),   // ← ADD
-    indicator:  item.indicator ?? '',            // ← ADD
-    status:     item.status    ?? '',            // ← ADD
+    unitprice:  String(item.unitPrice  ?? 0),
+    indicator:  item.indicator ?? '',
+    status:     item.status    ?? '',
     date:       item.date      ?? '', 
-    edit:       'X',           // ← ADD
-    editSet:    { results: [childRow] },
+    edit:       'X',
+    editSet:    { results },
   }
 }
 

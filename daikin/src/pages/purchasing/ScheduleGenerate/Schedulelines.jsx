@@ -139,6 +139,7 @@ function buildInitialLines(itemsData, mode, dayCount, calDays) {
     }
     return {
       ...it,
+      originalDays: Array.isArray(it.days) ? [...it.days] : [],
       days,
       forecast: it.forecast ? [...it.forecast] : [0, 0, 0],
     }
