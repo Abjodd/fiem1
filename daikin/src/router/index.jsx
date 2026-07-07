@@ -57,6 +57,13 @@ export const NAV_MODULES = [
         icon: 'generate',
         cover: import.meta.env.BASE_URL + 'images/ScheduleGenerate.png',
       },
+      {
+        id: 'import-purchase-order',
+        label: 'Import Purchase Order',
+        path: '/purchasing/ImportPO/import-purchase-order',
+        icon: 'import',
+        cover: import.meta.env.BASE_URL + 'images/ScheduleRelease.png',
+      }, 
     ],
   },
 

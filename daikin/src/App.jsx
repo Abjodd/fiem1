@@ -14,6 +14,7 @@ import ScheduleRelease from './pages/purchasing/ScheduleRelease/ScheduleRelease.
 import PurchaseOrder from './pages/purchasing/PurchaseOrder/PurchaseOrder.jsx'
 import POScheduleReport from './dump/POScheduleReport.jsx'
 import ScheduleGenerate from './pages/purchasing/ScheduleGenerate/scheduleGenerate.jsx'
+import ImportPurchaseOrder from './pages/purchasing/ImportPO/ImportPO.jsx'
 
 // Reports
 import ForecastReport from './pages/reports/ForecastReport/ForecastReport.jsx'
@@ -125,6 +126,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ScheduleGenerate />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/purchasing/ImportPO/import-purchase-order"
+        element={
+          <ProtectedRoute>
+            <ImportPurchaseOrder />
           </ProtectedRoute>
         }
       />
