@@ -553,13 +553,19 @@ export default function ReturnPOMatdoc() {
   useEffect(() => {
     let cancelled = false
     if (!selectedId) { setSelectedDoc(null); return }
+    
+    // Find the selected document metadata from the list to get its true DocumentNo
+    const docMeta = documents.find(d => d.id === selectedId)
+    if (!docMeta) return
+
     setDetailLoading(true); setDetailError(null)
-    poReturnApi.getDocumentDetail(selectedId)
+    // Pass docMeta.documentNo instead of selectedId (which is DeliveryChallanNo)
+    poReturnApi.getDocumentDetail(docMeta.documentNo)
       .then((data) => { if (!cancelled) setSelectedDoc(data) })
       .catch((err) => { if (!cancelled) setDetailError(err.message) })
       .finally(() => { if (!cancelled) setDetailLoading(false) })
     return () => { cancelled = true }
-  }, [selectedId])
+  }, [selectedId, documents])
 
   useEffect(() => {
     if (selectedBtnRef.current) {

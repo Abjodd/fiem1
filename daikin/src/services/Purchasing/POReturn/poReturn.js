@@ -103,10 +103,22 @@ function mapConsignee(raw) {
  * on backend formatting; we split defensively on common separators.
  */
 function splitItemCodeDesc(s) {
-  const v = str(s)
+  const v = str(s).trim()
   if (!v) return { code: '', desc: '' }
+  
   const sep = v.includes('|') ? '|' : (v.includes(' - ') ? ' - ' : null)
-  if (!sep) return { code: v, desc: '' }
+  
+  if (!sep) {
+    const firstSpace = v.indexOf(' ')
+    if (firstSpace !== -1) {
+      return {
+        code: str(v.substring(0, firstSpace)),
+        desc: str(v.substring(firstSpace + 1))
+      }
+    }
+    return { code: v, desc: '' }
+  }
+
   const [code, ...rest] = v.split(sep)
   return { code: str(code), desc: str(rest.join(sep)) }
 }
@@ -149,6 +161,22 @@ function mapDocument({ header, generalRaw, consigneeRaw, itemRows }) {
   const items = (itemRows || []).map(mapItem)
   const first = (itemRows || [])[0] || {}
 
+  // Backend often sends empty strings for document-level totals.
+  // Calculate them manually from the item rows as a fallback.
+  let calcCgst = 0
+  let calcSgst = 0
+  let calcIgst = 0
+  let calcTaxable = 0
+
+  items.forEach(it => {
+    calcCgst += it.cgstAmount || 0
+    calcSgst += it.sgstAmount || 0
+    calcIgst += it.igstAmount || 0
+    calcTaxable += it.taxableValue || 0
+  })
+
+  const calcGrandTotal = calcTaxable + calcCgst + calcSgst + calcIgst
+
   return {
     ...mapHeader(header),
     generalData: mapGeneralData(generalRaw || {}),
@@ -156,11 +184,11 @@ function mapDocument({ header, generalRaw, consigneeRaw, itemRows }) {
     items,
     remarks:            str(first.Remarks),
     totalValueInWords:  str(first.TotalValInWords),
-    cgst:               trimNum(first.CGSTTotal),
-    sgst:               trimNum(first.SGSTTotal),
-    igst:               trimNum(first.IGSTTotal),
-    totalValue:         trimNum(first.TotalValue),
-    grandTotal:         trimNum(first.GrandTotal),
+    cgst:               trimNum(first.CGSTTotal) || calcCgst,
+    sgst:               trimNum(first.SGSTTotal) || calcSgst,
+    igst:               trimNum(first.IGSTTotal) || calcIgst,
+    totalValue:         trimNum(first.TotalValue) || calcTaxable,
+    grandTotal:         trimNum(first.GrandTotal) || calcGrandTotal,
   }
 }
 
