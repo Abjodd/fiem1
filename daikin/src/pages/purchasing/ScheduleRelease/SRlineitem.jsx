@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageLayout from '../../../layouts/PageLayout.jsx'
-import { scheduleReleaseApi, authConfig } from '../../../services/Purchasing/ScheduleRelease/ScheduleRelease.js'
+import { scheduleReleaseApi, authConfig } from '../../../services/Purchasing/ScheduleRelease/Schedulerelease.js'
 import { useUser } from '../../../context/UserContext.jsx'
 // ── Constants ──────────────────────────────────────────────────
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
