@@ -1,6 +1,6 @@
 // src/services/UploadAttachment.js
 import { authConfig } from '../../authConfig.js'
-const SA_ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
+const SA_ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 // export const authConfig = { loginId: '', loginType: '' }
 
 /**
