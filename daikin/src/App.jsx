@@ -3,9 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
 import LandingPage from './components/landingpage.jsx'
-import Home from './pages/Home.jsx'
+import Home from './pages/home.jsx'
 import POreturn from './pages/purchasing/POReturn/POreturn.jsx'
-import './app.css'
+import './App.css'
 import SRlineitem from './pages/purchasing/ScheduleRelease/SRlineitem.jsx'
 import POlineitem from './pages/purchasing/PurchaseOrder/POlineitem.jsx'
 
@@ -27,7 +27,7 @@ import GateInMIGO from './pages/reports/GateInMIGO/GateInMIGO.jsx'
 import DeliverySchedule from './pages/reports/DeliverySchedule/DeliverySchedule.jsx'
 
 // ASN
-import Asnreport from './pages/reports/ASNReport/Asnreport.jsx'
+import Asnreport from './pages/reports/ASNReport/asnReport.jsx'
 
 // Shipment
 import Advanceshipment from './pages/shipment/AdvanceShipmentNote/Advanceshipment.jsx'

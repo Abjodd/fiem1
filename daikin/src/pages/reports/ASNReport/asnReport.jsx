@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import PageLayout from '../../../layouts/PageLayout.jsx'
-import { AsnReportApi, authConfig } from '../../../services/Reports/ASNReport/ASNReport.js'
+import { AsnReportApi, authConfig } from '../../../services/Reports/ASNReport/Asnreport.js'
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 

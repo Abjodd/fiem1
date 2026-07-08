@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageLayout from '../../../layouts/PageLayout.jsx'
 import { useUser } from '../../../context/UserContext.jsx'
-import { purchaseOrderApi, authConfig } from '../../../services/Purchasing/PurchaseOrder/purchaseOrder.js'
+import { purchaseOrderApi, authConfig } from '../../../services/Purchasing/PurchaseOrder/PurchaseOrder.js'
 
 // ── Constants ──────────────────────────────────────────────────
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
