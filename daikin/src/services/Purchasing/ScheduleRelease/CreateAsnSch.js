@@ -186,11 +186,11 @@ export const createAsnApi = {
 
       return {
         __metadata: {
-          type: 'SHIV.AAL_SUP_PORTAL_SA_SRV.ASN_ITEM',  // ← also fix namespace (AAL not SHIV)
+          type: 'SHIV.AAL_SUP_PORTAL_SA_SRV.ASN_ITEM',  
         },
 
         Schedule_No:     str(it.scheduleNo || scheduleNo),
-        Ebelp:           str(it.ebelp),           // already trimmed in mapAsnItem
+        Ebelp:           str(it.ebelp),          
         AsnNum:          '',
         DelQty:          str(it.delQty    || '0'),
         Etenr:           str(it.schLine),
@@ -204,7 +204,7 @@ export const createAsnApi = {
 
         Menge:           str(it.avlAsnQty || '0'),                   
 
-        Netpr:           String(parseFloat(it.netPrice          || '0')),  // ✅ no spaces
+        Netpr:           String(parseFloat(it.netPrice          || '0')),  
         NetprVen:        String(parseFloat(it.supplierNetPrice  || '0')),
 
         ShipDate:        str(it.eindt),
@@ -219,7 +219,7 @@ export const createAsnApi = {
         Warehouse_No:    str(it.warehouseNo         || ''),
         TaxChange:       it.taxMismatch ? 'X' : '',
         FixedBin:        it.batches?.[0]?.batchCode || '',
-        PerUnit:         String(parseFloat(it.perUnit || '1') || 1),  // ✅ "1 " → "1"
+        PerUnit:         String(parseFloat(it.perUnit || '1') || 1),  
         PlantDesc:       str(it.plantDesc           || ''),
         Warningmsg:      '',
 
@@ -230,7 +230,7 @@ export const createAsnApi = {
         Igst_per:        String(parseFloat(it.igstPer || '0')),
         Cgst_per:        String(parseFloat(it.cgstPer || '0')),
         Sgst_per:        String(parseFloat(it.sgstPer || '0')),
-        Tax:             String(parseFloat(it.tax     || '0')),  // ✅ "0 " → "0"
+        Tax:             String(parseFloat(it.tax     || '0')),  
         Currency:        str(it.currency || ''),
 
         Total_Qty:       String(parseFloat(it.totalQty    || '0')),
@@ -265,7 +265,6 @@ export const createAsnApi = {
       Werks:                plant,
       Fis_Year:             '',
       TotalPacking:         String(totalPacking || ''),
-      // Deep insert — { results: [] } wrapper required by OData spec
       ASNItemnav:           { results: itemRows },
     }
 
