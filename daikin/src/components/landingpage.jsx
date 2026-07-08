@@ -680,7 +680,7 @@ export default function DaikinPortal() {
                         {modules.map((m, i) => (
                             <div
                                 key={m.id}
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => navigate('/dashboard', { state: { scrollTo: m.id } })}
                                 className="module-card group relative p-8 cursor-pointer"
                                 style={{ background: t.cardBg }}
                             >
