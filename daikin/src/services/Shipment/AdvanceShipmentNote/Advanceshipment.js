@@ -246,8 +246,7 @@ export const asnApi = {
         const res = await fetch(valueUrl, {
           headers: { Accept: mime || 'application/octet-stream',
                       Loginid: authConfig.loginId,
-          Logintype: authConfig.loginType,
-          slug: `${asnNum}/${fisYear}/${name}`
+          Logintype: authConfig.loginType
            },
           credentials: 'include',
         })
@@ -270,8 +269,7 @@ export const asnApi = {
         const res = await fetch(srcUrl, {
           headers: { Accept: mime || 'application/octet-stream',
                       Loginid: authConfig.loginId,
-          Logintype: authConfig.loginType,
-          slug: `${asnNum}/${fisYear}/${name}`
+          Logintype: authConfig.loginType
            },
           credentials: 'include',
         })
