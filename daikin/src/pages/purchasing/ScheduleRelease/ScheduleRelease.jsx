@@ -925,7 +925,7 @@ export default function ScheduleRelease() {
                       <table className="w-full text-[13px]" style={{ minWidth: '640px', borderCollapse: 'collapse' }}>
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-                            {['Item No.', 'Material', 'HSN Code', 'Delivery', 'Delivered', 'Unit Price', 'Status', ''].map((h, i) => (
+                            {['Item No.', 'Material', 'HSN Code', 'Delivery Schedule', 'Delivered Quantity', 'Unit Price', 'Status', ''].map((h, i) => (
                               <th key={i} className={`font-semibold py-3.5 px-4 text-[11px] uppercase tracking-wider ${i === 7 ? 'w-10' : 'text-left'}`}>
                                 {h}
                               </th>

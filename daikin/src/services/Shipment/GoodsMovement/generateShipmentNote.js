@@ -84,11 +84,6 @@ export async function generateShipmentNote(tracking) {
   doc.setTextColor(...BLACK)
   doc.text('SHIPMENT NOTE', W / 2, Y, { align: 'center' })
 
-  setFont('normal', 9)
-  doc.setTextColor(...GRAY)
-  doc.text(`Report Gate No.: ${reportGateNo}`, W - RM, Y - 3, { align: 'right' })
-  doc.text(`Unloading Point: ${unloadingPoint}`, W - RM, Y + 3, { align: 'right' })
-
   Y += 12
 
   // ── LEFT BOX ────────────────────────────────────────────────
@@ -222,7 +217,8 @@ export async function generateShipmentNote(tracking) {
       const asnLines = [
         `IBD:${asn.ibdNumber || ''}`,
         `ASN:${asnBarcodeText}`,
-        `Inv#:${asn.invoiceNumber || ''}`,
+        `Inv:${asn.invoiceNumber || ''}`,
+        `PO:${asn.poNumber || ''}`,
         `Inv Date:${asn.invoiceDate || ''}`,
         `LPA/${asn.storageLocation || ''}`,
         `PLANT:${asn.plant || ''}`,
