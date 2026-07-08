@@ -3,10 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { findModuleByTilePath, NAV_MODULES } from '../router/index.jsx'
 import { useUser } from '../context/UserContext'
 
-const COMPANY = 'DSAL'
+// const COMPANY = 'DSAL'
 const COMPANY_FULL = 'FIEM Industries Limited'
-const SUPPLIER = 'Kunstocom (India) Ltd'
-const LOCATION = 'Neemrana, Alwar'
+// const SUPPLIER = 'Kunstocom (India) Ltd'
+// const LOCATION = 'Neemrana, Alwar'
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
