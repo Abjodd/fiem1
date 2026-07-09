@@ -897,8 +897,10 @@ export default function CreateASN({ agreement: propAgreement }) {
         header: header || {},
       })
 
-      const asnNum = result.AsnNum
-      const fisYear = result.FisYear || String(new Date().getFullYear())
+      
+      const asnNum = result.asnNum
+      const fisYear = result.fisYear || String(new Date().getFullYear())
+
 
       let uploadResult = { uploaded: 0, failed: [] }
       const totalFiles = generalAttachments.length + pdirAttachments.length

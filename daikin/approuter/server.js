@@ -14,7 +14,7 @@ app.beforeRequestHandler.use("/do/logout", (req, res, next) => {
   const idpBaseUrl = process.env.IDP_BASE_URL;
   const appUrl = process.env.APP_URL;
 
-  const postLogoutUri = encodeURIComponent(appUrl + '/');
+  const postLogoutUri = encodeURIComponent(appUrl);
   const idpLogoutUrl = `${idpBaseUrl}/oauth2/logout?post_logout_redirect_uri=${postLogoutUri}`;
 
   // Redirect through XSUAA logout first, then to IDP
