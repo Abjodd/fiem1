@@ -74,8 +74,10 @@ function extractDaysFromRow(d) {
   const dateStr = d.date || ''
   
   // If vertical format (has date and qty in day1)
+  // Backend date is in YYYYMMDD format (e.g., 20260708)
   if (dateStr && dateStr.length === 8 && qty > 0) {
-    const dayNum = parseInt(dateStr.substring(0, 2), 10)
+    const dayNum = parseInt(dateStr.substring(6, 8), 10)
+    
     if (dayNum >= 1 && dayNum <= 31) {
       days[dayNum - 1] = qty
     }

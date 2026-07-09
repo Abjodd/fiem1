@@ -524,7 +524,7 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
           <Field label="Tax Mismatch">
             <TaxMismatchToggle value={item.taxMismatch} onChange={val => onUpdate('taxMismatch', val)} compact disabled={isZeroQty} />
           </Field>
-          <Field label="Type of Packaging">
+          <Field label={<>Type of Packaging <span className="text-[#cc1c14]">*</span></>}>
             <select value={item.packingMaterialType} onChange={e => onUpdate('packingMaterialType', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
             <option value="">Select</option>
             {(packagingTypes || []).map(pt => (
@@ -827,19 +827,20 @@ export default function CreateASN({ agreement: propAgreement }) {
         errors.push(`Item ${it.itemNo} (${it.materialNumber}): Avl. ASN Qty (${avl}) exceeds the maximum available (${orig}).`)
       }
       const maxBatches = parseInt(it.packingMaterialQty, 10)
-      if (!isNaN(maxBatches) && maxBatches > 0 && (!it.batches || it.batches.length === 0)) {
-        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Split Quantity is required — please add batch rows before creating.`)
-      }
-      const fgVal = parseFloat(it.fgStock)
-      if (it.fgStock === '' || isNaN(fgVal)) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock is required.`)
-      else if (fgVal <= avl) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${avl}).`)
-      
       const batchExpected = !isNaN(maxBatches) && maxBatches > 0
+      
+      if (!it.packingMaterialType) {
+        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Type of Packaging is required.`)
+      }
 
       // Split batch mandatory if packing qty is set
       if (batchExpected && (!it.batches || it.batches.length === 0)) {
-        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Split Quantity is required — open the item and add batch rows.`)
+        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Split Quantity is required.`)
       }
+
+      const fgVal = parseFloat(it.fgStock)
+      if (it.fgStock === '' || isNaN(fgVal)) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock is required.`)
+      else if (fgVal <= avl) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${avl}).`)
 
       // If batches exist, validate them
       if (it.batches && it.batches.length > 0) {

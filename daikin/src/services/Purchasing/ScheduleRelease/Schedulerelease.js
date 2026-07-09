@@ -74,6 +74,8 @@ function mapScheduleLine(d) {
 }
 
 function mapConfirmRow(d) {
+  const deliveryRaw = str(d.ReqDate || d.Date || d.Delivery_Date)
+
   return {
     itemNo:          str(d.Schedule_Item),
     scheduleLine:    str(d.Schedule_Line),
@@ -83,13 +85,14 @@ function mapConfirmRow(d) {
     requiredQty:     num(d.Quantity),
     confirmedQty:    num(d.Con_Qty),
     asnQty:          num(d.Asn_Qty),
-    deliveryDate:    sapDate(d.ReqDate || d.Date),
-    deliveryDateRaw: str(d.ReqDate || d.Date),
+    deliveryDate:    sapDate(deliveryRaw),
+    deliveryDateRaw: deliveryRaw,
     dispatchDate:    sapDate(d.DispDate),
     uom:             str(d.Uom || ''),
     scheduleNo:      str(d.Schedule_No),
   }
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // API

@@ -456,12 +456,11 @@ export default function GoodsMovement() {
         <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
           <table className="w-full text-[14px]" style={{ minWidth: '750px' }}>
             <thead><tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">ASN</th>
+              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider rounded-tl-lg">ASN Number</th>
+              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Number</th>
               <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Total Line Items</th>
               <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">IBD Number</th>
               <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Plant</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Storage Location</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Number</th>
               <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Amount</th>
               <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Date</th>
             </tr></thead>
@@ -476,11 +475,10 @@ export default function GoodsMovement() {
                       {asn.asnId}
                     </span>
                   </td>
+                  <td className="py-4 px-4 text-[#32363a] font-medium">{asn.invoiceNumber}</td>
                   <td className="py-4 px-4 text-[#32363a]">{asn.totalLineItems}</td>
                   <td className="py-4 px-4 text-[#32363a] font-medium">{asn.ibdNumber}</td>
                   <td className="py-4 px-4"><span className="text-[#32363a] font-semibold">{asn.plant}</span></td>
-                  <td className="py-4 px-4 text-[#32363a]">{asn.storageLocation}</td>
-                  <td className="py-4 px-4 text-[#32363a] font-medium">{asn.invoiceNumber}</td>
                   <td className="py-4 px-4 font-semibold text-[#32363a]">{asn.invoiceAmount.toFixed(2)}</td>
                   <td className="py-4 px-4 text-[#32363a]">{asn.invoiceDate}</td>
                 </tr>
@@ -768,7 +766,7 @@ export default function GoodsMovement() {
 
       {/* ASN Value-Help Dialog */}
       {asnLookupOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 anim-overlay">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4 anim-overlay">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAsnLookupOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[680px] anim-modal flex flex-col" style={{ maxHeight: '80vh' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">

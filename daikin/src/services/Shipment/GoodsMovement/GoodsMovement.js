@@ -115,6 +115,7 @@ const mapAsn = (raw) => ({
   plant:           raw.Plant || '',
   storageLocation: raw.StorageLocation || '',
   invoiceNumber:   raw.InvNo || '',
+  poNumber:        raw.Po_No || raw.Ebeln || '',
   invoiceAmount:   parseFloat(raw.Price || '0'),
   invoiceDate:     fromSapDateDisplay(raw.InvDate),
   warehouseNo:     raw.Warehouse_No || '',

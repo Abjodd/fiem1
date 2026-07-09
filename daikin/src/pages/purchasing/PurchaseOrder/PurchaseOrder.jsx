@@ -695,14 +695,6 @@ useEffect(() => {
                         <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Plant</div>
                         <div className="text-[#32363a] font-medium">{agreement.plantDesc} ({agreement.plant})</div>
                       </div>
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Buyer</div>
-                        <div className="text-[#32363a] font-medium">{agreement.buyerName || '—'}</div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Currency</div>
-                        <div className="text-[#32363a] font-medium">{agreement.currency || '—'}</div>
-                      </div>
                     </div>
                   </div>
 

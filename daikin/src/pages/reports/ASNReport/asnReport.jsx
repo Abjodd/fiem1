@@ -182,8 +182,6 @@ const COLUMNS = [
   { key: 'asnStatus',        label: 'ASN status'           },
   { key: 'grStatus',         label: 'GR status'            },
   { key: 'invStatus',        label: 'Inv. status'          },
-  { key: 'currency',         label: 'Currency'             },
-  { key: 'qty',              label: 'Qty'                  },
   { key: 'ewayBillNo',       label: 'Eway bill no.'        },
   { key: 'ewayBillDate',     label: 'Eway bill date'       },
   { key: 'reachedPlantDate', label: 'Reached plant date'   },
@@ -375,7 +373,7 @@ export default function AsnReport() {
         'Base Document', 'Base Document Type', 'Material', 'Material Description',
         'Vendor Code', 'Vendor Name', 'Purchase Group',
         'ASN Status', 'GR Status', 'Inv. Status',
-        'Currency', 'Qty', 'Eway Bill No.', 'Eway Bill Date',
+        'Eway Bill No.', 'Eway Bill Date',
         'Reached Plant Date', 'ETA Date', 'ETA Time',
         'Gate Entry Date', 'Gate Entry Time', 'Gate Exit Date', 'Gate Exit Time',
       ]
@@ -394,7 +392,7 @@ export default function AsnReport() {
           r.createdOn, r.shipmentDate, r.baseDocument, r.baseDocumentType,
           r.material, r.materialName, r.vendorCode, r.vendorName,
           r.purchaseGroup, r.asnStatus, r.grStatus, r.invStatus,
-          r.currency, r.qty, r.ewayBillNo, r.ewayBillDate,
+          r.ewayBillNo, r.ewayBillDate,
           r.reachedPlantDate, r.etaDate, r.etaTime,
           r.gateEntryDate, r.gateEntryTime, r.gateExitDate, r.gateExitTime,
         ])

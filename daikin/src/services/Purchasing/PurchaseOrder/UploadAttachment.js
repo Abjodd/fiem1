@@ -1,6 +1,6 @@
 // src/services/UploadAttachment.js
 import { authConfig } from '../../authConfig.js'
-const SA_ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
+const SA_ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 // export const authConfig = { loginId: '', loginType: '' }
 
 /**
@@ -47,6 +47,7 @@ export async function uploadAttachmentToSap({ asnNum, fisYear, file, csrfToken, 
   // Build URL — some SAP backends accept key fields as query params
   const url = `${SA_ODATA_BASE}/AsnAttachementSet`
 
+  const buffer = await file.arrayBuffer()
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -58,11 +59,8 @@ export async function uploadAttachmentToSap({ asnNum, fisYear, file, csrfToken, 
         Logintype: authConfig.loginType,
       // SAP reads the filename from the slug header
       'slug': `${asnNum}/${fisYear}/${file.name}`,
-      // Pass ASN keys so SAP can link the attachment to the correct document
-      'AsnNum': asnNum,
-      'FisYear': fisYear,
     },
-    body: file,           // raw binary — NOT FormData, NOT base64
+    body: buffer,
     credentials: 'include',
   })
 
