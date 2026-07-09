@@ -56,130 +56,6 @@ function StatusBadge({ status }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUPPLIER PICKER MODAL
-// Shown to 'employee' and 'employeeadmin' roles on first load
-// ═══════════════════════════════════════════════════════════════
-function SupplierPickerModal({ onSelect, roleLabel }) {
-  const [query,     setQuery]     = useState('')
-  const [suppliers, setSuppliers] = useState([])
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState('')
-  const [searched,  setSearched]  = useState(false)
-
-  const handleSearch = async () => {
-    if (!query.trim()) return
-    setLoading(true); setError(''); setSearched(true)
-    try {
-      const list = await purchaseOrderApi.searchSuppliers(query.trim())
-      setSuppliers(list)
-    } catch (e) {
-      setError(e.message || 'Failed to search suppliers')
-      setSuppliers([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center px-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] overflow-hidden flex flex-col"
-        style={{ maxHeight: '75vh', animation: 'modalIn .22s ease-out both' }}
-      >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5">
-          <h2 className="text-[18px] font-bold text-white">Select Supplier</h2>
-          <p className="text-[13px] text-white/80 mt-1">
-            {roleLabel === 'employeeadmin'
-              ? 'Search and select a supplier to manage purchase orders on their behalf.'
-              : 'Search and select a supplier to view their purchase orders.'}
-          </p>
-        </div>
-
-        {/* Search bar */}
-        <div className="px-5 py-4 border-b border-[#e5e5e5] bg-[#fafbfc] flex-shrink-0">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9e9e]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-              </svg>
-              <input
-                autoFocus
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search by code or name…"
-                className="w-full h-10 pl-9 pr-3 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/15 transition-all"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              disabled={loading || !query.trim()}
-              className="h-10 px-4 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {loading && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"/>}
-              Search
-            </button>
-          </div>
-          {error && (
-            <div className="mt-2 text-[12px] text-[#cc1c14] bg-[#fce8e6] px-3 py-1.5 rounded-lg">{error}</div>
-          )}
-        </div>
-
-        {/* Table header */}
-        {searched && (
-          <div className="flex items-center px-5 py-2 bg-[#f5f6f7] border-b border-[#e5e5e5] flex-shrink-0">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] w-[110px]">Code</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] flex-1">Name</span>
-          </div>
-        )}
-
-        {/* Results */}
-        <div className="overflow-y-auto flex-1">
-          {loading && (
-            <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#6a6d70]">
-              <div className="w-4 h-4 border-2 border-[#0a6ed1]/30 border-t-[#0a6ed1] rounded-full animate-spin"/>
-              Searching…
-            </div>
-          )}
-          {!loading && searched && suppliers.length === 0 && (
-            <div className="flex items-center justify-center py-10 text-[13px] text-[#9e9e9e]">
-              No suppliers found for "{query}"
-            </div>
-          )}
-          {!loading && !searched && (
-            <div className="flex items-center justify-center py-10 text-[13px] text-[#9e9e9e]">
-              Type a code or name above and press Search
-            </div>
-          )}
-          {!loading && suppliers.map((s, idx) => (
-            <button
-              key={s.lifnr}
-              onClick={() => onSelect(s)}
-              className={`w-full flex items-center px-5 py-3 text-left transition-colors hover:bg-[#ebf5ff] active:bg-[#d6ecff] ${idx !== 0 ? 'border-t border-[#f0f0f0]' : ''}`}
-            >
-              <span className="w-[110px] flex-shrink-0">
-                <span className="inline-block px-2 py-0.5 rounded-md bg-[#ebf5ff] text-[#0a6ed1] text-[12px] font-bold tracking-wider">
-                  {s.lifnr}
-                </span>
-              </span>
-              <span className="flex-1 text-[13px] text-[#32363a] font-medium truncate">{s.name}</span>
-              <svg className="ml-2 flex-shrink-0 text-[#c0c2c4]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════
 // CONFIRM VIEW
 // ═══════════════════════════════════════════════════════════════
 function ConfirmView({ agreement, onBack, onSuccess }) {
@@ -405,31 +281,10 @@ function SidebarContent({
   plants, togglePlant,
   setSidebarCollapsed,
   selectedBtnRef,
-  needsSupplierPicker, selectedSupplier, onChangeSupplier,
 }) {
   return (
     <>
       <div className="px-4 py-4 border-b border-[#e5e5e5] flex-shrink-0">
-        {/* Supplier chip for employee/employeeadmin */}
-        {needsSupplierPicker && selectedSupplier && !sidebarCollapsed && (
-          <div className="mb-3 flex items-center justify-between px-3 py-2 bg-[#ebf5ff] border border-[#b3d4f5] rounded-lg">
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-[#6a6d70] font-semibold">Supplier</div>
-              <div className="text-[13px] font-bold text-[#0a6ed1] truncate">{selectedSupplier.lifnr}</div>
-              <div className="text-[11px] text-[#32363a] truncate">{selectedSupplier.name}</div>
-            </div>
-            <button
-              onClick={onChangeSupplier}
-              className="ml-2 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all"
-              title="Change supplier"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-        )}
-
         {!sidebarCollapsed && (
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold text-[#32363a]">Purchase Orders</h3>
@@ -571,24 +426,9 @@ function SidebarContent({
 // ═══════════════════════════════════════════════════════════════
 export default function PurchaseOrder() {
   const navigate = useNavigate()
-  const { role, loginId, loginType, loading: userLoading } = useUser()
-
-  // ── Role flags ──────────────────────────────────────────────
-  // partner       → full access, no supplier picker (their own POs auto-load)
-  // employeeadmin → supplier picker + Confirm + Create ASN
-  // employee      → supplier picker + view only (no Confirm, no Create ASN)
-  const isPartner            = role === 'partner'
-  const isEmployeeAdmin      = role === 'employeeadmin'
-  const isEmployee           = role === 'employee'
-  const needsSupplierPicker  = isEmployee || isEmployeeAdmin
-  const canPerformActions    = isPartner || isEmployeeAdmin  // Confirm + Create ASN
-
+  const { loginId, loginType, loading: userLoading } = useUser()
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
-
-  // ── Supplier picker state (employee / employeeadmin only) ──
-  const [selectedSupplier,   setSelectedSupplier]   = useState(null)   // { lifnr, name }
-  const [showSupplierPicker, setShowSupplierPicker] = useState(false)
 
   const [agreements,          setAgreements]          = useState([])
   const [listLoading,         setListLoading]         = useState(false)
@@ -608,14 +448,6 @@ export default function PurchaseOrder() {
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  // Show supplier picker for employee / employeeadmin once user loads
-  useEffect(() => {
-    if (userLoading) return
-    if (needsSupplierPicker && !selectedSupplier) {
-      setShowSupplierPicker(true)
-    }
-  }, [userLoading, needsSupplierPicker, selectedSupplier])
-
     useEffect(() => {
   if (userLoading) return 
   console.log('Firing listHeaders with:', {   // ← add this
@@ -624,18 +456,16 @@ export default function PurchaseOrder() {
     authConfigState: { ...authConfig }
   })         // ← wait until user is ready
   if (!loginId || !loginType) return  // ← don't fire with empty values
-  // employee / employeeadmin: wait until supplier is selected
-  if (needsSupplierPicker && !selectedSupplier) return
 
   let cancelled = false
   setListLoading(true)
   setListError(null)
-  purchaseOrderApi.listHeaders({ supplierCode: selectedSupplier?.lifnr || undefined })
+  purchaseOrderApi.listHeaders()
     .then(data => { if (!cancelled) setAgreements(data) })
     .catch(err  => { if (!cancelled) setListError(err.message) })
     .finally(()  => { if (!cancelled) setListLoading(false) })
   return () => { cancelled = true }
-}, [userLoading, loginId, loginType, needsSupplierPicker, selectedSupplier]) 
+}, [userLoading, loginId, loginType]) 
 
 useEffect(() => {
   if (!selectedAgreementId && agreements.length > 0) {
@@ -724,14 +554,6 @@ useEffect(() => {
     setSelectedPlants(prev => prev.includes(plant) ? prev.filter(p => p !== plant) : [...prev, plant])
   }, [])
 
-  const handleChangeSupplier = useCallback(() => {
-    setSelectedSupplier(null)
-    setAgreements([])
-    setAgreement(null)
-    setSelectedAgreementId(null)
-    setShowSupplierPicker(true)
-  }, [])
-
   const handleCreateAsn = async () => {
     if (!agreement) return
     const eligibleItems = agreement.items.filter(i => i.status !== 'Confirmation Required')
@@ -760,7 +582,6 @@ useEffect(() => {
     listLoading, listError, filterRef, filterOpen, setFilterOpen,
     selectedPlants, setSelectedPlants, plants, togglePlant,
     setSidebarCollapsed, selectedBtnRef,
-    needsSupplierPicker, selectedSupplier, onChangeSupplier: handleChangeSupplier,
   }
 
   return (
@@ -771,7 +592,6 @@ useEffect(() => {
         @keyframes slideInRight  { from { opacity: 0; transform: translateX(12px);  } to { opacity: 1; transform: translateX(0);  } }
         @keyframes scaleIn       { from { opacity: 0; transform: scale(0.96);       } to { opacity: 1; transform: scale(1);       } }
         @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        @keyframes modalIn       { from { opacity:0; transform:scale(0.94) translateY(-8px); } to { opacity:1; transform:scale(1) translateY(0); } }
         .anim-fade      { animation: fadeIn        0.35s ease-out both; }
         .anim-slide-l   { animation: slideInLeft   0.3s  ease-out both; }
         .anim-slide-r   { animation: slideInRight  0.35s ease-out both; }
@@ -787,20 +607,6 @@ useEffect(() => {
         .sidebar-transition { transition: width 0.25s ease; }
         .btn-disabled-asn   { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.3); }
       `}</style>
-
-      {/* ── Supplier Picker Modal ── */}
-      {showSupplierPicker && (
-        <SupplierPickerModal
-          roleLabel={role}
-          onSelect={(supplier) => {
-            setSelectedSupplier(supplier)
-            setShowSupplierPicker(false)
-            setAgreements([])
-            setAgreement(null)
-            setSelectedAgreementId(null)
-          }}
-        />
-      )}
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
 
@@ -855,11 +661,7 @@ useEffect(() => {
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="opacity-30">
                     <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                   </svg>
-                  <p className="text-[14px]">
-                    {needsSupplierPicker && !selectedSupplier
-                      ? 'Select a supplier to view purchase orders'
-                      : 'Select a purchase order'}
-                  </p>
+                  <p className="text-[14px]">Select a purchase order</p>
                 </div>
               )}
 
@@ -877,14 +679,7 @@ useEffect(() => {
                     </div>
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">
-                          Purchase Order
-                          {isEmployee && (
-                            <span className="ml-2 px-2 py-0.5 bg-[#fff3e0] text-[#e65100] rounded text-[10px] font-bold normal-case">
-                              View Only
-                            </span>
-                          )}
-                        </div>
+                        <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Purchase Order</div>
                         <h2 className="text-[20px] sm:text-[24px] font-bold text-[#0a6ed1] tracking-tight">{agreement.poNo}</h2>
                       </div>
                       <span className="text-[13px] text-[#6a6d70] bg-white px-3 py-2 rounded-lg border border-[#e5e5e5] shadow-sm whitespace-nowrap ml-3">
@@ -959,6 +754,10 @@ useEffect(() => {
                       <table className="w-full text-[13px]" style={{ minWidth: '760px', borderCollapse: 'collapse' }}>
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
+                            {/*
+                              Columns per spec:
+                              Item No. | Material | HSN Code | PO Qty | Confirmed QTY | Delivered QTY | Unit Price | Status | (chevron)
+                            */}
                             {['Item No.', 'Material', 'HSN Code', 'PO Qty', 'Confirmed Qty', 'Delivered Qty', 'Unit Price', 'Status', ''].map((h, i) => (
                               <th key={i} className={`font-semibold py-3.5 px-4 text-[11px] uppercase tracking-wider ${i === 8 ? 'w-10' : 'text-left'}`}>{h}</th>
                             ))}
@@ -983,25 +782,25 @@ useEffect(() => {
                               {/* HSN Code */}
                               <td className="py-3.5 px-4 text-[#32363a]">{item.hsnCode || '—'}</td>
 
-                              {/* PO Qty */}
+                              {/* PO Qty — Quantity ordered (raw.Quantity) */}
                               <td className="py-3.5 px-4">
                                 <span className="font-semibold text-[#32363a]">{item.poQty}</span>{' '}
                                 <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
 
-                              {/* Confirmed Qty */}
+                              {/* Confirmed Qty — raw.Confirm_Qty */}
                               <td className="py-3.5 px-4">
                                 <span className="font-semibold text-[#32363a]">{item.confirmQty}</span>{' '}
                                 <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
 
-                              {/* Delivered Qty */}
+                              {/* Delivered Qty — raw.Delivered_Qty */}
                               <td className="py-3.5 px-4">
                                 <span className="text-[#32363a]">{item.deliveredQty}</span>{' '}
                                 <span className="text-[#6a6d70] text-[12px]">{item.deliveryUnit}</span>
                               </td>
 
-                              {/* Unit Price */}
+                              {/* Unit Price — raw.Total_Amount */}
                               <td className="py-3.5 px-4 font-semibold text-[#32363a]">
                                 {item.unitPrice && item.unitPrice !== '0.00'
                                   ? `${item.unitPrice} ${agreement.currency || ''}`
@@ -1025,44 +824,31 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Footer actions — only for partner and employeeadmin */}
+                  {/* Footer actions */}
                   <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-                    {canPerformActions ? (
-                      <>
-                        <div className="relative group">
-                          <button onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}
-                            className={`flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg transition-all select-none ${asnDisabled(agreement.items) ? 'btn-disabled-asn' : 'hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98]'}`}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                              <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                            Create ASN
-                          </button>
-                          {asnDisabled(agreement.items) && (
-                            <div className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-[#32363a] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                              All items need confirmation before creating ASN
-                              <div className="absolute top-full left-4 border-4 border-transparent border-t-[#32363a]"/>
-                            </div>
-                          )}
-                        </div>
-                        <button onClick={canConfirm(agreement.items) ? handleConfirm : undefined}
-                          disabled={!canConfirm(agreement.items)}
-                          className={`flex items-center gap-2 px-4 sm:px-6 h-11 text-[14px] font-semibold text-white bg-[#0a6ed1] border border-[#0a6ed1] rounded-lg transition-all shadow-md ${canConfirm(agreement.items) ? 'hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]' : 'opacity-40 cursor-not-allowed'}`}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                          </svg>
-                          Confirm
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#fff3e0] border border-[#ffe0b2] rounded-lg">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e65100" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                    <div className="relative group">
+                      <button onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}
+                        className={`flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg transition-all select-none ${asnDisabled(agreement.items) ? 'btn-disabled-asn' : 'hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98]'}`}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <path d="M12 5v14M5 12h14"/>
                         </svg>
-                        <span className="text-[13px] text-[#e65100] font-semibold">
-                          View only — contact your admin to perform actions
-                        </span>
-                      </div>
-                    )}
+                        Create ASN
+                      </button>
+                      {asnDisabled(agreement.items) && (
+                        <div className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-[#32363a] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                          All items need confirmation before creating ASN
+                          <div className="absolute top-full left-4 border-4 border-transparent border-t-[#32363a]"/>
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={canConfirm(agreement.items) ? handleConfirm : undefined}
+                      disabled={!canConfirm(agreement.items)}
+                      className={`flex items-center gap-2 px-4 sm:px-6 h-11 text-[14px] font-semibold text-white bg-[#0a6ed1] border border-[#0a6ed1] rounded-lg transition-all shadow-md ${canConfirm(agreement.items) ? 'hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]' : 'opacity-40 cursor-not-allowed'}`}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                      </svg>
+                      Confirm
+                    </button>
                   </div>
                 </>
               )}
