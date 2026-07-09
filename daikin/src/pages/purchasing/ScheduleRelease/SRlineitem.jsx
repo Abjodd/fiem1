@@ -392,6 +392,7 @@ export default function SRlineitem() {
 
           {/* Material info */}
           <div className="flex items-start justify-between flex-wrap gap-4">
+            <div className="text-left">
             <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-[14px] text-[#0a6ed1] hover:underline mb-5 hover:-translate-x-0.5 transition-transform"
@@ -401,11 +402,11 @@ export default function SRlineitem() {
             </svg>
             Back to Items
           </button>
-            <div>
+            
               <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">Material Number</div>
               <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0a6ed1] tracking-tight">{drilledItem.materialNumber}</h2>
               <div className="text-[14px] text-[#6a6d70] mt-1">{drilledItem.materialName}</div>
-              <div className="mt-2.5"><StatusBadge status={drilledItem.status} /></div>
+              
             </div>
 
             {/* Agreement meta */}
@@ -414,6 +415,7 @@ export default function SRlineitem() {
               <div className="text-[16px] font-bold text-[#32363a]">{agreement.id}</div>
               <div className="text-[13px] text-[#6a6d70] mt-0.5">{agreement.vendor}</div>
               <div className="text-[13px] text-[#6a6d70]">{agreement.plantName} ({agreement.plant})</div>
+              <div className="mt-2.5"><StatusBadge status={drilledItem.status} /></div>
             </div>
           </div>
 
