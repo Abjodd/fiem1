@@ -59,12 +59,17 @@ function StatusBadge({ status }) {
 // SUPPLIER POPUP
 // ═══════════════════════════════════════════════════════════════
 function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Purchase Order' }) {
+  const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
 
   const handleSubmit = () => {
     if (!code.trim()) { setError('Please enter a supplier code.'); return }
     onSubmit(code.trim())
+  }
+
+  const handleCancel = () => {
+    if (canCancel) { onCancel() } else { navigate('/dashboard') }
   }
 
   return (
@@ -88,13 +93,31 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Purchase Order'
           <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
             Supplier Code <span className="text-[#cc1c14]">*</span>
           </label>
-          <input
-            autoFocus type="text" value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
-            placeholder="e.g. FS859"
-            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
-          />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                autoFocus type="text" value={code}
+                onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
+                onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+                placeholder="e.g. FS859"
+                className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => alert('F4 search not yet configured for Purchase Order')}
+              title="Open supplier value help (F4)"
+              className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-lg border border-[#0a6ed1] bg-white text-[#0a6ed1] hover:bg-[#ebf5ff] active:bg-[#d6ecff] transition-all shadow-sm"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+          <p className="mt-1.5 text-[11px] text-[#9e9e9e]">
+            Type a code manually or click <span className="font-semibold text-[#0a6ed1]">⧉</span> to browse all suppliers
+          </p>
           {error && (
             <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -106,7 +129,7 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Purchase Order'
         </div>
 
         <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
-          <button onClick={onCancel} disabled={!canCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all ${!canCancel && 'opacity-0 pointer-events-none'}`}>
+          <button onClick={handleCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all`}>
             Cancel
           </button>
           <button onClick={handleSubmit} className="px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] hover:bg-[#085caf] rounded-lg transition-all shadow-sm">
