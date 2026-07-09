@@ -26,6 +26,69 @@ const canManageShipment = (role) => {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SUPPLIER POPUP
+// ═══════════════════════════════════════════════════════════════
+function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Goods Movement' }) {
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = () => {
+    if (!code.trim()) { setError('Please enter a supplier code.'); return }
+    onSubmit(code.trim())
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={canCancel ? onCancel : undefined}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" style={{ animation: 'scaleIn .22s ease-out both' }} onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
+          <div>
+            <h2 className="text-[18px] font-bold text-white">{title}</h2>
+            <p className="text-[13px] text-white/80 mt-1">Enter a supplier code to load data</p>
+          </div>
+          {canCancel && (
+            <button onClick={onCancel} className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0" title="Cancel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div className="px-6 py-6">
+          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
+            Supplier Code <span className="text-[#cc1c14]">*</span>
+          </label>
+          <input
+            autoFocus type="text" value={code}
+            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+            placeholder="e.g. FS859"
+            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
+          />
+          {error && (
+            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
+          <button onClick={onCancel} disabled={!canCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all ${!canCancel && 'opacity-0 pointer-events-none'}`}>
+            Cancel
+          </button>
+          <button onClick={handleSubmit} className="px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] hover:bg-[#085caf] rounded-lg transition-all shadow-sm">
+            Load Supplier
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // STATUS CHECK HELPERS
 // Uses exact StatusText from SAP (case-insensitive)
 // ═══════════════════════════════════════════════════════════════
@@ -75,6 +138,7 @@ const statusDotColor = (c) => ({ green:'#107e3e', blue:'#0a6ed1', orange:'#e7650
 function SidebarContent({
   trackings, totalCount, selectedId, searchQuery, sidebarCollapsed,
   onSelectTracking, onSearchChange, onToggleCollapse,
+  isPartner, activeSupplier, handleChangeSupplier,
 }) {
   return (
     <>
@@ -94,23 +158,39 @@ function SidebarContent({
             </button>
           </div>
         ) : (
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search tracking number"
-              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-            />
-            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-              {searchQuery && (
-                <button onClick={() => onSearchChange('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
-                  <X size={15} />
+          <div className="flex flex-col gap-3">
+            {!isPartner && activeSupplier && (
+              <div className="flex items-center justify-between bg-[#ebf5ff] border border-[#0a6ed1]/30 rounded-lg px-3 py-2">
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-[#0a6ed1]/70 mb-0.5">Supplier</div>
+                  <div className="text-[13px] font-semibold text-[#0a6ed1]">{activeSupplier}</div>
+                </div>
+                <button 
+                  onClick={handleChangeSupplier}
+                  className="text-[12px] font-semibold text-[#0a6ed1] hover:bg-[#d9ecff] px-2 py-1 rounded transition-colors"
+                >
+                  Change
                 </button>
-              )}
-              <button onClick={() => onSearchChange(searchQuery)} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
-                <RefreshCw size={14} />
-              </button>
+              </div>
+            )}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Search tracking number"
+                className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
+              />
+              <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                {searchQuery && (
+                  <button onClick={() => onSearchChange('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
+                    <X size={15} />
+                  </button>
+                )}
+                <button onClick={() => onSearchChange(searchQuery)} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
+                  <RefreshCw size={14} />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -179,13 +259,40 @@ function SidebarContent({
 // ═══════════════════════════════════════════════════════════════
 export default function GoodsMovement() {
   const { loginId, loginType, role, loading: userLoading } = useUser()
-  authConfig.loginId   = loginId
-  authConfig.loginType = loginType
-
   // ── Role-based access flag ──────────────────────────────────
   // partner & employeeadmin => full access (view + actions).
   // employee => view only.
+  const isPartner = role === 'partner'
   const canManage = canManageShipment(role)
+
+  const [activeSupplier, setActiveSupplier] = useState('')
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false)
+
+  useEffect(() => {
+    if (userLoading) return
+    if (isPartner && loginId) {
+      setActiveSupplier(loginId)
+      setShowSupplierPopup(false)
+    } else if (!isPartner && !activeSupplier) {
+      setShowSupplierPopup(true)
+    }
+  }, [userLoading, isPartner, loginId, activeSupplier])
+
+  const handleSupplierSubmit = (code) => {
+    setActiveSupplier(code)
+    setShowSupplierPopup(false)
+  }
+
+  const handleChangeSupplier = () => {
+    setActiveSupplier('')
+    setTrackings([])
+    setTracking(null)
+    setSelectedId(null)
+    setShowSupplierPopup(true)
+  }
+
+  authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
+  authConfig.loginType = loginType
 
   const navigate = useNavigate()
   const [trackings, setTrackings] = useState([])
@@ -232,6 +339,10 @@ export default function GoodsMovement() {
   useEffect(() => {
     if (userLoading) return
     if (!loginId || !loginType) return
+    if (!isPartner && !activeSupplier) {
+      setTrackings([])
+      return
+    }
 
     let cancelled = false
     goodsMovementApi.listTrackings({ search: searchQuery })
@@ -244,7 +355,7 @@ export default function GoodsMovement() {
       })
       .catch(err => console.error(err))
     return () => { cancelled = true }
-  }, [userLoading, loginId, loginType, searchQuery])
+  }, [userLoading, loginId, loginType, activeSupplier, isPartner, searchQuery])
 
   // ── Load detail on selection ────────────────────────────────
   useEffect(() => {
@@ -428,6 +539,7 @@ export default function GoodsMovement() {
     onSelectTracking: handleSelectTracking,
     onSearchChange: setSearchQuery,
     onToggleCollapse: () => setSidebarCollapsed(c => !c),
+    isPartner, activeSupplier, handleChangeSupplier,
   }
 
   // ── Timeline tab ───────────────────────────────────────────
@@ -600,6 +712,15 @@ export default function GoodsMovement() {
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> {tracking?.vendorName || 'Kunstocom(India) Ltd'}</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>
+
+      {showSupplierPopup && (
+        <SupplierPopup 
+          onSubmit={handleSupplierSubmit} 
+          onCancel={() => setShowSupplierPopup(false)} 
+          canCancel={!!activeSupplier}
+          title="Goods Movement"
+        />
+      )}
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-136px)]">
         <div className="flex" style={{ minHeight: 'calc(100vh - 260px)' }}>

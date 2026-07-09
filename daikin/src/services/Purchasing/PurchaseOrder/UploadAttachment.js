@@ -59,6 +59,8 @@ export async function uploadAttachmentToSap({ asnNum, fisYear, file, csrfToken, 
         Logintype: authConfig.loginType,
       // SAP reads the filename from the slug header
       'slug': `${asnNum}/${fisYear}/${file.name}`,
+      'AsnNum': asnNum,
+      'FisYear': fisYear,
     },
     body: buffer,
     credentials: 'include',

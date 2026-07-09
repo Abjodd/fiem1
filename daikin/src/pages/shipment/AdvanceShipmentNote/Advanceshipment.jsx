@@ -6,6 +6,69 @@ import { useUser } from '../../../context/UserContext.jsx'
 
 
 // ═══════════════════════════════════════════════════════════════
+// SUPPLIER POPUP
+// ═══════════════════════════════════════════════════════════════
+function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Advance Shipping Note' }) {
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = () => {
+    if (!code.trim()) { setError('Please enter a supplier code.'); return }
+    onSubmit(code.trim())
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={canCancel ? onCancel : undefined}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" style={{ animation: 'scaleIn .22s ease-out both' }} onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
+          <div>
+            <h2 className="text-[18px] font-bold text-white">{title}</h2>
+            <p className="text-[13px] text-white/80 mt-1">Enter a supplier code to load data</p>
+          </div>
+          {canCancel && (
+            <button onClick={onCancel} className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0" title="Cancel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div className="px-6 py-6">
+          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
+            Supplier Code <span className="text-[#cc1c14]">*</span>
+          </label>
+          <input
+            autoFocus type="text" value={code}
+            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+            placeholder="e.g. FS859"
+            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
+          />
+          {error && (
+            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
+          <button onClick={onCancel} disabled={!canCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all ${!canCancel && 'opacity-0 pointer-events-none'}`}>
+            Cancel
+          </button>
+          <button onClick={handleSubmit} className="px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] hover:bg-[#085caf] rounded-lg transition-all shadow-sm">
+            Load Supplier
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TABS CONFIG
 // ═══════════════════════════════════════════════════════════════
 const TABS = [
@@ -128,6 +191,7 @@ function SidebarContent({
   plants, selectedPlants, filterOpen, filterRef,
   onSearchChange, onSelectAsn, onToggleCollapse, onToggleFilter,
   onTogglePlant, onClearPlants, statusStyle,
+  isPartner, activeSupplier, handleChangeSupplier,
 }) {
   return (
     <>
@@ -166,6 +230,14 @@ function SidebarContent({
                 </svg>
               </button>
             </div>
+          </div>
+        )}
+        {!sidebarCollapsed && (
+          <div className="mt-3 text-[12px] text-[#6a6d70] flex items-center justify-between bg-[#f8f9fa] px-3 py-2 rounded-lg border border-[#e5e5e5]">
+            <span>Supplier: <span className="font-semibold text-[#32363a]">{activeSupplier || 'Not selected'}</span></span>
+            {!isPartner && (
+              <button onClick={handleChangeSupplier} className="text-[#0a6ed1] hover:underline font-semibold">Change</button>
+            )}
           </div>
         )}
       </div>
@@ -280,18 +352,26 @@ function SidebarContent({
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
   const { role, loginId, loginType, loading: userLoading } = useUser()
-  authConfig.loginId   = loginId
-  authConfig.loginType = loginType
   const navigate = useNavigate()
 
   // ── Role flags ──────────────────────────────────────────────
-  // View data: partner (p), employeeadmin (ea), employee (e) — all can view.
-  // Cancel / Print: partner + employeeadmin can actually use them;
-  // employee sees the same buttons but disabled (not hidden).
   const isPartner         = role === 'partner'
   const isEmployeeAdmin   = role === 'employeeadmin'
   const isEmployee        = role === 'employee'
   const canPerformActions = isPartner || isEmployeeAdmin // Print + Cancel
+
+  const [activeSupplier, setActiveSupplier] = useState('')
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false)
+
+  useEffect(() => {
+    if (userLoading) return
+    if (isPartner && loginId) {
+      setActiveSupplier(loginId)
+      setShowSupplierPopup(false)
+    } else if (!isPartner && !activeSupplier) {
+      setShowSupplierPopup(true)
+    }
+  }, [userLoading, isPartner, loginId, activeSupplier])
 
   const [asns, setAsns] = useState([])
   const [asn, setAsn] = useState(null)
@@ -314,6 +394,26 @@ export default function AdvanceShippingNote() {
   const filterRef = useRef(null)
 
   useEffect(() => {
+    if (isPartner && loginId) setActiveSupplier(loginId)
+  }, [isPartner, loginId])
+
+  const handleSupplierSubmit = (code) => {
+    setActiveSupplier(code)
+    setShowSupplierPopup(false)
+  }
+
+  const handleChangeSupplier = () => {
+    setActiveSupplier('')
+    setAsns([])
+    setAsn(null)
+    setSelectedAsnId(null)
+    setShowSupplierPopup(true)
+  }
+
+  authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
+  authConfig.loginType = loginType
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const asnParam = params.get('asn')
     if (asnParam) {
@@ -324,7 +424,7 @@ export default function AdvanceShippingNote() {
 
   // ── Fetch list ──
   useEffect(() => {
-    if (userLoading) return
+    if (userLoading || (!isPartner && !activeSupplier)) return
     if (!loginId || !loginType) return
 
     let cancelled = false
@@ -335,7 +435,7 @@ export default function AdvanceShippingNote() {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [userLoading, loginId, loginType, searchQuery, selectedPlants])
+  }, [userLoading, loginId, loginType, searchQuery, selectedPlants, activeSupplier])
 
   // ── Auto-select first ASN ──
 useEffect(() => {
@@ -483,6 +583,7 @@ const handleSuccessDismiss = async () => {
     onTogglePlant: togglePlant,
     onClearPlants: () => setSelectedPlants([]),
     statusStyle,
+    isPartner, activeSupplier, handleChangeSupplier,
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -699,6 +800,7 @@ const handleSuccessDismiss = async () => {
         .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
         .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
         .sidebar-transition { transition: width 0.25s ease; }
+        .btn-disabled-asn   { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.3); }
       `}</style>
 
 {cancelDialogOpen && asn && (
@@ -712,7 +814,15 @@ const handleSuccessDismiss = async () => {
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>
 
-      <div className="bg-[#f5f6f7] min-h-[calc(100vh-136px)]">
+      <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
+        {showSupplierPopup && (
+          <SupplierPopup 
+            onSubmit={handleSupplierSubmit} 
+            onCancel={() => setShowSupplierPopup(false)} 
+            canCancel={!!activeSupplier}
+            title="Advance Shipping Note"
+          />
+        )}
         <div className="flex" style={{ minHeight: 'calc(100vh - 260px)' }}>
 
           {mobileSidebarOpen && (
