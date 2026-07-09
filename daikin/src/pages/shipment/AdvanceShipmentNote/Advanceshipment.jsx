@@ -279,10 +279,20 @@ function SidebarContent({
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
-  const { loginId, loginType, loading: userLoading } = useUser()
+  const { role, loginId, loginType, loading: userLoading } = useUser()
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
   const navigate = useNavigate()
+
+  // ── Role flags ──────────────────────────────────────────────
+  // View data: partner (p), employeeadmin (ea), employee (e) — all can view.
+  // Cancel / Print: partner + employeeadmin can actually use them;
+  // employee sees the same buttons but disabled (not hidden).
+  const isPartner         = role === 'partner'
+  const isEmployeeAdmin   = role === 'employeeadmin'
+  const isEmployee        = role === 'employee'
+  const canPerformActions = isPartner || isEmployeeAdmin // Print + Cancel
+
   const [asns, setAsns] = useState([])
   const [asn, setAsn] = useState(null)
   const [selectedAsnId, setSelectedAsnId] = useState(null)
@@ -402,11 +412,15 @@ if (listItem && !data.status) {
 }
 
   const handlePrint = async () => {
+    if (!canPerformActions) return // employee: view-only, button is disabled anyway
     if (!asn) return
     try { await asnApi.printAsn(asn.id) } catch (err) { console.error(err) }
   }
 
-  const handleCancelClick = () => setCancelDialogOpen(true)
+  const handleCancelClick = () => {
+    if (!canPerformActions) return // employee: view-only, button is disabled anyway
+    setCancelDialogOpen(true)
+  }
 
 const handleCancelConfirm = async () => {
   if (!asn) return
@@ -741,7 +755,14 @@ const handleSuccessDismiss = async () => {
                   </div>
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">ASN — {asn.id}</div>
+                      <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">
+                        ASN — {asn.id}
+                        {isEmployee && (
+                          <span className="ml-2 px-2 py-0.5 bg-[#fff3e0] text-[#e65100] rounded text-[10px] font-bold normal-case">
+                            View Only
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-baseline gap-4">
                         <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight">{asn.id}</h2>
                         <span className="text-[22px] sm:text-[26px] font-bold text-[#32363a]">{asn.amount.toFixed(2)}</span>
@@ -751,23 +772,57 @@ const handleSuccessDismiss = async () => {
                     </div>
                     <div className="flex flex-col items-end gap-2 ml-3 flex-shrink-0">
   <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
-  <button onClick={handlePrint}
-    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 6 2 18 2 18 9" />
-      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-      <rect x="6" y="14" width="12" height="8" />
-    </svg>
-    Print
-  </button>
-  {asns.find(a => a.id === asn.id)?.status?.toLowerCase() === 'confirmed' && (
-    <button onClick={handleCancelClick}
-      className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
+
+  {/* Print — visible to all roles, disabled for employee */}
+  <div className="relative group">
+    <button
+      onClick={handlePrint}
+      disabled={!canPerformActions}
+      title={!canPerformActions ? 'View only — contact your admin to print' : undefined}
+      className={`flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white rounded-lg transition-all shadow-md ${
+        canPerformActions
+          ? 'bg-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'
+          : 'bg-[#9ca3af] cursor-not-allowed opacity-60 shadow-none'
+      }`}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
       </svg>
-      Cancel ASN
+      Print
     </button>
+    {!canPerformActions && (
+      <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-[#32363a] text-white text-[11px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+        View only — contact your admin
+      </div>
+    )}
+  </div>
+
+  {/* Cancel — visible whenever status is confirmed, for all roles; disabled for employee */}
+  {asns.find(a => a.id === asn.id)?.status?.toLowerCase() === 'confirmed' && (
+    <div className="relative group">
+      <button
+        onClick={handleCancelClick}
+        disabled={!canPerformActions}
+        title={!canPerformActions ? 'View only — contact your admin to cancel' : undefined}
+        className={`flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold rounded-lg border transition-all ${
+          canPerformActions
+            ? 'text-[#cc1c14] bg-white border-[#cc1c14] hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98]'
+            : 'text-[#9ca3af] bg-[#f5f6f7] border-[#d9d9d9] cursor-not-allowed opacity-70'
+        }`}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
+        </svg>
+        Cancel ASN
+      </button>
+      {!canPerformActions && (
+        <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-[#32363a] text-white text-[11px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+          View only — contact your admin
+        </div>
+      )}
+    </div>
   )}
 </div>
                   </div>
