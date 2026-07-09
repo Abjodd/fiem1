@@ -364,14 +364,23 @@ export default function AdvanceShippingNote() {
   const [showSupplierPopup, setShowSupplierPopup] = useState(false)
 
   useEffect(() => {
-    if (userLoading) return
-    if (isPartner && loginId) {
-      setActiveSupplier(loginId)
-      setShowSupplierPopup(false)
-    } else if (!isPartner && !activeSupplier) {
-      setShowSupplierPopup(true)
-    }
-  }, [userLoading, isPartner, loginId, activeSupplier])
+  if (userLoading) return
+
+  if ((isPartner || isEmployeeAdmin) && loginId) {
+    setActiveSupplier(loginId)
+    setShowSupplierPopup(false)
+  } else if (isEmployee && !activeSupplier) {
+    setShowSupplierPopup(true)
+  }
+}, [
+  userLoading,
+  isPartner,
+  isEmployeeAdmin,
+  isEmployee,
+  loginId,
+  activeSupplier,
+])
+  
 
   const [asns, setAsns] = useState([])
   const [asn, setAsn] = useState(null)
@@ -393,9 +402,11 @@ export default function AdvanceShippingNote() {
 
   const filterRef = useRef(null)
 
-  useEffect(() => {
-    if (isPartner && loginId) setActiveSupplier(loginId)
-  }, [isPartner, loginId])
+ useEffect(() => {
+  if ((isPartner || isEmployeeAdmin) && loginId) {
+    setActiveSupplier(loginId)
+  }
+}, [isPartner, isEmployeeAdmin, loginId])
 
   const handleSupplierSubmit = (code) => {
     setActiveSupplier(code)
