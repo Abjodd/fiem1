@@ -58,6 +58,92 @@ function StatusBadge({ status }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SUPPLIER POPUP
+// ═══════════════════════════════════════════════════════════════
+function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Schedule Release' }) {
+  const navigate = useNavigate()
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = () => {
+    if (!code.trim()) { setError('Please enter a supplier code.'); return }
+    onSubmit(code.trim())
+  }
+
+  const handleCancel = () => {
+    if (canCancel) { onCancel() } else { navigate('/dashboard') }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={canCancel ? onCancel : undefined}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" style={{ animation: 'scaleIn .22s ease-out both' }} onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
+          <div>
+            <h2 className="text-[18px] font-bold text-white">{title}</h2>
+            <p className="text-[13px] text-white/80 mt-1">Enter a supplier code to load data</p>
+          </div>
+          {canCancel && (
+            <button onClick={onCancel} className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0" title="Cancel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div className="px-6 py-6">
+          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
+            Supplier Code <span className="text-[#cc1c14]">*</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                autoFocus type="text" value={code}
+                onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
+                onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+                placeholder="e.g. FS859"
+                className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => alert('F4 search not yet configured for Schedule Release')}
+              title="Open supplier value help (F4)"
+              className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-lg border border-[#0a6ed1] bg-white text-[#0a6ed1] hover:bg-[#ebf5ff] active:bg-[#d6ecff] transition-all shadow-sm"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+          <p className="mt-1.5 text-[11px] text-[#9e9e9e]">
+            Type a code manually or click <span className="font-semibold text-[#0a6ed1]">⧉</span> to browse all suppliers
+          </p>
+          {error && (
+            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
+          <button onClick={handleCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all`}>
+            Cancel
+          </button>
+          <button onClick={handleSubmit} className="px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] hover:bg-[#085caf] rounded-lg transition-all shadow-sm">
+            Load Supplier
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CONFIRM VIEW
 // ═══════════════════════════════════════════════════════════════
 function ConfirmView({ agreement, onBack, onSuccess }) {
@@ -388,8 +474,38 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════
 export default function ScheduleRelease() {
   const navigate = useNavigate()
-  const { loginId, loginType, loading: userLoading } = useUser()
-  authConfig.loginId   = loginId
+  const { loginId, loginType, role, loading: userLoading } = useUser()
+
+  const isPartner = role === 'partner'
+  const canAct = role === 'partner' || role === 'employeeadmin'
+
+  const [activeSupplier, setActiveSupplier] = useState('')
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false)
+
+  useEffect(() => {
+    if (userLoading) return
+    if (isPartner && loginId) {
+      setActiveSupplier(loginId)
+      setShowSupplierPopup(false)
+    } else if (!isPartner && !activeSupplier) {
+      setShowSupplierPopup(true)
+    }
+  }, [userLoading, isPartner, loginId, activeSupplier])
+
+  const handleSupplierSubmit = (code) => {
+    setActiveSupplier(code)
+    setShowSupplierPopup(false)
+  }
+
+  const handleChangeSupplier = () => {
+    setActiveSupplier('')
+    setAgreements([])
+    setAgreement(null)
+    setSelectedAgreementId(null)
+    setShowSupplierPopup(true)
+  }
+
+  authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
   authConfig.loginType = loginType
 
   const [agreements,          setAgreements]          = useState([])
@@ -409,18 +525,22 @@ export default function ScheduleRelease() {
 
   // ── Load agreement list ──
   useEffect(() => {
-  if (userLoading) return
-  if (!loginId || !loginType) return
+    if (userLoading) return
+    if (!loginId || !loginType) return
+    if (!isPartner && !activeSupplier) {
+      setAgreements([])
+      return
+    }
 
-  let cancelled = false
-  setLoading(true)
-  setError(null)
-  scheduleReleaseApi.listAgreements({ search: searchQuery, plants: selectedPlants })
-    .then(data  => { if (!cancelled) setAgreements(data) })
-    .catch(err  => { if (!cancelled) setError(err.message) })
-    .finally(() => { if (!cancelled) setLoading(false) })
-  return () => { cancelled = true }
-}, [userLoading, loginId, loginType, searchQuery, selectedPlants])
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    scheduleReleaseApi.listAgreements({ search: searchQuery, plants: selectedPlants })
+      .then(data  => { if (!cancelled) setAgreements(data) })
+      .catch(err  => { if (!cancelled) setError(err.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [userLoading, loginId, loginType, activeSupplier, isPartner, searchQuery, selectedPlants])
 
   // ── Auto-select first agreement ──
   useEffect(() => {
@@ -546,28 +666,44 @@ export default function ScheduleRelease() {
             </button>
           </div>
         ) : (
-          <div className="relative">
-            <input
-              type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by ID or plant"
-              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
-            />
-            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all"
+          <div className="flex flex-col gap-3">
+            {!isPartner && activeSupplier && (
+              <div className="flex items-center justify-between bg-[#ebf5ff] border border-[#0a6ed1]/30 rounded-lg px-3 py-2">
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-[#0a6ed1]/70 mb-0.5">Supplier</div>
+                  <div className="text-[13px] font-semibold text-[#0a6ed1]">{activeSupplier}</div>
+                </div>
+                <button 
+                  onClick={handleChangeSupplier}
+                  className="text-[12px] font-semibold text-[#0a6ed1] hover:bg-[#d9ecff] px-2 py-1 rounded transition-colors"
                 >
+                  Change
+                </button>
+              </div>
+            )}
+            <div className="relative">
+              <input
+                type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by ID or plant"
+                className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all"
+              />
+              <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                  </button>
+                )}
+                <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M18 6L6 18M6 6l12 12"/>
+                    <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
                   </svg>
                 </button>
-              )}
-              <button className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
-                </svg>
-              </button>
+              </div>
             </div>
           </div>
         )}
@@ -709,6 +845,15 @@ export default function ScheduleRelease() {
       `}</style>
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
+
+        {showSupplierPopup && (
+          <SupplierPopup 
+            onSubmit={handleSupplierSubmit} 
+            onCancel={() => setShowSupplierPopup(false)} 
+            canCancel={!!activeSupplier}
+            title="Schedule Release"
+          />
+        )}
 
         {/* ── CONFIRM VIEW ── */}
         {showConfirmView && agreement && (
@@ -901,40 +1046,42 @@ export default function ScheduleRelease() {
                   </div>
 
                   {/* Footer actions */}
-                  <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+                  {canAct && (
+                    <div className="px-4 sm:px-6 lg:px-10 py-4 border-t border-[#e5e5e5] flex items-center justify-between gap-3 flex-shrink-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
 
-                    {/* Create ASN button */}
-                    <div className="relative group">
+                      {/* Create ASN button */}
+                      <div className="relative group">
+                        <button
+                          onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}
+                          className={`flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg transition-all select-none ${asnDisabled(agreement.items) ? 'btn-disabled-asn' : 'hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98]'}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <path d="M12 5v14M5 12h14"/>
+                          </svg>
+                          Create ASN
+                        </button>
+                        {asnDisabled(agreement.items) && (
+                          <div className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-[#32363a] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                            All items need confirmation before creating ASN
+                            <div className="absolute top-full left-4 border-4 border-transparent border-t-[#32363a]"/>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Confirm button */}
                       <button
-                        onClick={asnDisabled(agreement.items) ? undefined : handleCreateAsn}
-                        className={`flex items-center gap-2 px-4 sm:px-5 h-11 text-[14px] font-semibold text-[#0a6ed1] bg-[#ebf5ff] border border-[#0a6ed1] rounded-lg transition-all select-none ${asnDisabled(agreement.items) ? 'btn-disabled-asn' : 'hover:bg-[#d9ecff] hover:scale-[1.02] active:scale-[0.98]'}`}
+                        onClick={canConfirm(agreement.items) ? handleConfirm : undefined}
+                        disabled={!canConfirm(agreement.items)}
+                        className={`flex items-center gap-2 px-4 sm:px-6 h-11 text-[14px] font-semibold text-white bg-[#0a6ed1] border border-[#0a6ed1] rounded-lg transition-all shadow-md ${canConfirm(agreement.items) ? 'hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]' : 'opacity-40 cursor-not-allowed'}`}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                          <path d="M12 5v14M5 12h14"/>
+                          <path d="M9 11l3 3L22 4"/>
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                         </svg>
-                        Create ASN
+                        Confirm
                       </button>
-                      {asnDisabled(agreement.items) && (
-                        <div className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-[#32363a] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                          All items need confirmation before creating ASN
-                          <div className="absolute top-full left-4 border-4 border-transparent border-t-[#32363a]"/>
-                        </div>
-                      )}
                     </div>
-
-                    {/* Confirm button */}
-                    <button
-                      onClick={canConfirm(agreement.items) ? handleConfirm : undefined}
-                      disabled={!canConfirm(agreement.items)}
-                      className={`flex items-center gap-2 px-4 sm:px-6 h-11 text-[14px] font-semibold text-white bg-[#0a6ed1] border border-[#0a6ed1] rounded-lg transition-all shadow-md ${canConfirm(agreement.items) ? 'hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]' : 'opacity-40 cursor-not-allowed'}`}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M9 11l3 3L22 4"/>
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                      </svg>
-                      Confirm
-                    </button>
-                  </div>
+                  )}
                 </>
               ) : (
                 !loading && (
