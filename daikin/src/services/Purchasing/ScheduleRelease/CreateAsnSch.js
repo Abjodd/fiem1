@@ -61,31 +61,18 @@ async function fetchCsrfToken() {
   return res.headers.get('X-CSRF-Token') || res.headers.get('x-csrf-token') || ''
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// mapAsnItem — OData ASN_itemSet row → UI item card shape
-//
-// KEY LOGIC:
-//  • Menge  = Con_Qty − DelQty  (SAP computes this; it IS the avlAsnQty)
-//  • avlAsnQty ← Menge  (user sees and can edit this)
-//  • deliveredQty ← DelQty  (already delivered — read-only)
-//  • In POST: Menge is re-sent as Con_Qty − DelQty (same formula)
-//
-//  • itemNo = `${ebelp}-${etenr}` so each schedule line is a unique
-//    React state entry — editing one row never cascades to others.
-//
-//  • All SAP string values are .trim()-ed here to strip leading/trailing
-//    spaces that SAP sometimes returns (e.g. " 10", "7.00 ", "1 ").
-// ─────────────────────────────────────────────────────────────────────────────
-function mapAsnItem(d) {
-  const ebelp = str(d.Ebelp)      // str() already trims — " 10" → "10"
+
+function mapAsnItem(d, idx = 0) {
+  const ebelp = str(d.Ebelp)      
   const etenr = str(d.Etenr)
+  const eindt = str(d.Eindt)
 
   const conQty = str(d.Con_Qty)
   const delQty = str(d.DelQty)
-  const menge  = str(d.Menge)     // "10.00 " → "10.00" via str()'s trim
+  const menge  = str(d.Menge)     
 
   return {
-    itemNo:           `${ebelp}-${etenr}`,
+    itemNo: `${ebelp}-${etenr || '0'}-${eindt}-${idx}`,
     ebelp,
     schLine:          etenr,
     ebeln:            str(d.Ebeln || d.Schedule_No),
@@ -159,7 +146,7 @@ export const createAsnApi = {
       filter += ` and StorageLocation eq '${storageLocation.trim()}'`
     }
     const json = await odataGet(`/ASN_itemSet?$filter=${encodeURIComponent(filter)}&$format=json`)
-    return (json.d?.results || []).map(mapAsnItem)
+    return (json.d?.results || []).map((d, idx) => mapAsnItem(d, idx))
   },
 
   async getPdirRefNos(scheduleNo) {
