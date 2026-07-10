@@ -522,8 +522,15 @@ export default function GoodsMovement() {
         onBack={(newTrackingId) => {
           setShowCreateMovement(false); setEditTrackingData(null)
           goodsMovementApi.listTrackings({ search: searchQuery })
-            .then(data => { setTrackings(data); if (newTrackingId) setSelectedId(newTrackingId) })
+            .then(data => setTrackings(data))
             .catch(console.error)
+
+          if (newTrackingId) {
+            setSelectedId(newTrackingId) // harmless even if unchanged
+            goodsMovementApi.getTracking(newTrackingId)
+              .then(data => { setTracking(data); setActiveTab('timeline') })
+              .catch(console.error)
+          }
         }}
       />
     )

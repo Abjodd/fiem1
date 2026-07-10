@@ -79,7 +79,7 @@ const trackingToForm = (t) => {
     transportMode: t.transportationMode || t.transportMode || 'By Road',
     ewayBillNo: t.ewayBillNo || '',
     ewayBillDate: ewayBillDateVal,
-    lrNum: t.invoiceNum || '',
+    lrNum: t.lr || t.invoiceNum || '',
     transporterName: t.transporter || '',
     driverName: t.driverName || '',
     contactNumber: t.contact || '',
