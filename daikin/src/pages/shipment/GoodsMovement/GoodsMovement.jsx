@@ -175,41 +175,10 @@ function SidebarContent({
 // ═══════════════════════════════════════════════════════════════
 export default function GoodsMovement() {
   const { loginId, loginType, role, loading: userLoading } = useUser()
-  // ── Role-based access flag ──────────────────────────────────
-  // partner & employeeadmin => full access (view + actions).
-  // employee => view only.
-  const isPartner = role === 'partner'
-const isEmployeeAdmin = role === 'employeeadmin'
-const isEmployee = role === 'employee'
-const canManage = canManageShipment(role)
 
-  const [activeSupplier, setActiveSupplier] = useState('')
-  const [showSupplierPopup, setShowSupplierPopup] = useState(false)
+  // canManage = partner | employeeadmin. employee gets view-only.
+  const canManage = canManageShipment(role)
 
-  useEffect(() => {
-    if (userLoading) return
-    if (isPartner && loginId) {
-      setActiveSupplier(loginId)
-      setShowSupplierPopup(false)
-    } else if (!isPartner && !activeSupplier) {
-      setShowSupplierPopup(true)
-    }
-  }, [userLoading, isPartner, loginId, activeSupplier])
-
-  const handleSupplierSubmit = (code) => {
-    setActiveSupplier(code)
-    setShowSupplierPopup(false)
-  }
-
-  const handleChangeSupplier = () => {
-    setActiveSupplier('')
-    setTrackings([])
-    setTracking(null)
-    setSelectedId(null)
-    setShowSupplierPopup(true)
-  }
-
-  authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
 
@@ -254,13 +223,6 @@ const canManage = canManageShipment(role)
   // ── Load tracking list ──────────────────────────────────────
   useEffect(() => {
     if (userLoading || !loginId || !loginType) return
-    if (userLoading) return
-    if (!loginId || !loginType) return
-    if (!isPartner && !activeSupplier) {
-      setTrackings([])
-      return
-    }
-
     let cancelled = false
     goodsMovementApi.listTrackings({ search: searchQuery })
       .then(data => {
@@ -339,7 +301,21 @@ const canManage = canManageShipment(role)
 
   const handleCreateMovement   = () => { if (!canManage) return; setEditTrackingData(null); setShowCreateMovement(true) }
   const handleEditMovement     = () => { if (!canManage || !tracking) return; setEditTrackingData(tracking); setShowCreateMovement(true) }
-  const handleCancelMovement   = async () => { if (!canManage || !tracking) return; try { await goodsMovementApi.cancelTracking(tracking.id) } catch (err) { console.error(err) } }
+  const handleCancelMovement = async () => {
+    if (!canManage || !tracking) return
+    try {
+      await goodsMovementApi.cancelTracking(tracking.id)
+      const updatedTracking = await goodsMovementApi.getTracking(tracking.id)
+      setTracking(updatedTracking)
+      setTrackings(prev => prev.map(t =>
+        t.id === tracking.id
+          ? { ...t, status: updatedTracking.status, statusColor: updatedTracking.statusColor }
+          : t
+      ))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const handlePrint = async () => {
     if (!canManage || !tracking || printLoading) return
