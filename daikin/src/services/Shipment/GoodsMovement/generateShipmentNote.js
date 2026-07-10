@@ -2,22 +2,13 @@
 // generateShipmentNote.js — PDF Shipment Note Generator
 // ═══════════════════════════════════════════════════════════════
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`)
-    if (existing) { resolve(); return }
-    const s = document.createElement('script')
-    s.src = src
-    s.onload = resolve
-    s.onerror = () => reject(new Error(`Failed to load ${src}`))
-    document.head.appendChild(s)
-  })
-}
+import { jsPDF } from 'jspdf'
+import JsBarcode from 'jsbarcode'
 
 function barcodeDataUrl(text, opts = {}) {
   const canvas = document.createElement('canvas')
   try {
-    window.JsBarcode(canvas, text, {
+    JsBarcode(canvas, text, {
       format: 'CODE128',
       width: opts.width || 2,
       height: opts.height || 50,
@@ -36,10 +27,6 @@ function barcodeDataUrl(text, opts = {}) {
 export async function generateShipmentNote(tracking) {
   if (!tracking) throw new Error('No tracking data')
 
-  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
-  await loadScript('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js')
-
-  const { jsPDF } = window.jspdf
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const W = 210, H = 297
   const LM = 15, RM = 15

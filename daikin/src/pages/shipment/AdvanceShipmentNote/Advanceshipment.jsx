@@ -524,35 +524,45 @@ if (listItem && !data.status) {
   setMobileSidebarOpen(false)
 }
 
-const handlePrint = async () => {
-  if (!canPerformActions) return
-  if (!asn || !asn.items?.length) return
-  try {
-    const grouped = {}
-    asn.items.forEach(it => {
-      const key = `${it.poItem}-${it.materialCode}`
-      if (!grouped[key]) grouped[key] = []
-      grouped[key].push(it)
-    })
+  const handlePrint = async () => {
+    if (!canPerformActions) return
+    if (!asn || !asn.items?.length) return
+    try {
+      const grouped = {}
+      asn.items.forEach(it => {
+        const key = `${it.itemNo}-${it.materialCode}`
+        if (!grouped[key]) grouped[key] = []
+        grouped[key].push(it)
+      })
 
-    const tagsToPrint = []
-    
-    for (const key of Object.keys(grouped)) {
-       const groupItems = grouped[key]
-       const totalBoxes = groupItems.length
-       for (let i = 0; i < totalBoxes; i++) {
-         tagsToPrint.push(buildPartTag(asn, groupItems[i], { boxNo: i + 1, totalBoxes }))
-       }
-    }
+      const tagsToPrint = []
+      for (const key of Object.keys(grouped)) {
+        const groupItems = grouped[key]
+        const totalBoxes = groupItems.length
+        for (let i = 0; i < totalBoxes; i++) {
+          tagsToPrint.push(buildPartTag(asn, groupItems[i], { boxNo: i + 1, totalBoxes }))
+        }
+      }
 
-    if (tagsToPrint.length > 0) {
-      await previewPartTags(tagsToPrint)
+      if (tagsToPrint.length > 0) {
+        const { blobUrl, filename } = await previewPartTags(tagsToPrint)
+        const newTab = window.open(blobUrl, '_blank')
+        if (!newTab || newTab.closed) {
+          // Fallback: download if popup blocked
+          const a = document.createElement('a')
+          a.href = blobUrl
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+        }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+      }
+      await asnApi.printAsn(asn.id)
+    } catch (err) {
+      console.error('Print failed:', err)
     }
-    await asnApi.printAsn(asn.id) // keep existing call if backend needs to log the print event
-  } catch (err) {
-    console.error(err)
   }
-}
 
   const handleCancelClick = () => {
     if (!canPerformActions) return // employee: view-only, button is disabled anyway

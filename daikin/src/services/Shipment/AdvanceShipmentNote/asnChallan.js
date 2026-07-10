@@ -1,23 +1,15 @@
+import { jsPDF } from 'jspdf'
+import JsBarcode from 'jsbarcode'
+import QRCode from 'qrcode'
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`)
-    if (existing) { resolve(); return }
-    const s = document.createElement('script')
-    s.src = src
-    s.onload = resolve
-    s.onerror = () => reject(new Error(`Failed to load ${src}`))
-    document.head.appendChild(s)
-  })
-}
-
+// ── Barcode: CODE128 format ──
 function barcodeDataUrl(text, opts = {}) {
   const canvas = document.createElement('canvas')
   try {
-    window.JsBarcode(canvas, text, {
-      format: 'CODE39',
+    JsBarcode(canvas, text, {
+      format: 'CODE128',
       width: opts.width || 2,
-      height: opts.height || 55,
+      height: opts.height || 50,
       displayValue: false,
       margin: 0,
       background: '#ffffff',
@@ -30,22 +22,17 @@ function barcodeDataUrl(text, opts = {}) {
   }
 }
 
-function qrDataUrl(text, opts = {}) {
-  return new Promise((resolve) => {
-    try {
-      window.QRCode.toDataURL(
-        text,
-        { width: opts.size || 200, margin: 0, errorCorrectionLevel: 'M' },
-        (err, url) => {
-          if (err) { console.error('QR generation failed:', err); resolve(null); return }
-          resolve(url)
-        }
-      )
-    } catch (err) {
-      console.error('QR generation failed:', err)
-      resolve(null)
-    }
-  })
+async function qrDataUrl(text, opts = {}) {
+  try {
+    return await QRCode.toDataURL(text, {
+      width: opts.size || 200,
+      margin: 0,
+      errorCorrectionLevel: 'M',
+    })
+  } catch (err) {
+    console.error('QR generation failed:', err)
+    return null
+  }
 }
 
 async function fetchLogoDataUrl() {
@@ -67,13 +54,6 @@ async function fetchLogoDataUrl() {
 export async function generatePartTags(tags = []) {
   if (!tags.length) tags = [{}] // fallback for empty call
 
-  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
-  await loadScript('https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js')
-  await loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js')
-
-  const { jsPDF } = window.jspdf
-
-  // A4 dimensions
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const setFont = (style = 'normal', size = 10) => {
     doc.setFont('helvetica', style)
@@ -85,12 +65,12 @@ export async function generatePartTags(tags = []) {
   const tagW = 180
   const tagH = 65
   const gap = 5
-  const leftMargin = 15 // (210 - 180) / 2
+  const leftMargin = 15
   const topMargin = 15
 
   for (let i = 0; i < tags.length; i++) {
     const tag = tags[i]
-    
+
     // Page break after 4 tags
     if (i > 0 && i % 4 === 0) {
       doc.addPage()
@@ -101,78 +81,99 @@ export async function generatePartTags(tags = []) {
 
     doc.setDrawColor(0, 0, 0)
     doc.setLineWidth(0.5)
-    doc.rect(leftMargin, offsetY, tagW, tagH) // outer border
+    doc.rect(leftMargin, offsetY, tagW, tagH)
 
     // ── Field values ──
-    const barcodeValue = tag.barcodeValue || '2600000140//C3'
-    const qrValue = tag.qrValue ||
-      '7000037126/00040/0001/NMR/08.07.2026/22.12.2025/1P302790-1 G/15/1/2/2600000140/2026/153348/*'
+    const barcodeValue = tag.barcodeValue || '1100000093'
+    const qrValue = tag.qrValue || ''
 
-    const partNumber   = tag.partNumber   || '1P302790-1G'
-    const partDesc     = tag.partDesc     || 'DISCH.GRILLE'
-    const qty          = tag.qty          || '15.000-NO'
-    const poNo         = tag.poNo         || '7000037126'
-    const poItem       = tag.poItem       || '00040'
-    const poSubItem    = tag.poSubItem    || '0001'
-    const invNo        = tag.invNo        || '-0O,'
-    const supplierCode = tag.supplierCode || '401122'
-    const supplierName = tag.supplierName || 'Kunstocom(India) Ltd'
-    const plant        = tag.plant        || 'NMR'
+    const partNumber   = tag.partNumber   || ''
+    const partDesc     = tag.partDesc     || ''
+    const qty          = tag.qty          || ''
+    const poNo         = tag.poNo         || ''
+    const poItem       = tag.poItem       || ''
+    const poSubItem    = tag.poSubItem    || ''
+    const invNo        = tag.invNo        || ''
+    const supplierCode = tag.supplierCode || ''
+    const supplierName = tag.supplierName || ''
+    const plant        = tag.plant        || ''
+    const plantDesc    = tag.plantDesc    || ''
     const boxNo        = tag.boxNo        || '1'
-    const totalBoxes   = tag.totalBoxes   || '2'
-    const delDate      = tag.delDate      || '22.12.2025'
-    const issueDate    = tag.issueDate    || '08.07.2026'
+    const totalBoxes   = tag.totalBoxes   || '1'
+    const delDate      = tag.delDate      || ''
+    const issueDate    = tag.issueDate    || ''
     const expiryDate   = tag.expiryDate   || ''
 
     // ── Column anchors ──
     const LX = leftMargin + 4
     const MX = leftMargin + 53
-    const RX = leftMargin + 174
+    const RX = leftMargin + tagW - 6
 
-    // ── Row 1 ──
+    // ── Row 1 — Material Code / QTY / Box count ──
     setFont('bold', 15); doc.text(partNumber, LX, offsetY + 8)
     setFont('bold', 12); doc.text(`QTY- ${qty}`, MX, offsetY + 8)
     setFont('bold', 11); doc.text(`${boxNo}/${totalBoxes} BOX`, RX, offsetY + 8, { align: 'right' })
 
-    // ── Row 2 ──
+    // ── Row 2 — DEL DATE (right-aligned) ──
     setFont('normal', 7.5)
     doc.text(`DEL DATE- ${delDate}`, RX, offsetY + 14, { align: 'right' })
 
-    // ── Info block ──
+    // ── Info block (mid column, 5 lines) ──
     let fy = offsetY + 18
     setFont('normal', 8)
+
+    const maxInfoWidth = tagW - 53 - 8
+    const truncate = (text, maxW) => {
+      if (doc.getTextWidth(text) <= maxW) return text
+      while (text.length > 0 && doc.getTextWidth(text + '...') > maxW) {
+        text = text.slice(0, -1)
+      }
+      return text + '...'
+    }
+
     ;[
       partDesc,
       `PO No - ${poNo} : ${poItem} : ${poSubItem}`,
       `INV. No - ${invNo}`,
       `SUPPLIER CODE - ${supplierCode}`,
-      `SUPPLIER NAME - ${supplierName}`,
+      `SUPPLIER NAME - ${truncate(supplierName, maxInfoWidth)}`,
     ].forEach(line => { doc.text(line, MX, fy); fy += 4.3 })
 
-    // ── QR code ──
-    const qrImg = await qrDataUrl(qrValue, { size: 200 })
-    if (qrImg) doc.addImage(qrImg, 'PNG', LX, offsetY + 13, 17, 17)
-    setFont('bold', 7); doc.text('PART TAG', LX, offsetY + 38)
-
-    // ── Barcode ──
-    const barcodeImg = barcodeDataUrl(barcodeValue, { width: 2, height: 55 })
-    if (barcodeImg) doc.addImage(barcodeImg, 'PNG', MX, offsetY + 40, 42, 11)
-
-    // ── Plant code ──
-    setFont('bold', 24); doc.text(plant, MX + 48, offsetY + 49)
-
-    // ── Logo ──
-    const logoToDraw = tag.logoDataUrl || logoDataUrl
-    if (logoToDraw) {
-      doc.addImage(logoToDraw, 'PNG', MX, offsetY + 53, 30, 10)
-    } else {
-      setFont('bold', 13); doc.text('FIEM', MX, offsetY + 58)
+    // ── QR code — left column ──
+    if (qrValue) {
+      const qrImg = await qrDataUrl(qrValue, { size: 200 })
+      if (qrImg) doc.addImage(qrImg, 'PNG', LX, offsetY + 13, 17, 17)
     }
 
-    // ── Issue / Expiry ──
+    // ── Barcode — mid column, lower area ──
+    const barcodeImg = barcodeDataUrl(barcodeValue, { width: 2, height: 50 })
+    if (barcodeImg) doc.addImage(barcodeImg, 'PNG', MX, offsetY + 40, 50, 12)
+
+    // ── Plant code (Werks) — right-aligned, next to barcode row ──
+    setFont('bold', 20); doc.text(plant, RX, offsetY + 50, { align: 'right' })
+
+    // ── "PART TAG" label — bottom-left corner ──
+    setFont('bold', 7); doc.text('PART TAG', LX, offsetY + 58)
+
+    // ── Logo — below barcode ──
+    const logoToDraw = tag.logoDataUrl || logoDataUrl
+    if (logoToDraw) {
+      doc.addImage(logoToDraw, 'PNG', MX, offsetY + 54, 40, 8)
+    } else {
+      setFont('bold', 13); doc.text('FIEM', MX, offsetY + 60)
+    }
+
+    // ── Issue / Expiry — right column ──
     setFont('normal', 7.5)
-    doc.text(`ISSUE DATE- ${issueDate}`, RX, offsetY + 46, { align: 'right' })
-    doc.text(`EXPIRY DATE- ${expiryDate}`, RX, offsetY + 51, { align: 'right' })
+    doc.text(`ISSUE DATE- ${issueDate}`, RX, offsetY + 55, { align: 'right' })
+    doc.text(`EXPIRY DATE- ${expiryDate}`, RX, offsetY + 59, { align: 'right' })
+
+    // ── Plant Description — bottom-right, smaller font to fit ──
+    if (plantDesc) {
+      setFont('normal', 5.5)
+      const truncatedPlantDesc = truncate(plantDesc, tagW - 53 - 8)
+      doc.text(truncatedPlantDesc, RX, offsetY + 63, { align: 'right' })
+    }
   }
 
   return doc
@@ -189,17 +190,6 @@ export async function previewPartTags(tags = []) {
   const pdfBlob = doc.output('blob')
   const blobUrl = URL.createObjectURL(pdfBlob)
 
-  const newTab = window.open(blobUrl, '_blank')
-  if (!newTab || newTab.closed) {
-    const a = document.createElement('a')
-    a.href = blobUrl
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
   return { filename, blobUrl }
 }
 

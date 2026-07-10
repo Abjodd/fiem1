@@ -146,7 +146,23 @@ export const createAsnApi = {
       filter += ` and StorageLocation eq '${storageLocation.trim()}'`
     }
     const json = await odataGet(`/ASN_itemSet?$filter=${encodeURIComponent(filter)}&$format=json`)
-    return (json.d?.results || []).map((d, idx) => mapAsnItem(d, idx))
+    
+    const results = json.d?.results || []
+    const ebelpCounters = {}
+    
+    return results.map((d, idx) => {
+      const item = mapAsnItem(d, idx)
+      const ebelpStr = str(d.Ebelp)
+      if (!ebelpCounters[ebelpStr]) ebelpCounters[ebelpStr] = 1
+      
+      const genSch = String(ebelpCounters[ebelpStr]++)
+      item.schLine = item.schLine ? String(parseInt(item.schLine, 10)) : genSch
+      
+      // Update itemNo to reflect the new schLine so React keys are stable
+      item.itemNo = `${item.ebelp}-${item.schLine}-${item.eindt}-${idx}`
+      
+      return item
+    })
   },
 
   async getPdirRefNos(scheduleNo) {
@@ -166,21 +182,27 @@ export const createAsnApi = {
     const token = await fetchCsrfToken()
 
     // ── Item rows ─────────────────────────────────────────────────────────────
+    const ebelpCounters = {}
+
     const itemRows = items.map(it => {
       // Use avlAsnQty directly — this is what SAP returned and user confirmed.
       // Do NOT recompute Con_Qty − DelQty; that's SAP's job and causes mismatch.
       const menge = String(parseFloat(it.avlAsnQty || '0'))
+      
+      const ebelpStr = str(it.ebelp)
+      if (!ebelpCounters[ebelpStr]) ebelpCounters[ebelpStr] = 1
+      const generatedEtenr = String(ebelpCounters[ebelpStr]++)
 
-      return {
+      const itemObj = {
         __metadata: {
           type: 'SHIV.AAL_SUP_PORTAL_SA_SRV.ASN_ITEM',  
         },
 
         Schedule_No:     str(it.scheduleNo || scheduleNo),
-        Ebelp:           str(it.ebelp),          
+        Ebelp:           ebelpStr,          
         AsnNum:          '',
         DelQty:          str(it.delQty    || '0'),
-        Etenr:           str(it.schLine),
+        Etenr:           generatedEtenr,
         Ebeln:           str(it.ebeln || scheduleNo),
         Eindt:           str(it.eindt),
         Werks:           str(it.werks || plant),
@@ -225,10 +247,25 @@ export const createAsnApi = {
         Asn_Created:     String(parseFloat(it.asnCreated  || '0')),
         Draft_AsnQty:    String(parseFloat(it.draftAsnQty || '0')),
         Pstyp:           str(it.pstyp  || ''),
-        SOQ:             String(parseFloat(it.spq || '0')),  // ✅ "100.000 " → "100"
+        SOQ:             String(parseFloat(it.spq || '0')),
 
         App: '',
       }
+
+      // ── BatchSplitSet — same as PO CreateAsnPost.js ──
+      if (it.batches && it.batches.length > 0) {
+        itemObj.BatchSplitSet = it.batches.map(b => ({
+          Batch: str(b.batchCode),
+          Menge: String(parseInt(b.quantity, 10)),
+          Po_No: str(scheduleNo),
+          Ebelp: ebelpStr,
+          Etenr: generatedEtenr,
+          ProductionDate: str(it.eindt || ''),
+          MatExpDate: ''
+        }))
+      }
+
+      return itemObj
     })
 
     // ── Header payload ────────────────────────────────────────────────────────

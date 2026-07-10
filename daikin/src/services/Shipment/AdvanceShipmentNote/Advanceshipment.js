@@ -66,6 +66,9 @@ function mapHeader(d) {
     baseDocument: baseDoc,
     plant: str(d.Werks),
     plantName: str(d.Plant_des),
+    lifnr: str(d.Lifnr),
+    orderNum: str(d.Order_num),
+    creationTime: str(d.CreationTime),
     date: sapDate(d.Invoice_Date),
     status,
     statusColor: color,
@@ -105,8 +108,8 @@ function mapItem(d) {
     cgst: num(d.Tot_cgst),
     sgstUtgst: num(d.Tot_sgst),
     unplannedCost: num(d.UnplannedCost),
-    // TODO: confirm actual SAP field names for these two — needed by
-    // the part-tag PO No line ("PO No - 7000037126 : 00040 : 0001")
+    itemNo: str(d.ItemNo),
+    schdLine: str(d.schd_line),
     poItem: str(d.Ebelp || d.PoItem || ''),
     poSubItem: str(d.Etenr || d.PoSubItem || ''),
   }
@@ -154,26 +157,22 @@ function mapAttachment(d) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PART TAG MAPPING — asn + item → generatePartTag() payload
+// PART TAG MAPPING — asn + item → generatePartTags() payload
 // ═══════════════════════════════════════════════════════════════
-// TODO: barcodeValue's second segment ("//C3") and the PO item/sub-item
-// pair ("00040:0001") aren't confirmed against real SAP fields yet —
-// mapItem() above has placeholder field names (Ebelp/Etenr). Update
-// those once you confirm what the OData service actually returns.
 export function buildPartTag(asn, item, opts = {}) {
   const boxNo = String(opts.boxNo ?? '1')
   const totalBoxes = String(opts.totalBoxes ?? '1')
 
-  const poNo = asn.generalData?.baseDocument?.split(' ').pop() || ''
-  const poItem = item?.poItem || ''
-  const poSubItem = item?.poSubItem || ''
+  const poNo = asn.orderNum || ''
+  const itemNo = item?.itemNo || ''
+  const schdLine = item?.schdLine || ''
 
   const qrValue = [
     poNo,
-    poItem,
-    poSubItem,
+    itemNo,
+    schdLine,
     asn.plant,
-    asn.generalData?.invoiceDate || '',
+    asn.shipment?.creationDate || '',
     item?.deliveryDate || '',
     item?.materialCode || '',
     item?.quantity ?? '',
@@ -181,28 +180,28 @@ export function buildPartTag(asn, item, opts = {}) {
     totalBoxes,
     asn.asnNum,
     asn.fisYear,
-    '',   // TODO: serial/time segment — source unconfirmed
+    asn.creationTime || '',
     '*',
   ].join('/')
 
   return {
-    // TODO: confirm real barcode format — using ASN//Plant as placeholder
-    barcodeValue: `${asn.asnNum}//${asn.plant}`,
+    barcodeValue: asn.asnNum || '',
     qrValue,
     partNumber: item?.materialCode || '',
     partDesc: item?.material || '',
     qty: `${item?.quantity ?? ''}-${item?.unit || 'NO'}`,
     poNo,
-    poItem,
-    poSubItem,
+    poItem: itemNo,
+    poSubItem: schdLine,
     invNo: asn.generalData?.supplierInvoice || '',
-    supplierCode: asn.vendor || '',
-    supplierName: asn.vendor || '', // TODO: separate supplier-name field if SAP exposes one
+    supplierCode: asn.lifnr || '',
+    supplierName: asn.vendor || '',
     plant: asn.plant,
+    plantDesc: asn.plantName || '',
     boxNo,
     totalBoxes,
     delDate: item?.deliveryDate || '',
-    issueDate: asn.generalData?.invoiceDate || '',
+    issueDate: asn.shipment?.creationDate || '',
     expiryDate: '',
   }
 }
