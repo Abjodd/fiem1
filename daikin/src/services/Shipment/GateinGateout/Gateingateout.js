@@ -257,20 +257,14 @@ export const gateEntryApi = {
   const headerKey = buildKey(trackNo, year)
   const asnKey = `AsnNum='${asnNum}',FisYear='${asnYear}',Bwart=''`
 
-  // Fetch current ASN header entity first, same pattern as Gate Out
-  const current = await odata(`/ASNHeaderSet(${asnKey})`)
-  const d = current?.d
-  if (!d) throw new Error('Could not load ASN header before Gate In')
 
   const token = await fetchCsrfToken()
 
   await odataWriteWithToken(
     token,
-    `/ASNHeaderSet`,   // collection-level, no key
-    {
-      __metadata: d.__metadata,
-      AsnNum: d.AsnNum, FisYear: d.FisYear, TrackingNo: d.TrackingNo, TrackingYear: d.TrackingYear, Lfsnr: 'TRD' },
-      'POST'
+    `/ASNHeaderSet(${asnKey})`,
+      { AsnNum: asnNum, FisYear: asnYear, TrackingNo: trackNo, TrackingYear: year, Lfsnr: 'TRD' },
+      'PUT'
     )
 
     const numData = await odata(`/GateNumberSet(${headerKey})`)

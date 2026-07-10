@@ -263,30 +263,21 @@ export default function GoodsMovement() {
   // partner & employeeadmin => full access (view + actions).
   // employee => view only.
   const isPartner = role === 'partner'
-const isEmployeeAdmin = role === 'employeeadmin'
-const isEmployee = role === 'employee'
-const canManage = canManageShipment(role)
+  const canManage = canManageShipment(role)
 
   const [activeSupplier, setActiveSupplier] = useState('')
   const [showSupplierPopup, setShowSupplierPopup] = useState(false)
-useEffect(() => {
-  if (userLoading) return
 
-  if ((isPartner || isEmployeeAdmin) && loginId) {
-    setActiveSupplier(loginId)
-    setShowSupplierPopup(false)
-  } else if (isEmployee && !activeSupplier) {
-    setShowSupplierPopup(true)
-  }
-}, [
-  userLoading,
-  loginId,
-  loginType,
-  activeSupplier,
-  isPartner,
-  isEmployeeAdmin,
-  searchQuery,
-])
+  useEffect(() => {
+    if (userLoading) return
+    if (isPartner && loginId) {
+      setActiveSupplier(loginId)
+      setShowSupplierPopup(false)
+    } else if (!isPartner && !activeSupplier) {
+      setShowSupplierPopup(true)
+    }
+  }, [userLoading, isPartner, loginId, activeSupplier])
+
   const handleSupplierSubmit = (code) => {
     setActiveSupplier(code)
     setShowSupplierPopup(false)
@@ -348,10 +339,10 @@ useEffect(() => {
   useEffect(() => {
     if (userLoading) return
     if (!loginId || !loginType) return
-    if (!(isPartner || isEmployeeAdmin) && !activeSupplier) {
-  setTrackings([])
-  return
-}
+    if (!isPartner && !activeSupplier) {
+      setTrackings([])
+      return
+    }
 
     let cancelled = false
     goodsMovementApi.listTrackings({ search: searchQuery })
