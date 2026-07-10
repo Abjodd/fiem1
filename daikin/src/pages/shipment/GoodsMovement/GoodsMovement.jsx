@@ -12,13 +12,10 @@ import {
 } from 'lucide-react'
 import { useUser } from '../../../context/UserContext.jsx'
 
-
 // ═══════════════════════════════════════════════════════════════
-// ROLE ACCESS HELPERS
-// All roles (partner, employeeadmin, employee) can view data.
-// partner & employeeadmin can also perform actions:
-//   Create, Start Shipment, Edit, Cancel, Print, Edit Details.
-// employee is view only.
+// ROLE ACCESS
+// partner & employeeadmin → full access (view + all action buttons)
+// employee               → view only (all action buttons hidden)
 // ═══════════════════════════════════════════════════════════════
 const canManageShipment = (role) => {
   const r = String(role || '').toLowerCase()
@@ -26,71 +23,7 @@ const canManageShipment = (role) => {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUPPLIER POPUP
-// ═══════════════════════════════════════════════════════════════
-function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Goods Movement' }) {
-  const [code, setCode] = useState('')
-  const [error, setError] = useState('')
-
-  const handleSubmit = () => {
-    if (!code.trim()) { setError('Please enter a supplier code.'); return }
-    onSubmit(code.trim())
-  }
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={canCancel ? onCancel : undefined}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" style={{ animation: 'scaleIn .22s ease-out both' }} onClick={e => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
-          <div>
-            <h2 className="text-[18px] font-bold text-white">{title}</h2>
-            <p className="text-[13px] text-white/80 mt-1">Enter a supplier code to load data</p>
-          </div>
-          {canCancel && (
-            <button onClick={onCancel} className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0" title="Cancel">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        <div className="px-6 py-6">
-          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
-            Supplier Code <span className="text-[#cc1c14]">*</span>
-          </label>
-          <input
-            autoFocus type="text" value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
-            placeholder="e.g. FS859"
-            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
-          />
-          {error && (
-            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-              </svg>
-              {error}
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
-          <button onClick={onCancel} disabled={!canCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all ${!canCancel && 'opacity-0 pointer-events-none'}`}>
-            Cancel
-          </button>
-          <button onClick={handleSubmit} className="px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] hover:bg-[#085caf] rounded-lg transition-all shadow-sm">
-            Load Supplier
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════
 // STATUS CHECK HELPERS
-// Uses exact StatusText from SAP (case-insensitive)
 // ═══════════════════════════════════════════════════════════════
 const isUpdatableStatus = (status) => {
   if (!status) return false
@@ -116,14 +49,14 @@ const UPDATE_TAB = {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TIMELINE STEP CONFIG  (gate_reporting removed)
+// TIMELINE STEPS
 // ═══════════════════════════════════════════════════════════════
 const TIMELINE_STEPS = [
-  { key: 'created',       label: 'Created',         Icon: FilePlus     },
-  { key: 'shipped',       label: 'Shipped',         Icon: Truck        },
-  { key: 'gate_entry',    label: 'Gate Entry (IN)', Icon: LogIn        },
-  { key: 'goods_received',label: 'Goods Received',  Icon: PackageCheck },
-  { key: 'completed',     label: 'Completed',       Icon: PackageCheck },
+  { key: 'created',        label: 'Created',         Icon: FilePlus     },
+  { key: 'shipped',        label: 'Shipped',         Icon: Truck        },
+  { key: 'gate_entry',     label: 'Gate Entry (IN)', Icon: LogIn        },
+  { key: 'goods_received', label: 'Goods Received',  Icon: PackageCheck },
+  { key: 'completed',      label: 'Completed',       Icon: PackageCheck },
 ]
 
 // ═══════════════════════════════════════════════════════════════
@@ -138,7 +71,6 @@ const statusDotColor = (c) => ({ green:'#107e3e', blue:'#0a6ed1', orange:'#e7650
 function SidebarContent({
   trackings, totalCount, selectedId, searchQuery, sidebarCollapsed,
   onSelectTracking, onSearchChange, onToggleCollapse,
-  isPartner, activeSupplier, handleChangeSupplier,
 }) {
   return (
     <>
@@ -158,43 +90,27 @@ function SidebarContent({
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {!isPartner && activeSupplier && (
-              <div className="flex items-center justify-between bg-[#ebf5ff] border border-[#0a6ed1]/30 rounded-lg px-3 py-2">
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-[#0a6ed1]/70 mb-0.5">Supplier</div>
-                  <div className="text-[13px] font-semibold text-[#0a6ed1]">{activeSupplier}</div>
-                </div>
-                <button 
-                  onClick={handleChangeSupplier}
-                  className="text-[12px] font-semibold text-[#0a6ed1] hover:bg-[#d9ecff] px-2 py-1 rounded transition-colors"
-                >
-                  Change
+          <div className="relative">
+            <input
+              type="text" value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search tracking number"
+              className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
+            />
+            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+              {searchQuery && (
+                <button onClick={() => onSearchChange('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
+                  <X size={15} />
                 </button>
-              </div>
-            )}
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search tracking number"
-                className="w-full h-10 pl-3.5 pr-16 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all duration-200"
-              />
-              <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-                {searchQuery && (
-                  <button onClick={() => onSearchChange('')} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#cc1c14] rounded transition-all hover:scale-110">
-                    <X size={15} />
-                  </button>
-                )}
-                <button onClick={() => onSearchChange(searchQuery)} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
-                  <RefreshCw size={14} />
-                </button>
-              </div>
+              )}
+              <button onClick={() => onSearchChange(searchQuery)} className="w-7 h-7 flex items-center justify-center text-[#6a6d70] hover:text-[#0a6ed1] rounded transition-all hover:scale-110">
+                <RefreshCw size={14} />
+              </button>
             </div>
           </div>
         )}
       </div>
+
       <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
         {sidebarCollapsed ? (
           trackings.map((t) => {
@@ -214,23 +130,23 @@ function SidebarContent({
               const isSelected = t.id === selectedId
               return (
                 <button key={t.id} onClick={() => onSelectTracking(t.id)}
-  className={`w-full text-left px-4 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
-  <div className="flex items-center justify-between mb-1">
-    <span className="text-[14px] font-bold text-[#0a6ed1]">{t.id}</span>
-  </div>
-  <div className="flex items-center justify-between text-[12px] text-[#6a6d70] mb-1">
-    <span>{t.transportMode}</span>
-    <span>{t.date}</span>
-  </div>
-  <div className="flex items-center justify-between">
-    <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
-    {t.status && (
-      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
-        {t.status}
-      </span>
-    )}
-  </div>
-</button>
+                  className={`w-full text-left px-4 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[14px] font-bold text-[#0a6ed1]">{t.id}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[12px] text-[#6a6d70] mb-1">
+                    <span>{t.transportMode}</span>
+                    <span>{t.date}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] text-[#6a6d70]">Plant: {t.plant}</span>
+                    {t.status && (
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle(t.statusColor)}`}>
+                        {t.status}
+                      </span>
+                    )}
+                  </div>
+                </button>
               )
             })}
             {trackings.length === 0 && (
@@ -242,8 +158,8 @@ function SidebarContent({
           </>
         )}
       </div>
-      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-end flex-shrink-0">
 
+      <div className="border-t border-[#e5e5e5] px-3 py-2.5 flex items-center justify-end flex-shrink-0">
         <button onClick={onToggleCollapse}
           className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
@@ -263,7 +179,9 @@ export default function GoodsMovement() {
   // partner & employeeadmin => full access (view + actions).
   // employee => view only.
   const isPartner = role === 'partner'
-  const canManage = canManageShipment(role)
+const isEmployeeAdmin = role === 'employeeadmin'
+const isEmployee = role === 'employee'
+const canManage = canManageShipment(role)
 
   const [activeSupplier, setActiveSupplier] = useState('')
   const [showSupplierPopup, setShowSupplierPopup] = useState(false)
@@ -292,41 +210,39 @@ export default function GoodsMovement() {
   }
 
   authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
+  authConfig.loginId   = loginId
   authConfig.loginType = loginType
 
   const navigate = useNavigate()
-  const [trackings, setTrackings] = useState([])
-  const [tracking, setTracking] = useState(null)
-  const [selectedId, setSelectedId] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('timeline')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [timelinePage, setTimelinePage] = useState(0)
+  const [trackings,          setTrackings]          = useState([])
+  const [tracking,           setTracking]           = useState(null)
+  const [selectedId,         setSelectedId]         = useState(null)
+  const [searchQuery,        setSearchQuery]        = useState('')
+  const [activeTab,          setActiveTab]          = useState('timeline')
+  const [sidebarCollapsed,   setSidebarCollapsed]   = useState(false)
+  const [mobileSidebarOpen,  setMobileSidebarOpen]  = useState(false)
+  const [timelinePage,       setTimelinePage]       = useState(0)
   const [showCreateMovement, setShowCreateMovement] = useState(false)
-  const [editTrackingData, setEditTrackingData] = useState(null)
+  const [editTrackingData,   setEditTrackingData]   = useState(null)
+  const [totalCount,         setTotalCount]         = useState(0)
+  const [printLoading,       setPrintLoading]       = useState(false)
 
-  // Update modal (In Transit / Shipped)
-  const [updateModalOpen, setUpdateModalOpen] = useState(false)
-  const [updateForm, setUpdateForm] = useState({ asn: '', asnId: '', vehicleNumber: '', invoiceNumber: '', lrNum: '', finalTransporterName: '' })
-  const [updateSaving, setUpdateSaving] = useState(false)
-  const [updateError, setUpdateError] = useState('')
-
-  const [asnLookupOpen, setAsnLookupOpen] = useState(false)
-  const [asnLookupSearch, setAsnLookupSearch] = useState('')
+  // Update modal
+  const [updateModalOpen,  setUpdateModalOpen]  = useState(false)
+  const [updateForm,       setUpdateForm]       = useState({ asn: '', asnId: '', vehicleNumber: '', invoiceNumber: '', lrNum: '', finalTransporterName: '' })
+  const [updateSaving,     setUpdateSaving]     = useState(false)
+  const [updateError,      setUpdateError]      = useState('')
+  const [asnLookupOpen,    setAsnLookupOpen]    = useState(false)
+  const [asnLookupSearch,  setAsnLookupSearch]  = useState('')
   const [asnLookupResults, setAsnLookupResults] = useState([])
 
-  const [startWarningOpen, setStartWarningOpen] = useState(false)
-  const [shipmentDetailsOpen, setShipmentDetailsOpen] = useState(false)
-  const [shipmentDetailsForm, setShipmentDetailsForm] = useState({ date: '', time: '', etaDate: '' })
+  // Start shipment flow
+  const [startWarningOpen,          setStartWarningOpen]          = useState(false)
+  const [shipmentDetailsOpen,       setShipmentDetailsOpen]       = useState(false)
+  const [shipmentDetailsForm,       setShipmentDetailsForm]       = useState({ date: '', time: '', etaDate: '' })
   const [shipmentDetailsSubmitting, setShipmentDetailsSubmitting] = useState(false)
-  const [shipmentDetailsError, setShipmentDetailsError] = useState('')
-
-  // Success popup after start shipment
-  const [shipSuccessMsg, setShipSuccessMsg] = useState('')
-
-  const [totalCount, setTotalCount] = useState(0)
-  const [printLoading, setPrintLoading] = useState(false)
+  const [shipmentDetailsError,      setShipmentDetailsError]      = useState('')
+  const [shipSuccessMsg,            setShipSuccessMsg]            = useState('')
 
   // Read ?track= param on mount
   useEffect(() => {
@@ -337,6 +253,7 @@ export default function GoodsMovement() {
 
   // ── Load tracking list ──────────────────────────────────────
   useEffect(() => {
+    if (userLoading || !loginId || !loginType) return
     if (userLoading) return
     if (!loginId || !loginType) return
     if (!isPartner && !activeSupplier) {
@@ -355,7 +272,7 @@ export default function GoodsMovement() {
       })
       .catch(err => console.error(err))
     return () => { cancelled = true }
-  }, [userLoading, loginId, loginType, activeSupplier, isPartner, searchQuery])
+  }, [userLoading, loginId, loginType, searchQuery])
 
   // ── Load detail on selection ────────────────────────────────
   useEffect(() => {
@@ -367,17 +284,18 @@ export default function GoodsMovement() {
     return () => { cancelled = true }
   }, [selectedId])
 
-  // ── Close mobile sidebar on outside click ──────────────────
+  // ── Close mobile sidebar on outside click ───────────────────
   useEffect(() => {
     if (!mobileSidebarOpen) return
     const handler = (e) => {
-      if (!e.target.closest('[data-sidebar]') && !e.target.closest('[data-sidebar-toggle]')) setMobileSidebarOpen(false)
+      if (!e.target.closest('[data-sidebar]') && !e.target.closest('[data-sidebar-toggle]'))
+        setMobileSidebarOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileSidebarOpen])
 
-  // ── ASN lookup (for In Transit update modal) ────────────────
+  // ── ASN lookup ──────────────────────────────────────────────
   useEffect(() => {
     if (!asnLookupOpen || !tracking) return
     let cancelled = false
@@ -387,7 +305,7 @@ export default function GoodsMovement() {
     return () => { cancelled = true }
   }, [asnLookupOpen, asnLookupSearch, tracking])
 
-  // ── Pre-fill shipment details ──────────────────────────────
+  // ── Pre-fill shipment details ───────────────────────────────
   useEffect(() => {
     if (!shipmentDetailsOpen) return
     const now = new Date()
@@ -419,33 +337,18 @@ export default function GoodsMovement() {
 
   const handleSelectTracking = (id) => { setSelectedId(id); setMobileSidebarOpen(false); setTimelinePage(0) }
 
-  // Guard every mutating handler with `canManage` so a Partner (P) role
-  // can never trigger these actions even via devtools/console.
-  const handleCreateMovement = () => { if (!canManage) return; setEditTrackingData(null); setShowCreateMovement(true) }
+  const handleCreateMovement   = () => { if (!canManage) return; setEditTrackingData(null); setShowCreateMovement(true) }
+  const handleEditMovement     = () => { if (!canManage || !tracking) return; setEditTrackingData(tracking); setShowCreateMovement(true) }
+  const handleCancelMovement   = async () => { if (!canManage || !tracking) return; try { await goodsMovementApi.cancelTracking(tracking.id) } catch (err) { console.error(err) } }
 
-  // Edit for "Yet to Ship" — opens CreateMovement with pre-filled data
-  const handleEditMovement = () => { if (!canManage || !tracking) return; setEditTrackingData(tracking); setShowCreateMovement(true) }
-
-  const handleCancelMovement = async () => {
-    if (!canManage || !tracking) return
-    try { await goodsMovementApi.cancelTracking(tracking.id) } catch (err) { console.error(err) }
-  }
-
-  // ── PRINT ──────────────────────────────────────────────────
   const handlePrint = async () => {
     if (!canManage || !tracking || printLoading) return
     setPrintLoading(true)
-    try {
-      await generateShipmentNote(tracking)
-    } catch (err) {
-      console.error('Print failed:', err)
-      alert('Failed to generate Shipment Note. Please try again.')
-    } finally {
-      setPrintLoading(false)
-    }
+    try { await generateShipmentNote(tracking) }
+    catch (err) { console.error('Print failed:', err); alert('Failed to generate Shipment Note. Please try again.') }
+    finally { setPrintLoading(false) }
   }
 
-  // ── Start Shipment flow ────────────────────────────────────
   const handleStartShipmentClick = () => { if (!canManage) return; setStartWarningOpen(true) }
   const handleWarningOk = () => { setStartWarningOpen(false); setShipmentDetailsOpen(true) }
 
@@ -459,27 +362,21 @@ export default function GoodsMovement() {
       await goodsMovementApi.startShipment(tracking.id, shipmentDetailsForm)
       setShipmentDetailsOpen(false)
       setShipSuccessMsg(`Tracking number ${tracking.id} has been shipped successfully`)
-      goodsMovementApi.getTracking(tracking.id)
-        .then(data => setTracking(data))
-        .catch(err => console.error(err))
-      goodsMovementApi.listTrackings({ search: searchQuery })
-        .then(data => setTrackings(data))
-        .catch(err => console.error(err))
-    } catch (err) {
-      console.error(err); setShipmentDetailsError('Failed to start shipment. Please try again.')
-    } finally { setShipmentDetailsSubmitting(false) }
+      goodsMovementApi.getTracking(tracking.id).then(data => setTracking(data)).catch(console.error)
+      goodsMovementApi.listTrackings({ search: searchQuery }).then(data => setTrackings(data)).catch(console.error)
+    } catch (err) { console.error(err); setShipmentDetailsError('Failed to start shipment. Please try again.') }
+    finally { setShipmentDetailsSubmitting(false) }
   }
 
-  // ── In-Transit Update modal ────────────────────────────────
   const openUpdateModal = () => {
     if (!canManage || !tracking) return
     const firstAsn = tracking.asns?.[0]
     setUpdateForm({
-      asn:           firstAsn?.asnId || '',
-      asnId:         firstAsn?.asnId || '',
-      vehicleNumber: tracking.vehicleRegNo || '',
-      invoiceNumber: firstAsn?.invoiceNumber || '',
-      lrNum: tracking.lrNum || '',
+      asn:                  firstAsn?.asnId || '',
+      asnId:                firstAsn?.asnId || '',
+      vehicleNumber:        tracking.vehicleRegNo || '',
+      invoiceNumber:        firstAsn?.invoiceNumber || '',
+      lrNum:                tracking.lrNum || '',
       finalTransporterName: tracking.finalTransporterName || '',
     })
     setUpdateError(''); setUpdateModalOpen(true)
@@ -496,35 +393,22 @@ export default function GoodsMovement() {
       await goodsMovementApi.updateInTransitShipment(
         tracking.trackingNo,
         updateForm.asnId || updateForm.asn,
-        { 
-          vehicleNumber: updateForm.vehicleNumber, 
-          invoiceNumber: updateForm.invoiceNumber,
-          lrNum: updateForm.lrNum,
-          finalTransporterName: updateForm.finalTransporterName
-        }
+        { vehicleNumber: updateForm.vehicleNumber, invoiceNumber: updateForm.invoiceNumber, lrNum: updateForm.lrNum, finalTransporterName: updateForm.finalTransporterName }
       )
       const updated = await goodsMovementApi.getTracking(tracking.id)
-      setTracking(updated)
-      setUpdateModalOpen(false)
-    } catch (err) {
-      console.error(err); setUpdateError('Failed to save. Please try again.')
-    } finally { setUpdateSaving(false) }
+      setTracking(updated); setUpdateModalOpen(false)
+    } catch (err) { console.error(err); setUpdateError('Failed to save. Please try again.') }
+    finally { setUpdateSaving(false) }
   }
 
   const handlePickAsn = (row) => {
-    setUpdateForm(f => ({
-      ...f,
-      asn:           row.asnId,
-      asnId:         row.asnId,
-      invoiceNumber: f.invoiceNumber || row.invoiceNumber,
-      vehicleNumber: f.vehicleNumber || row.transporter,
-    }))
+    setUpdateForm(f => ({ ...f, asn: row.asnId, asnId: row.asnId, invoiceNumber: f.invoiceNumber || row.invoiceNumber, vehicleNumber: f.vehicleNumber || row.transporter }))
     setAsnLookupOpen(false); setAsnLookupSearch('')
   }
 
+  // Update Shipment tab only for canManage + correct status
   const tabs = useMemo(() => {
     if (!tracking) return BASE_TABS
-    // Update Shipment tab is only available to roles that can manage shipments (EA)
     return (isUpdatableStatus(tracking.status) && canManage) ? [...BASE_TABS, UPDATE_TAB] : BASE_TABS
   }, [tracking, canManage])
 
@@ -539,10 +423,9 @@ export default function GoodsMovement() {
     onSelectTracking: handleSelectTracking,
     onSearchChange: setSearchQuery,
     onToggleCollapse: () => setSidebarCollapsed(c => !c),
-    isPartner, activeSupplier, handleChangeSupplier,
   }
 
-  // ── Timeline tab ───────────────────────────────────────────
+  // ── Tab renderers ───────────────────────────────────────────
   const renderTimeline = () => {
     if (!tracking) return null
     const steps = TIMELINE_STEPS.map(s => {
@@ -583,7 +466,6 @@ export default function GoodsMovement() {
     )
   }
 
-  // ── ASN tab ────────────────────────────────────────────────
   const renderAsn = () => {
     if (!tracking) return null
     return (
@@ -591,29 +473,23 @@ export default function GoodsMovement() {
         <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm">
           <table className="w-full text-[14px]" style={{ minWidth: '750px' }}>
             <thead><tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider rounded-tl-lg">ASN Number</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Number</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Total Line Items</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">IBD Number</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Plant</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Amount</th>
-              <th className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">Invoice Date</th>
+              {['ASN Number','Invoice Number','Total Line Items','IBD Number','Plant','Invoice Amount','Invoice Date'].map(h => (
+                <th key={h} className="text-left font-semibold py-3.5 px-4 text-[13px] uppercase tracking-wider">{h}</th>
+              ))}
             </tr></thead>
             <tbody className="row-stagger">
               {tracking.asns.map((asn, idx) => (
                 <tr key={idx} className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors duration-200">
                   <td className="py-4 px-4">
-                    <span
-                      className="text-[#0a6ed1] font-semibold hover:underline cursor-pointer"
-                      onClick={() => navigate(`/shipment/AdvanceShipmentNote/advance-shipping-note?asn=${asn.asnId}`)}
-                    >
+                    <span className="text-[#0a6ed1] font-semibold hover:underline cursor-pointer"
+                      onClick={() => navigate(`/shipment/AdvanceShipmentNote/advance-shipping-note?asn=${asn.asnId}`)}>
                       {asn.asnId}
                     </span>
                   </td>
                   <td className="py-4 px-4 text-[#32363a] font-medium">{asn.invoiceNumber}</td>
                   <td className="py-4 px-4 text-[#32363a]">{asn.totalLineItems}</td>
                   <td className="py-4 px-4 text-[#32363a] font-medium">{asn.ibdNumber}</td>
-                  <td className="py-4 px-4"><span className="text-[#32363a] font-semibold">{asn.plant}</span></td>
+                  <td className="py-4 px-4 font-semibold text-[#32363a]">{asn.plant}</td>
                   <td className="py-4 px-4 font-semibold text-[#32363a]">{asn.invoiceAmount.toFixed(2)}</td>
                   <td className="py-4 px-4 text-[#32363a]">{asn.invoiceDate}</td>
                 </tr>
@@ -625,7 +501,6 @@ export default function GoodsMovement() {
     )
   }
 
-  // ── Update Shipment tab (In Transit / Shipped) ─────────────
   const renderUpdate = () => {
     if (!tracking) return null
     return (
@@ -641,6 +516,7 @@ export default function GoodsMovement() {
           <div className="rounded-xl border border-[#e5e5e5] bg-white shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-[15px] font-semibold text-[#32363a]">Current Shipment Details</h4>
+              {/* Edit Details button hidden for employee */}
               {canManage && (
                 <button onClick={openUpdateModal} className="flex items-center gap-1.5 px-3 h-9 text-[13px] font-semibold text-white bg-[#e76500] rounded-lg hover:bg-[#c55600] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
                   <Edit3 size={14} /> Edit Details
@@ -663,24 +539,18 @@ export default function GoodsMovement() {
   const tabContent = { timeline: renderTimeline, asn: renderAsn, update: renderUpdate }
 
   if (showCreateMovement) {
-    // Extra guard: a Partner role should never be able to reach this screen.
-    if (!canManage) {
-      setShowCreateMovement(false)
-      return null
-    }
-    return <CreateMovement
-  editData={editTrackingData}
-  onBack={(newTrackingId) => {
-    setShowCreateMovement(false)
-    setEditTrackingData(null)
-    goodsMovementApi.listTrackings({ search: searchQuery })
-      .then(data => {
-        setTrackings(data)
-        if (newTrackingId) setSelectedId(newTrackingId)
-      })
-      .catch(err => console.error(err))
-  }}
-/>
+    if (!canManage) { setShowCreateMovement(false); return null }
+    return (
+      <CreateMovement
+        editData={editTrackingData}
+        onBack={(newTrackingId) => {
+          setShowCreateMovement(false); setEditTrackingData(null)
+          goodsMovementApi.listTrackings({ search: searchQuery })
+            .then(data => { setTrackings(data); if (newTrackingId) setSelectedId(newTrackingId) })
+            .catch(console.error)
+        }}
+      />
+    )
   }
 
   return (
@@ -713,21 +583,12 @@ export default function GoodsMovement() {
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>
 
-      {showSupplierPopup && (
-        <SupplierPopup 
-          onSubmit={handleSupplierSubmit} 
-          onCancel={() => setShowSupplierPopup(false)} 
-          canCancel={!!activeSupplier}
-          title="Goods Movement"
-        />
-      )}
-
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-136px)]">
         <div className="flex" style={{ minHeight: 'calc(100vh - 260px)' }}>
 
           {mobileSidebarOpen && <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)} />}
 
-          {/* Mobile sidebar drawer */}
+          {/* Mobile sidebar */}
           <aside data-sidebar className={`fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50 md:hidden anim-drawer ${mobileSidebarOpen ? 'flex' : 'hidden'}`}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e5] bg-[#fafbfc]">
               <span className="text-[14px] font-semibold text-[#32363a]">Tracking Number List</span>
@@ -738,13 +599,12 @@ export default function GoodsMovement() {
 
           {/* Desktop sidebar */}
           <aside data-sidebar className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
-
             <SidebarContent {...sidebarProps} />
           </aside>
 
-          {/* Right pane */}
+          {/* Main content */}
           <main className="flex-1 bg-white overflow-y-auto anim-slide-r min-w-0 pb-28">
-            {tracking && (
+            {tracking ? (
               <>
                 {/* Header */}
                 <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
@@ -766,6 +626,7 @@ export default function GoodsMovement() {
                     </div>
                     <div className="flex items-center gap-3 ml-3 flex-shrink-0">
                       <span className="hidden sm:block text-[13px] text-[#6a6d70]">{tracking.date}</span>
+                      {/* Print — hidden for employee */}
                       {canManage && (
                         <button onClick={handlePrint} disabled={printLoading}
                           className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60">
@@ -779,16 +640,16 @@ export default function GoodsMovement() {
                   {/* Info fields */}
                   <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-3">
                     {[
-                      { Icon: Truck,          label: 'Transporter',              value: tracking.transporter           },
-                      { Icon: CalendarDays,   label: 'ETA Date',                 value: tracking.etaDate               },
-                      { Icon: User,           label: 'Driver Name',              value: tracking.driverName            },
-                      { Icon: ShieldCheck,    label: 'Safety Equipments',        value: tracking.safetyEquipments      },
-                      { Icon: Phone,          label: 'Contact',                  value: tracking.contact               },
-                      { Icon: HardHat,        label: 'Safety Guard for Material',value: tracking.safetyGuardForMaterial},
-                      { Icon: Car,            label: 'Transportation Mode',      value: tracking.transportationMode    },
-                      { Icon: Hash,           label: 'Vehicle Reg. No. / Docket',value: tracking.vehicleRegNo          },
-                      { Icon: ClipboardCheck, label: 'Pollution Certificate',    value: tracking.pollutionCertificateApplicable },
-                      { Icon: Banknote,       label: 'Total ASN Amount',         value: tracking.totalAsnAmount.toFixed(2) },
+                      { Icon: Truck,          label: 'Transporter',               value: tracking.transporter            },
+                      { Icon: CalendarDays,   label: 'ETA Date',                  value: tracking.etaDate                },
+                      { Icon: User,           label: 'Driver Name',               value: tracking.driverName             },
+                      { Icon: ShieldCheck,    label: 'Safety Equipments',         value: tracking.safetyEquipments       },
+                      { Icon: Phone,          label: 'Contact',                   value: tracking.contact                },
+                      { Icon: HardHat,        label: 'Safety Guard for Material', value: tracking.safetyGuardForMaterial },
+                      { Icon: Car,            label: 'Transportation Mode',       value: tracking.transportationMode     },
+                      { Icon: Hash,           label: 'Vehicle Reg. No. / Docket', value: tracking.vehicleRegNo           },
+                      { Icon: ClipboardCheck, label: 'Pollution Certificate',     value: tracking.pollutionCertificateApplicable },
+                      { Icon: Banknote,       label: 'Total ASN Amount',          value: tracking.totalAsnAmount.toFixed(2) },
                     ].map(({ Icon, label, value }) => (
                       <div key={label} className="flex items-start gap-2">
                         <Icon size={14} className="text-[#6a6d70] mt-[3px] flex-shrink-0" strokeWidth={1.8} />
@@ -820,8 +681,7 @@ export default function GoodsMovement() {
 
                 <div key={`${tracking.id}-${activeTab}`}>{tabContent[activeTab]?.()}</div>
               </>
-            )}
-            {!tracking && (
+            ) : (
               <div className="flex flex-col items-center justify-center h-64 text-[#6a6d70] anim-fade">
                 <Truck size={48} className="mb-3 opacity-30" strokeWidth={1.5} />
                 <span className="text-[14px]">Select a tracking number from the list</span>
@@ -831,19 +691,28 @@ export default function GoodsMovement() {
         </div>
       </div>
 
-      {/* Bottom action bar — Create/Edit/Cancel/Start Shipment are EA-only */}
+      {/* Bottom action bar — hidden entirely for employee */}
       {canManage && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5e5e5] px-6 py-3 flex justify-between items-center z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-          <button onClick={handleCreateMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+          <button onClick={handleCreateMovement}
+            className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
             <FilePlus size={15} /> Create
           </button>
-
           <div className="flex items-center gap-3">
             {tracking && isYetToShipStatus(tracking.status) && (
               <>
-                <button onClick={handleStartShipmentClick} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><PlayCircle size={15} /> Start Shipment</button>
-                <button onClick={handleEditMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"><Edit3 size={15} /> Edit</button>
-                <button onClick={handleCancelMovement} className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all"><X size={15} /> Cancel</button>
+                <button onClick={handleStartShipmentClick}
+                  className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#107e3e] rounded-lg hover:bg-[#0d6633] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+                  <PlayCircle size={15} /> Start Shipment
+                </button>
+                <button onClick={handleEditMovement}
+                  className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+                  <Edit3 size={15} /> Edit
+                </button>
+                <button onClick={handleCancelMovement}
+                  className="flex items-center gap-2 px-4 h-9 text-[13px] font-semibold text-[#cc1c14] border border-[#cc1c14] bg-white rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
+                  <X size={15} /> Cancel
+                </button>
               </>
             )}
           </div>
@@ -868,7 +737,7 @@ export default function GoodsMovement() {
         </div>
       )}
 
-      {/* Update Shipment Modal (In Transit) */}
+      {/* Update Shipment Modal */}
       {canManage && updateModalOpen && tracking && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center px-4 anim-overlay mt-16 sm:mt-0">
           <div className="absolute inset-0 bg-black/40" onClick={closeUpdateModal} />
@@ -911,7 +780,8 @@ export default function GoodsMovement() {
             </div>
             <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-end gap-2 flex-shrink-0">
               <button onClick={closeUpdateModal} disabled={updateSaving} className="px-4 h-9 text-[13px] font-semibold text-[#0a6ed1] hover:bg-[#ebf5ff] rounded-lg transition-all disabled:opacity-60">Cancel</button>
-              <button onClick={handleUpdateSave} disabled={updateSaving} className="flex items-center gap-1.5 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100">
+              <button onClick={handleUpdateSave} disabled={updateSaving}
+                className="flex items-center gap-1.5 px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100">
                 <Save size={14} /> {updateSaving ? 'Saving…' : 'Save'}
               </button>
             </div>
@@ -928,11 +798,13 @@ export default function GoodsMovement() {
               <h4 className="text-[15px] font-bold text-[#32363a]">Select ASN</h4>
               <button onClick={() => setAsnLookupOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all"><X size={17} /></button>
             </div>
-            <div className="px-6 py-3 border-b border-[#e5e5e5]"><div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6a6d70]" />
-              <input type="text" value={asnLookupSearch} onChange={(e) => setAsnLookupSearch(e.target.value)} placeholder="Search ASN or invoice"
-                className="w-full h-10 pl-9 pr-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
-            </div></div>
+            <div className="px-6 py-3 border-b border-[#e5e5e5]">
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6a6d70]" />
+                <input type="text" value={asnLookupSearch} onChange={(e) => setAsnLookupSearch(e.target.value)} placeholder="Search ASN or invoice"
+                  className="w-full h-10 pl-9 pr-3 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
+              </div>
+            </div>
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-[13px]">
                 <thead className="sticky top-0 bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5]">
@@ -991,12 +863,12 @@ export default function GoodsMovement() {
             <div className="px-6 py-4 border-b border-[#e5e5e5] text-center"><h4 className="text-[16px] font-bold text-[#32363a]">Shipment Details</h4></div>
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Date: <span className="text-[#cc1c14]">*</span></label>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Date <span className="text-[#cc1c14]">*</span></label>
                 <input type="date" value={shipmentDetailsForm.date} onChange={(e) => setShipmentDetailsForm(f => ({ ...f, date: e.target.value }))}
                   className="w-full h-10 px-3 text-[14px] border border-[#0a6ed1] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
               </div>
               <div>
-                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Time: <span className="text-[#cc1c14]">*</span></label>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">Time <span className="text-[#cc1c14]">*</span></label>
                 <div className="relative">
                   <input type="text" value={shipmentDetailsForm.time} onChange={(e) => setShipmentDetailsForm(f => ({ ...f, time: e.target.value }))} placeholder="HH:MM:SS AM/PM"
                     className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />
@@ -1006,7 +878,7 @@ export default function GoodsMovement() {
                 </div>
               </div>
               <div>
-                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">ETA (Delivery Date): <span className="text-[#cc1c14]">*</span></label>
+                <label className="block text-[13px] font-semibold text-[#32363a] mb-1.5">ETA (Delivery Date) <span className="text-[#cc1c14]">*</span></label>
                 <div className="relative">
                   <input type="date" value={shipmentDetailsForm.etaDate} onChange={(e) => setShipmentDetailsForm(f => ({ ...f, etaDate: e.target.value }))}
                     className="w-full h-10 pl-3 pr-10 text-[14px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all" />

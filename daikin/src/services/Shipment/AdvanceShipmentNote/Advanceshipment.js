@@ -105,6 +105,10 @@ function mapItem(d) {
     cgst: num(d.Tot_cgst),
     sgstUtgst: num(d.Tot_sgst),
     unplannedCost: num(d.UnplannedCost),
+    // TODO: confirm actual SAP field names for these two — needed by
+    // the part-tag PO No line ("PO No - 7000037126 : 00040 : 0001")
+    poItem: str(d.Ebelp || d.PoItem || ''),
+    poSubItem: str(d.Etenr || d.PoSubItem || ''),
   }
 }
 
@@ -146,6 +150,60 @@ function mapAttachment(d) {
     entityUri,
     mediaSrc,
     downloadUrl: d.Url ? str(d.Url) : null,
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PART TAG MAPPING — asn + item → generatePartTag() payload
+// ═══════════════════════════════════════════════════════════════
+// TODO: barcodeValue's second segment ("//C3") and the PO item/sub-item
+// pair ("00040:0001") aren't confirmed against real SAP fields yet —
+// mapItem() above has placeholder field names (Ebelp/Etenr). Update
+// those once you confirm what the OData service actually returns.
+export function buildPartTag(asn, item, opts = {}) {
+  const boxNo = String(opts.boxNo ?? '1')
+  const totalBoxes = String(opts.totalBoxes ?? '1')
+
+  const poNo = asn.generalData?.baseDocument?.split(' ').pop() || ''
+  const poItem = item?.poItem || ''
+  const poSubItem = item?.poSubItem || ''
+
+  const qrValue = [
+    poNo,
+    poItem,
+    poSubItem,
+    asn.plant,
+    asn.generalData?.invoiceDate || '',
+    item?.deliveryDate || '',
+    item?.materialCode || '',
+    item?.quantity ?? '',
+    boxNo,
+    totalBoxes,
+    asn.asnNum,
+    asn.fisYear,
+    '',   // TODO: serial/time segment — source unconfirmed
+    '*',
+  ].join('/')
+
+  return {
+    // TODO: confirm real barcode format — using ASN//Plant as placeholder
+    barcodeValue: `${asn.asnNum}//${asn.plant}`,
+    qrValue,
+    partNumber: item?.materialCode || '',
+    partDesc: item?.material || '',
+    qty: `${item?.quantity ?? ''}-${item?.unit || 'NO'}`,
+    poNo,
+    poItem,
+    poSubItem,
+    invNo: asn.generalData?.supplierInvoice || '',
+    supplierCode: asn.vendor || '',
+    supplierName: asn.vendor || '', // TODO: separate supplier-name field if SAP exposes one
+    plant: asn.plant,
+    boxNo,
+    totalBoxes,
+    delDate: item?.deliveryDate || '',
+    issueDate: asn.generalData?.invoiceDate || '',
+    expiryDate: '',
   }
 }
 

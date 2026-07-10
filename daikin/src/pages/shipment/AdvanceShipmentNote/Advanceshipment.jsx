@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import PageLayout from '../../../layouts/PageLayout.jsx'
 import { asnApi, authConfig } from '../../../services/Shipment/AdvanceShipmentNote/Advanceshipment.js'
 import { useUser } from '../../../context/UserContext.jsx'
+import { previewPartTags } from '../../../services/Shipment/AdvanceShipmentNote/asnChallan.js'
+import { buildPartTag } from '../../../services/Shipment/AdvanceShipmentNote/Advanceshipment.js'
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -522,11 +524,35 @@ if (listItem && !data.status) {
   setMobileSidebarOpen(false)
 }
 
-  const handlePrint = async () => {
-    if (!canPerformActions) return // employee: view-only, button is disabled anyway
-    if (!asn) return
-    try { await asnApi.printAsn(asn.id) } catch (err) { console.error(err) }
+const handlePrint = async () => {
+  if (!canPerformActions) return
+  if (!asn || !asn.items?.length) return
+  try {
+    const grouped = {}
+    asn.items.forEach(it => {
+      const key = `${it.poItem}-${it.materialCode}`
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(it)
+    })
+
+    const tagsToPrint = []
+    
+    for (const key of Object.keys(grouped)) {
+       const groupItems = grouped[key]
+       const totalBoxes = groupItems.length
+       for (let i = 0; i < totalBoxes; i++) {
+         tagsToPrint.push(buildPartTag(asn, groupItems[i], { boxNo: i + 1, totalBoxes }))
+       }
+    }
+
+    if (tagsToPrint.length > 0) {
+      await previewPartTags(tagsToPrint)
+    }
+    await asnApi.printAsn(asn.id) // keep existing call if backend needs to log the print event
+  } catch (err) {
+    console.error(err)
   }
+}
 
   const handleCancelClick = () => {
     if (!canPerformActions) return // employee: view-only, button is disabled anyway
