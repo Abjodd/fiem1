@@ -139,10 +139,10 @@ export async function generatePartTags(tags = []) {
       `SUPPLIER NAME - ${truncate(supplierName, maxInfoWidth)}`,
     ].forEach(line => { doc.text(line, MX, fy); fy += 4.3 })
 
-    // ── QR code — left column ──
+    // ── QR code — left column, above PART TAG ──
     if (qrValue) {
       const qrImg = await qrDataUrl(qrValue, { size: 200 })
-      if (qrImg) doc.addImage(qrImg, 'PNG', LX, offsetY + 13, 17, 17)
+      if (qrImg) doc.addImage(qrImg, 'PNG', LX, offsetY + 36, 18, 18)
     }
 
     // ── Barcode — mid column, lower area ──
@@ -150,7 +150,7 @@ export async function generatePartTags(tags = []) {
     if (barcodeImg) doc.addImage(barcodeImg, 'PNG', MX, offsetY + 40, 50, 12)
 
     // ── Plant code (Werks) — right-aligned, next to barcode row ──
-    setFont('bold', 20); doc.text(plant, RX, offsetY + 50, { align: 'right' })
+    setFont('bold', 10); doc.text(`Plant : ${plant}`, RX, offsetY + 50, { align: 'right' })
 
     // ── "PART TAG" label — bottom-left corner ──
     setFont('bold', 7); doc.text('PART TAG', LX, offsetY + 58)
@@ -158,7 +158,8 @@ export async function generatePartTags(tags = []) {
     // ── Logo — below barcode ──
     const logoToDraw = tag.logoDataUrl || logoDataUrl
     if (logoToDraw) {
-      doc.addImage(logoToDraw, 'PNG', MX, offsetY + 54, 40, 8)
+      // Made larger and less compressed than the original 40x8 (now 35x10)
+      doc.addImage(logoToDraw, 'PNG', MX, offsetY + 54, 35, 10)
     } else {
       setFont('bold', 13); doc.text('FIEM', MX, offsetY + 60)
     }
