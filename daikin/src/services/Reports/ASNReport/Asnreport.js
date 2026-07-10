@@ -70,8 +70,8 @@ function mapAsnRow(raw) {
     baseDocumentType:  str(raw.DocType ?? raw.BaseDocumentType ?? ''),
 
     // Vendor
-    vendorCode:        str(raw.Lifnr),
-    vendorName:        str(raw.VendorName ?? raw.LifnrName ?? ''),
+    vendorCode:        str(raw.Supplier),
+    vendorName:        str(raw.Name),
 
     // Purchase
     purchaseGroup:     str(raw.PurGrp),

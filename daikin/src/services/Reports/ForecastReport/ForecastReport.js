@@ -115,7 +115,7 @@ function buildFilter(required = {}, optional = {}) {
 export const ForecastReportApi = {
 
   // Page load default — only Bukrs filter, no $skip (SAP may not support it)
-  async fetchDefaultReport({ bukrs = 'DSAL', skip = 0, top = 100 } = {}) {
+  async fetchDefaultReport({ bukrs = '', skip = 0, top = 100 } = {}) {
     const f = buildFilter({ Bukrs: bukrs })
     // FIX: Use $skip only when skip > 0, some SAP services reject $skip=0
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -125,20 +125,20 @@ export const ForecastReportApi = {
 
   // Go button — all filters + pagination
   async fetchReport({
-    inputDate = '', matnr = '', ebeln = '', supplier = '',
-    bukrs = 'DSAL', mdIndicator = 'D', skip = 0, top = 100,
-  } = {}) {
+  inputDate = '', matnr = '', ebeln = '', supplier = '',
+  bukrs = '', mdIndicator = '', skip = 0, top = 100,
+} = {}) {
     // FIX: Bukrs and MDIndicator are always required.
     //      InputDate, Matnr, Ebeln, Supplier are optional — only sent if filled.
-    const f = buildFilter(
-      { Bukrs: bukrs, MDIndicator: mdIndicator },
-      { InputDate: inputDate, Matnr: matnr, Ebeln: ebeln, Supplier: supplier }
-    )
+     const f = buildFilter(
+    { Bukrs: bukrs },
+    { InputDate: inputDate, Matnr: matnr, Ebeln: ebeln, Supplier: supplier }
+  )
     // FIX: Use $skip only when skip > 0
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
-    const data = await odata(`/POSA_REPORT_OUTPUTSet?$filter=${f}${pagination}`)
-    return (data.d?.results || []).map(mapReportRow)
-  },
+  const data = await odata(`/POSA_REPORT_OUTPUTSet?$filter=${f}${pagination}`)
+  return (data.d?.results || []).map(mapReportRow)
+},
 
   // Material value help
   async fetchMaterials({ inputDate = '', matnr = '', ebeln = '', supplier = '', skip = 0, top = 200 } = {}) {
