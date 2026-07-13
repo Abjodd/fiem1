@@ -240,6 +240,21 @@ function mapPdirRef(raw) {
 // ─── API object ─────────────────────────────────────────────────
 
 export const purchaseOrderApi = {
+  // Cross-service call to ZSCHEDULE_GENERATE_SRV for F4 supplier value help
+  async fetchAllSuppliers() {
+    const res = await fetch(`/sap/opu/odata/sap/ZSCHEDULE_GENERATE_SRV/f4supplierSet?$format=json`, {
+      headers: {
+        Accept: 'application/json',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
+      },
+      credentials: 'include',
+    })
+    if (!res.ok) throw new Error('Failed to load suppliers')
+    const json = await res.json()
+    return (json.d?.results || []).map(d => ({ lifnr: d.lifnr, name: d.name }))
+  },
+
   async listHeaders({ vendorNo = '' } = {}) {
     const filter = vendorNo
       ? `?$filter=Vendor_No%20eq%20%27${encodeURIComponent(vendorNo)}%27`
@@ -279,11 +294,11 @@ export const purchaseOrderApi = {
     return (data.results || []).map(mapConfirmRow)
   },
 
-  async submitConfirm(poNo, selectedRows) {
+  async submitConfirm(poNo, selectedRows, vendorNo = '') {
     if (!poNo || poNo === 'undefined') throw new Error('No PO number provided')
 
     const csrfRes = await fetch(
-      `${BASE}/PO_HEADERSet(Po_No='${poNo}',Vendor_No='')`,
+      `${BASE}/PO_HEADERSet(Po_No='${poNo}',Vendor_No='${vendorNo}')`,
       {
         method: 'GET',
         headers: {
@@ -309,13 +324,13 @@ export const purchaseOrderApi = {
       credentials: 'include',
       body: JSON.stringify({
         Po_No:    poNo,
-        Vendor_No: '',
+        Vendor_No: vendorNo,
         headertopoconfirmnav: {
           results: selectedRows.map(row => ({
             Po_No:         poNo,
             Item_No:       row.itemNo,
             Schedule_Line: row.scheduleLine,
-            Vendor_No:     '',
+            Vendor_No:     vendorNo,
             Material_No:   row.materialNo,
             Conf_Date:     row.confDate,
             Conf_Quantity: String(row.confirmedQty),

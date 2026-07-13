@@ -58,12 +58,126 @@ function StatusBadge({ status }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// F4 SUPPLIER PICKER (Borrowed from Schedule Generate)
+// ═══════════════════════════════════════════════════════════════
+function F4SupplierPicker({ onSelect, onClose }) {
+  const [suppliers, setSuppliers] = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState('')
+  const [search,    setSearch]    = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    scheduleReleaseApi.fetchAllSuppliers()
+      .then(list => { if (!cancelled) { setSuppliers(list); setLoading(false) } })
+      .catch(err  => { if (!cancelled) { setError(err.message || 'Failed to load suppliers'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [])
+
+  const filtered = suppliers.filter(s => {
+    const q = search.toLowerCase()
+    return s.lifnr.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+  })
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center px-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] overflow-hidden flex flex-col"
+        style={{ maxHeight: '75vh', animation: 'modalIn .2s ease-out both' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-5 py-4 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h3 className="text-[15px] font-bold text-white">Select Supplier</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-4 py-3 border-b border-[#e5e5e5] flex-shrink-0 bg-[#fafbfc]">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9e9e]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by code or name…"
+              className="w-full h-9 pl-9 pr-3 text-[13px] border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/15 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center px-4 py-2 bg-[#f5f6f7] border-b border-[#e5e5e5] flex-shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] w-[110px]">Supplier Code</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6a6d70] flex-1">Supplier Name</span>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {loading && (
+            <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#6a6d70]">
+              <div className="w-4 h-4 border-2 border-[#0a6ed1]/30 border-t-[#0a6ed1] rounded-full animate-spin" />
+              Loading suppliers…
+            </div>
+          )}
+          {!loading && error && (
+            <div className="flex items-center justify-center py-10 text-[13px] text-[#cc1c14]">{error}</div>
+          )}
+          {!loading && !error && filtered.length === 0 && (
+            <div className="flex items-center justify-center py-10 text-[13px] text-[#9e9e9e]">No suppliers found</div>
+          )}
+          {!loading && !error && filtered.map((s, idx) => (
+            <button
+              key={s.lifnr}
+              onClick={() => onSelect(s.lifnr)}
+              className={`w-full flex items-center px-4 py-3 text-left transition-colors hover:bg-[#ebf5ff] active:bg-[#d6ecff]
+                ${idx !== 0 ? 'border-t border-[#f0f0f0]' : ''}`}
+            >
+              <span className="w-[110px] flex-shrink-0">
+                <span className="inline-block px-2 py-0.5 rounded-md bg-[#ebf5ff] text-[#0a6ed1] text-[12px] font-bold tracking-wider">
+                  {s.lifnr}
+                </span>
+              </span>
+              <span className="flex-1 text-[13px] text-[#32363a] font-medium truncate">{s.name}</span>
+              <svg className="ml-2 flex-shrink-0 text-[#c0c2c4]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </button>
+          ))}
+        </div>
+
+        {!loading && !error && (
+          <div className="px-4 py-2.5 border-t border-[#e5e5e5] bg-[#fafbfc] flex-shrink-0">
+            <span className="text-[11px] text-[#9e9e9e]">
+              {filtered.length} of {suppliers.length} supplier{suppliers.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SUPPLIER POPUP
 // ═══════════════════════════════════════════════════════════════
 function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Schedule Release' }) {
   const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [showF4, setShowF4] = useState(false)
 
   const handleSubmit = () => {
     if (!code.trim()) { setError('Please enter a supplier code.'); return }
@@ -107,7 +221,7 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Schedule Releas
             </div>
             <button
               type="button"
-              onClick={() => alert('F4 search not yet configured for Schedule Release')}
+              onClick={() => setShowF4(true)}
               title="Open supplier value help (F4)"
               className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-lg border border-[#0a6ed1] bg-white text-[#0a6ed1] hover:bg-[#ebf5ff] active:bg-[#d6ecff] transition-all shadow-sm"
             >
@@ -139,6 +253,16 @@ function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Schedule Releas
           </button>
         </div>
       </div>
+      {showF4 && (
+        <F4SupplierPicker 
+          onClose={() => setShowF4(false)} 
+          onSelect={(selectedCode) => {
+            setCode(selectedCode)
+            setShowF4(false)
+            setError('')
+          }} 
+        />
+      )}
     </div>
   )
 }
@@ -505,7 +629,7 @@ export default function ScheduleRelease() {
     setShowSupplierPopup(true)
   }
 
-  authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
+  authConfig.loginId   = loginId
   authConfig.loginType = loginType
 
   const [agreements,          setAgreements]          = useState([])
@@ -535,7 +659,11 @@ export default function ScheduleRelease() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    scheduleReleaseApi.listAgreements({ search: searchQuery, plants: selectedPlants })
+    scheduleReleaseApi.listAgreements({ 
+      search: searchQuery, 
+      plants: selectedPlants, 
+      vendorNo: !isPartner ? activeSupplier : '' 
+    })
       .then(data  => { if (!cancelled) setAgreements(data) })
       .catch(err  => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })

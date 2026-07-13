@@ -99,9 +99,25 @@ function mapConfirmRow(d) {
 // ═══════════════════════════════════════════════════════════════
 export const scheduleReleaseApi = {
 
+  // Cross-service call to ZSCHEDULE_GENERATE_SRV for F4 supplier value help
+  async fetchAllSuppliers() {
+    const res = await fetch(`/sap/opu/odata/sap/ZSCHEDULE_GENERATE_SRV/f4supplierSet?$format=json`, {
+      headers: {
+        Accept: 'application/json',
+        Loginid: authConfig.loginId,
+        Logintype: authConfig.loginType,
+      },
+      credentials: 'include',
+    })
+    if (!res.ok) throw new Error('Failed to load suppliers')
+    const json = await res.json()
+    return (json.d?.results || []).map(d => ({ lifnr: d.lifnr, name: d.name }))
+  },
+
   // LIST — all schedule agreements
-  async listAgreements({ search = '', plants = [] } = {}) {
-    const json = await odataGet('/S_HEADERSet?$format=json')
+  async listAgreements({ search = '', plants = [], vendorNo = '' } = {}) {
+    const filterStr = vendorNo ? `?$filter=Vendor_No%20eq%20%27${encodeURIComponent(vendorNo)}%27&$format=json` : `?$format=json`
+    const json = await odataGet(`/S_HEADERSet${filterStr}`)
     let rows = (json.d?.results || []).map(mapHeader)
     const q = search.trim().toLowerCase()
     if (q) {
