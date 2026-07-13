@@ -69,9 +69,7 @@ function mapAsnItem(d, idx = 0) {
 
   const conQty = str(d.Con_Qty)
   const delQty = str(d.DelQty)
-  const menge  = str(d.Menge)
-  // const avlQty = str(d.asnallowed)  
-  const avlQty = String(parseFloat(menge || '0') - parseFloat(str(d.Asn_Created) || '0'))   
+  const menge  = str(d.Menge)     
 
   return {
     itemNo: `${ebelp}-${etenr || '0'}-${eindt}-${idx}`,
@@ -113,7 +111,7 @@ function mapAsnItem(d, idx = 0) {
     draftAsnQty:      str(d.Draft_AsnQty || '0'),
     spq:              str(d.SOQ),         // "100.000 " → "100.000"
 
-    avlAsnQty:        avlQty,            // "0.000 " → "0.000"
+    avlAsnQty:        menge,             // "0.00" stored correctly ✅
     delQty:           delQty,             // "0.00" stored correctly ✅
     deliveredQty:     delQty,
     deliveredUnit:    str(d.Meins),
