@@ -6,70 +6,6 @@ import { useUser } from '../../../context/UserContext.jsx'
 import { previewPartTags } from '../../../services/Shipment/AdvanceShipmentNote/asnChallan.js'
 import { buildPartTag } from '../../../services/Shipment/AdvanceShipmentNote/Advanceshipment.js'
 
-
-// ═══════════════════════════════════════════════════════════════
-// SUPPLIER POPUP
-// ═══════════════════════════════════════════════════════════════
-function SupplierPopup({ onSubmit, onCancel, canCancel, title = 'Advance Shipping Note' }) {
-  const [code, setCode] = useState('')
-  const [error, setError] = useState('')
-
-  const handleSubmit = () => {
-    if (!code.trim()) { setError('Please enter a supplier code.'); return }
-    onSubmit(code.trim())
-  }
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={canCancel ? onCancel : undefined}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden" style={{ animation: 'scaleIn .22s ease-out both' }} onClick={e => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-[#0a6ed1] to-[#085caf] px-6 py-5 flex items-start justify-between">
-          <div>
-            <h2 className="text-[18px] font-bold text-white">{title}</h2>
-            <p className="text-[13px] text-white/80 mt-1">Enter a supplier code to load data</p>
-          </div>
-          {canCancel && (
-            <button onClick={onCancel} className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-all flex-shrink-0" title="Cancel">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        <div className="px-6 py-6">
-          <label className="block text-[13px] font-semibold text-[#32363a] mb-2">
-            Supplier Code <span className="text-[#cc1c14]">*</span>
-          </label>
-          <input
-            autoFocus type="text" value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setError('') }}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
-            placeholder="e.g. FS859"
-            className="w-full h-11 px-4 text-[15px] font-semibold border border-[#d9d9d9] rounded-lg bg-white focus:outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 transition-all tracking-wider uppercase"
-          />
-          {error && (
-            <div className="mt-3 flex items-center gap-1.5 text-[13px] text-[#cc1c14] bg-[#fce8e6] px-3 py-2 rounded-lg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-              </svg>
-              {error}
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t border-[#e5e5e5] flex items-center justify-between">
-          <button onClick={onCancel} disabled={!canCancel} className={`px-4 h-10 text-[14px] font-semibold text-[#6a6d70] hover:text-[#32363a] hover:bg-[#f5f6f7] rounded-lg transition-all ${!canCancel && 'opacity-0 pointer-events-none'}`}>
-            Cancel
-          </button>
-          <button onClick={handleSubmit} className="px-6 h-10 text-[14px] font-semibold text-white bg-[#0a6ed1] hover:bg-[#085caf] rounded-lg transition-all shadow-sm">
-            Load Supplier
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ═══════════════════════════════════════════════════════════════
 // TABS CONFIG
 // ═══════════════════════════════════════════════════════════════
@@ -119,7 +55,7 @@ const TABS = [
 ]
 
 // ═══════════════════════════════════════════════════════════════
-// CANCEL DIALOG
+// CANCEL DIALOGS
 // ═══════════════════════════════════════════════════════════════
 function CancelConfirmDialog({ asnId, onConfirm, onDismiss, loading }) {
   return (
@@ -183,17 +119,14 @@ function CancelSuccessDialog({ asnId, onDismiss }) {
   )
 }
 
-
-
 // ═══════════════════════════════════════════════════════════════
-// SIDEBAR — extracted OUTSIDE to fix input losing focus bug
+// SIDEBAR
 // ═══════════════════════════════════════════════════════════════
 function SidebarContent({
   asns, loading, error, searchQuery, sidebarCollapsed, selectedAsnId,
   plants, selectedPlants, filterOpen, filterRef,
   onSearchChange, onSelectAsn, onToggleCollapse, onToggleFilter,
   onTogglePlant, onClearPlants, statusStyle,
-  isPartner, activeSupplier, handleChangeSupplier,
 }) {
   return (
     <>
@@ -234,14 +167,6 @@ function SidebarContent({
             </div>
           </div>
         )}
-        {!sidebarCollapsed && (
-          <div className="mt-3 text-[12px] text-[#6a6d70] flex items-center justify-between bg-[#f8f9fa] px-3 py-2 rounded-lg border border-[#e5e5e5]">
-            <span>Supplier: <span className="font-semibold text-[#32363a]">{activeSupplier || 'Not selected'}</span></span>
-            {!isPartner && (
-              <button onClick={handleChangeSupplier} className="text-[#0a6ed1] hover:underline font-semibold">Change</button>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 row-stagger">
@@ -259,8 +184,7 @@ function SidebarContent({
             const isSelected = a.id === selectedAsnId
             return (
               <button key={a.id} onClick={() => onSelectAsn(a.id)} title={a.id}
-                className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
-              >
+                className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}>
                 <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>{a.id.slice(0, 4)}</span>
               </button>
             )
@@ -271,8 +195,7 @@ function SidebarContent({
               const isSelected = a.id === selectedAsnId
               return (
                 <button key={a.id} onClick={() => onSelectAsn(a.id)}
-                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
-                >
+                  className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[14px] font-semibold text-[#0a6ed1]">{a.id}</span>
                     <span className="text-[14px] font-bold text-[#32363a]">{a.amount.toFixed(2)}</span>
@@ -307,8 +230,7 @@ function SidebarContent({
         <div className="relative">
           <button onClick={onToggleFilter}
             className={`relative w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:scale-105 ${selectedPlants.length > 0 ? 'bg-[#ebf5ff] text-[#0a6ed1]' : 'text-[#0a6ed1] hover:bg-[#f0f7ff]'}`}
-            title="Filter by plant"
-          >
+            title="Filter by plant">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18l-7 9v6l-4-2v-4L3 4z" /></svg>
             {selectedPlants.length > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#cc1c14] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -337,8 +259,7 @@ function SidebarContent({
         </div>
         <button onClick={onToggleCollapse}
           className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#0a6ed1] hover:bg-[#f0f7ff] transition-all hover:scale-105"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}>
             <path d="M15 18l-6-6 6-6" />
@@ -350,160 +271,99 @@ function SidebarContent({
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COMPONENT
+// MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AdvanceShippingNote() {
   const { role, loginId, loginType, loading: userLoading } = useUser()
   const navigate = useNavigate()
 
   // ── Role flags ──────────────────────────────────────────────
-  const isPartner         = role === 'partner'
-  const isEmployeeAdmin   = role === 'employeeadmin'
+  // partner + employeeadmin → Print & Cancel visible + functional
+  // employee               → Print & Cancel completely hidden
   const isEmployee        = role === 'employee'
-  const canPerformActions = isPartner || isEmployeeAdmin // Print + Cancel
+  const canPerformActions = role === 'partner' || role === 'employeeadmin'
 
-  const [activeSupplier, setActiveSupplier] = useState('')
-  const [showSupplierPopup, setShowSupplierPopup] = useState(false)
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
 
-  useEffect(() => {
-  if (userLoading) return
-
-  if ((isPartner || isEmployeeAdmin) && loginId) {
-    setActiveSupplier(loginId)
-    setShowSupplierPopup(false)
-  } else if (isEmployee && !activeSupplier) {
-    setShowSupplierPopup(true)
-  }
-}, [
-  userLoading,
-  isPartner,
-  isEmployeeAdmin,
-  isEmployee,
-  loginId,
-  activeSupplier,
-])
-  
-
-  const [asns, setAsns] = useState([])
-  const [asn, setAsn] = useState(null)
-  const [selectedAsnId, setSelectedAsnId] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [downloadingFile, setDownloadingFile] = useState(null)
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedPlants, setSelectedPlants] = useState([])
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('items')
+  const [asns,             setAsns]             = useState([])
+  const [asn,              setAsn]              = useState(null)
+  const [selectedAsnId,    setSelectedAsnId]    = useState(null)
+  const [loading,          setLoading]          = useState(false)
+  const [error,            setError]            = useState(null)
+  const [downloadingFile,  setDownloadingFile]  = useState(null)
+  const [searchQuery,      setSearchQuery]      = useState('')
+  const [selectedPlants,   setSelectedPlants]   = useState([])
+  const [filterOpen,       setFilterOpen]       = useState(false)
+  const [activeTab,        setActiveTab]        = useState('items')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [mobileSidebarOpen,setMobileSidebarOpen]= useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
-  const [cancelLoading, setCancelLoading] = useState(false)
-  const [cancelSuccessAsn, setCancelSuccessAsn] = useState(null) // stores cancelled ASN id string
-  const [selectedAsnStatus, setSelectedAsnStatus] = useState(null)
+  const [cancelLoading,    setCancelLoading]    = useState(false)
+  const [cancelSuccessAsn, setCancelSuccessAsn] = useState(null)
+  const [selectedAsnStatus,setSelectedAsnStatus]= useState(null)
 
   const filterRef = useRef(null)
 
- useEffect(() => {
-  if ((isPartner || isEmployeeAdmin) && loginId) {
-    setActiveSupplier(loginId)
-  }
-}, [isPartner, isEmployeeAdmin, loginId])
-
-  const handleSupplierSubmit = (code) => {
-    setActiveSupplier(code)
-    setShowSupplierPopup(false)
-  }
-
-  const handleChangeSupplier = () => {
-    setActiveSupplier('')
-    setAsns([])
-    setAsn(null)
-    setSelectedAsnId(null)
-    setShowSupplierPopup(true)
-  }
-
-  authConfig.loginId   = isPartner ? loginId : (activeSupplier || loginId)
-  authConfig.loginType = loginType
-
+  // Read ?asn= param on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const asnParam = params.get('asn')
-    if (asnParam) {
-      setSelectedAsnId(asnParam)
-      setSearchQuery(asnParam)
-    }
+    if (asnParam) { setSelectedAsnId(asnParam); setSearchQuery(asnParam) }
   }, [])
 
-  // ── Fetch list ──
+  // ── Fetch list ──────────────────────────────────────────────
   useEffect(() => {
-    if (userLoading || (!isPartner && !activeSupplier)) return
-    if (!loginId || !loginType) return
-
+    if (userLoading || !loginId || !loginType) return
     let cancelled = false
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     asnApi.listAsns({ search: searchQuery, plants: selectedPlants })
       .then(data => { if (!cancelled) setAsns(data) })
-      .catch(err => { if (!cancelled) setError(err.message) })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .catch(err  => { if (!cancelled) setError(err.message) })
+      .finally(()  => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [userLoading, loginId, loginType, searchQuery, selectedPlants, activeSupplier])
+  }, [userLoading, loginId, loginType, searchQuery, selectedPlants])
 
-  // ── Auto-select first ASN ──
-useEffect(() => {
-  if (!selectedAsnId && asns.length > 0) {
-    const first = asns[0]
-    setSelectedAsnId(first.id)
-    setSelectedAsnStatus({ status: first.status, statusColor: first.statusColor })
-  }
-}, [asns, selectedAsnId])
-
-  // ── Fetch ASN detail + attachments ──
+  // ── Auto-select first ASN ───────────────────────────────────
   useEffect(() => {
-    if (userLoading) return
-    if (!loginId || !loginType) return
+    if (!selectedAsnId && asns.length > 0) {
+      const first = asns[0]
+      setSelectedAsnId(first.id)
+      setSelectedAsnStatus({ status: first.status, statusColor: first.statusColor })
+    }
+  }, [asns, selectedAsnId])
 
+  // ── Fetch ASN detail + attachments ──────────────────────────
+  useEffect(() => {
+    if (userLoading || !loginId || !loginType) return
     let cancelled = false
     if (!selectedAsnId) { setAsn(null); return }
-
     asnApi.getAsn(selectedAsnId)
-  .then(async (data) => {
-    if (cancelled || !data) return
-
-    // ── merge status from list (detail endpoint returns empty Status) ──
-   const listItem = selectedAsnStatus
-if (listItem && !data.status) {
-  data.status = listItem.status
-  data.statusColor = listItem.statusColor
-}
-
-    try {
-      data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear)
-    } catch (e) {
-      console.error('Attachments fetch failed:', e)
-      data.attachments = []
-    }
-    if (!cancelled) { setAsn(data); setActiveTab('items') }
-  })
+      .then(async (data) => {
+        if (cancelled || !data) return
+        if (selectedAsnStatus && !data.status) {
+          data.status = selectedAsnStatus.status
+          data.statusColor = selectedAsnStatus.statusColor
+        }
+        try { data.attachments = await asnApi.getAttachments(data.asnNum, data.fisYear) }
+        catch { data.attachments = [] }
+        if (!cancelled) { setAsn(data); setActiveTab('items') }
+      })
       .catch(err => { if (!cancelled) console.error('ASN detail fetch failed:', err) })
     return () => { cancelled = true }
   }, [userLoading, loginId, loginType, selectedAsnId])
 
-  // ── Close filter on outside click ──
+  // ── Close filter on outside click ──────────────────────────
   useEffect(() => {
     const h = (e) => { if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false) }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  // ── Close mobile sidebar on outside click ──
+  // ── Close mobile sidebar on outside click ──────────────────
   useEffect(() => {
     if (!mobileSidebarOpen) return
-    const h = (e) => {
-      if (!e.target.closest('[data-sidebar]') && !e.target.closest('[data-sidebar-toggle]'))
-        setMobileSidebarOpen(false)
-    }
+    const h = (e) => { if (!e.target.closest('[data-sidebar]') && !e.target.closest('[data-sidebar-toggle]')) setMobileSidebarOpen(false) }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [mobileSidebarOpen])
@@ -518,15 +378,14 @@ if (listItem && !data.status) {
     setSelectedPlants(prev => prev.includes(plant) ? prev.filter(p => p !== plant) : [...prev, plant])
 
   const handleSelectAsn = (id) => {
-  const listItem = asns.find(a => a.id === id)
-  setSelectedAsnStatus(listItem ? { status: listItem.status, statusColor: listItem.statusColor } : null)
-  setSelectedAsnId(id)
-  setMobileSidebarOpen(false)
-}
+    const listItem = asns.find(a => a.id === id)
+    setSelectedAsnStatus(listItem ? { status: listItem.status, statusColor: listItem.statusColor } : null)
+    setSelectedAsnId(id)
+    setMobileSidebarOpen(false)
+  }
 
   const handlePrint = async () => {
-    if (!canPerformActions) return
-    if (!asn || !asn.items?.length) return
+    if (!canPerformActions || !asn || !asn.items?.length) return
     try {
       const grouped = {}
       asn.items.forEach(it => {
@@ -534,7 +393,6 @@ if (listItem && !data.status) {
         if (!grouped[key]) grouped[key] = []
         grouped[key].push(it)
       })
-
       const tagsToPrint = []
       for (const key of Object.keys(grouped)) {
         const groupItems = grouped[key]
@@ -543,74 +401,48 @@ if (listItem && !data.status) {
           tagsToPrint.push(buildPartTag(asn, groupItems[i], { boxNo: i + 1, totalBoxes }))
         }
       }
-
       if (tagsToPrint.length > 0) {
         const { blobUrl, filename } = await previewPartTags(tagsToPrint)
         const newTab = window.open(blobUrl, '_blank')
         if (!newTab || newTab.closed) {
-          // Fallback: download if popup blocked
-          const a = document.createElement('a')
-          a.href = blobUrl
-          a.download = filename
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
+          const a = document.createElement('a'); a.href = blobUrl; a.download = filename
+          document.body.appendChild(a); a.click(); document.body.removeChild(a)
         }
         setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
       }
       await asnApi.printAsn(asn.id)
-    } catch (err) {
-      console.error('Print failed:', err)
-    }
+    } catch (err) { console.error('Print failed:', err) }
   }
 
-  const handleCancelClick = () => {
-    if (!canPerformActions) return // employee: view-only, button is disabled anyway
-    setCancelDialogOpen(true)
+  const handleCancelClick = () => { if (canPerformActions) setCancelDialogOpen(true) }
+
+  const handleCancelConfirm = async () => {
+    if (!asn) return
+    setCancelLoading(true)
+    try {
+      await asnApi.cancelAsn(asn.id)
+      const cancelledId = asn.id
+      setCancelDialogOpen(false); setCancelSuccessAsn(cancelledId)
+      const data = await asnApi.listAsns({ search: searchQuery, plants: selectedPlants })
+      setAsns(data)
+      const updated = await asnApi.getAsn(cancelledId)
+      if (updated) {
+        try { updated.attachments = await asnApi.getAttachments(updated.asnNum, updated.fisYear) } catch { updated.attachments = [] }
+        setAsn(updated)
+      }
+    } catch (err) { console.error(err) }
+    finally { setCancelLoading(false) }
   }
 
-const handleCancelConfirm = async () => {
-  if (!asn) return
-  setCancelLoading(true)
-  try {
-    await asnApi.cancelAsn(asn.id)
-    const cancelledId = asn.id
-    setCancelDialogOpen(false)
-    setCancelSuccessAsn(cancelledId)
-    // re-fetch list
-    const data = await asnApi.listAsns({ search: searchQuery, plants: selectedPlants })
-    setAsns(data)
-    // re-fetch detail of same ASN to get updated status
-    const updated = await asnApi.getAsn(cancelledId)
-    if (updated) {
-      try { updated.attachments = await asnApi.getAttachments(updated.asnNum, updated.fisYear) }
-      catch { updated.attachments = [] }
-      setAsn(updated)
-    }
-  } catch (err) {
-    console.error(err)
-  } finally {
-    setCancelLoading(false)
-  }
-}
-
-const handleSuccessDismiss = async () => {
-  setCancelSuccessAsn(null)
-}
-
-  const handleCancelDismiss = () => { if (!cancelLoading) setCancelDialogOpen(false) }
+  const handleSuccessDismiss = () => setCancelSuccessAsn(null)
+  const handleCancelDismiss  = () => { if (!cancelLoading) setCancelDialogOpen(false) }
 
   const handleDownload = async (attachment) => {
     if (downloadingFile === attachment.name) return
     setDownloadingFile(attachment.name)
-    try {
-      await asnApi.downloadAttachment(asn.asnNum, asn.fisYear, attachment)
-    } catch (err) {
-      console.error('Download failed:', err)
-      alert(`Could not download "${attachment.name}". Please try again.`)
-    } finally {
-      setDownloadingFile(null)
-    }
+    try { await asnApi.downloadAttachment(asn.asnNum, asn.fisYear, attachment) }
+    catch (err) { console.error('Download failed:', err); alert(`Could not download "${attachment.name}". Please try again.`) }
+    finally { setDownloadingFile(null) }
   }
 
   const statusStyle = (statusColor) => {
@@ -619,7 +451,6 @@ const handleSuccessDismiss = async () => {
     return 'text-[#107e3e] bg-[#e8f5ec]'
   }
 
-  // ── Sidebar props ──
   const sidebarProps = {
     asns, loading, error, searchQuery, sidebarCollapsed, selectedAsnId,
     plants, selectedPlants, filterOpen, filterRef,
@@ -630,7 +461,6 @@ const handleSuccessDismiss = async () => {
     onTogglePlant: togglePlant,
     onClearPlants: () => setSelectedPlants([]),
     statusStyle,
-    isPartner, activeSupplier, handleChangeSupplier,
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -644,9 +474,9 @@ const handleSuccessDismiss = async () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 max-w-2xl">
           {[
             { label: 'Supplier Invoice', value: g.supplierInvoice },
-            { label: 'Invoice Amount', value: g.invoiceAmount.toFixed(2) },
-            { label: 'Base Document', value: g.baseDocument, highlight: true },
-            { label: 'Invoice Date', value: g.invoiceDate },
+            { label: 'Invoice Amount',   value: g.invoiceAmount.toFixed(2) },
+            { label: 'Base Document',    value: g.baseDocument, highlight: true },
+            { label: 'Invoice Date',     value: g.invoiceDate },
           ].map(({ label, value, highlight }) => (
             <div key={label}>
               <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">{label}</div>
@@ -684,11 +514,7 @@ const handleSuccessDismiss = async () => {
                   </td>
                   <td className="py-4 px-4 text-[#32363a] font-semibold">
                     {item.material}
-                    {item.materialCode && (
-                      <div className="text-[12px] text-[#6b7280] font-normal mt-0.5">
-                        {item.materialCode}
-                      </div>
-                    )}
+                    {item.materialCode && <div className="text-[12px] text-[#6b7280] font-normal mt-0.5">{item.materialCode}</div>}
                   </td>
                   <td className="py-4 px-4">
                     <span className="font-bold text-[15px] text-[#32363a]">{item.quantity}</span>{' '}
@@ -710,11 +536,11 @@ const handleSuccessDismiss = async () => {
               <span className="text-[13px] font-semibold text-[#32363a] uppercase tracking-wider">Tax Summary</span>
             </div>
             {[
-              { label: 'Taxable Value', value: asn.taxSummary.taxableValue },
-              { label: 'IGST', value: asn.taxSummary.igst },
-              { label: 'CGST', value: asn.taxSummary.cgst },
-              { label: 'SGST/UTGST', value: asn.taxSummary.sgstUtgst },
-              { label: 'Un-Planned Cost', value: asn.taxSummary.unPlannedCost },
+              { label: 'Taxable Value',   value: asn.taxSummary.taxableValue   },
+              { label: 'IGST',            value: asn.taxSummary.igst            },
+              { label: 'CGST',            value: asn.taxSummary.cgst            },
+              { label: 'SGST/UTGST',      value: asn.taxSummary.sgstUtgst       },
+              { label: 'Un-Planned Cost', value: asn.taxSummary.unPlannedCost   },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between px-5 py-2.5 border-b border-[#f0f0f0] text-[14px]">
                 <span className="text-[#6a6d70]">{label}</span>
@@ -735,14 +561,14 @@ const handleSuccessDismiss = async () => {
     if (!asn) return null
     const s = asn.shipment
     const fields = [
-      { label: 'Tracking No.', value: s.trackingNo, highlight: true, clickable: true },
-      { label: 'Transport Mode', value: s.transportMode },
-      { label: 'Driver Name', value: s.driverName },
-      { label: 'Vehicle Reg. No. / Docket', value: s.vehicleRegNo },
-      { label: 'Contact Number', value: s.contactNumber },
-      { label: 'Creation Date', value: s.creationDate },
-      { label: 'Transporter Name', value: s.transporterName },
-      { label: 'Creation Time', value: s.creationTime },
+      { label: 'Tracking No.',              value: s.trackingNo,      highlight: true, clickable: true },
+      { label: 'Transport Mode',            value: s.transportMode    },
+      { label: 'Driver Name',               value: s.driverName       },
+      { label: 'Vehicle Reg. No. / Docket', value: s.vehicleRegNo     },
+      { label: 'Contact Number',            value: s.contactNumber    },
+      { label: 'Creation Date',             value: s.creationDate     },
+      { label: 'Transporter Name',          value: s.transporterName  },
+      { label: 'Creation Time',             value: s.creationTime     },
     ]
     return (
       <div className="anim-fade px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
@@ -750,13 +576,11 @@ const handleSuccessDismiss = async () => {
           <div className="grid grid-cols-1 sm:grid-cols-2">
             {fields.map(({ label, value, highlight, clickable }, idx) => (
               <div key={label}
-                className={`flex flex-col px-5 py-4 border-b border-[#f0f0f0] ${idx % 2 === 1 ? 'sm:border-l border-[#f0f0f0]' : ''} last:border-b-0 hover:bg-[#fafbfc] transition-colors`}
-              >
+                className={`flex flex-col px-5 py-4 border-b border-[#f0f0f0] ${idx % 2 === 1 ? 'sm:border-l border-[#f0f0f0]' : ''} last:border-b-0 hover:bg-[#fafbfc] transition-colors`}>
                 <span className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1">{label}</span>
                 <span
                   className={`text-[15px] font-semibold ${highlight ? 'text-[#0a6ed1] cursor-pointer hover:underline' : 'text-[#32363a]'}`}
-                  onClick={clickable ? () => navigate(`/shipment/GoodsMovement/goods-movement?track=${encodeURIComponent(s.trackingNo)}`) : undefined}
-                >
+                  onClick={clickable ? () => navigate(`/shipment/GoodsMovement/goods-movement?track=${encodeURIComponent(s.trackingNo)}`) : undefined}>
                   {value}
                 </span>
               </div>
@@ -771,9 +595,7 @@ const handleSuccessDismiss = async () => {
     if (!asn) return null
     return (
       <div className="anim-fade px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
-        <h3 className="text-[15px] font-semibold text-[#32363a] mb-4">
-          Attachments ({asn.attachments.length})
-        </h3>
+        <h3 className="text-[15px] font-semibold text-[#32363a] mb-4">Attachments ({asn.attachments.length})</h3>
         {asn.attachments.length === 0 ? (
           <div className="py-12 text-center text-[13px] text-[#6a6d70]">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
@@ -787,8 +609,7 @@ const handleSuccessDismiss = async () => {
               const isDownloading = downloadingFile === att.name
               return (
                 <button key={idx} onClick={() => handleDownload(att)} disabled={isDownloading}
-                  className="flex items-center gap-4 px-4 py-3.5 rounded-xl border border-[#e5e5e5] bg-white hover:bg-[#f5f6f7] hover:border-[#0a6ed1] hover:shadow-md transition-all duration-200 group text-left disabled:opacity-60"
-                >
+                  className="flex items-center gap-4 px-4 py-3.5 rounded-xl border border-[#e5e5e5] bg-white hover:bg-[#f5f6f7] hover:border-[#0a6ed1] hover:shadow-md transition-all duration-200 group text-left disabled:opacity-60">
                   <div className="w-10 h-10 flex items-center justify-center bg-[#fce8e6] rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform">
                     {isDownloading ? (
                       <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2">
@@ -796,22 +617,17 @@ const handleSuccessDismiss = async () => {
                       </svg>
                     ) : (
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cc1c14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
                       </svg>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-semibold text-[#0a6ed1] group-hover:underline truncate">{att.name}</div>
-                    <div className="text-[12px] text-[#6a6d70] mt-0.5">
-                      {isDownloading ? 'Downloading…' : `${att.type} Document`}
-                    </div>
+                    <div className="text-[12px] text-[#6a6d70] mt-0.5">{isDownloading ? 'Downloading…' : `${att.type} Document`}</div>
                   </div>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                     className="text-[#6a6d70] group-hover:text-[#0a6ed1] group-hover:translate-y-0.5 transition-all flex-shrink-0">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                 </button>
               )
@@ -847,53 +663,38 @@ const handleSuccessDismiss = async () => {
         .row-stagger > *:nth-child(4) { animation-delay: 0.14s; }
         .row-stagger > *:nth-child(5) { animation-delay: 0.18s; }
         .sidebar-transition { transition: width 0.25s ease; }
-        .btn-disabled-asn   { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.3); }
       `}</style>
 
-{cancelDialogOpen && asn && (
-  <CancelConfirmDialog asnId={asn.id} onConfirm={handleCancelConfirm} onDismiss={handleCancelDismiss} loading={cancelLoading} />
-)}
-{cancelSuccessAsn && (
-  <CancelSuccessDialog asnId={cancelSuccessAsn} onDismiss={handleSuccessDismiss} />
-)}
+      {cancelDialogOpen && asn && (
+        <CancelConfirmDialog asnId={asn.id} onConfirm={handleCancelConfirm} onDismiss={handleCancelDismiss} loading={cancelLoading} />
+      )}
+      {cancelSuccessAsn && (
+        <CancelSuccessDialog asnId={cancelSuccessAsn} onDismiss={handleSuccessDismiss} />
+      )}
+
       <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
       </div>
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
-        {showSupplierPopup && (
-          <SupplierPopup 
-            onSubmit={handleSupplierSubmit} 
-            onCancel={() => setShowSupplierPopup(false)} 
-            canCancel={!!activeSupplier}
-            title="Advance Shipping Note"
-          />
-        )}
         <div className="flex" style={{ minHeight: 'calc(100vh - 260px)' }}>
 
           {mobileSidebarOpen && (
             <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)} />
           )}
 
-          <aside data-sidebar
-            className={`fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50 md:hidden anim-drawer ${mobileSidebarOpen ? 'flex' : 'hidden'}`}
-          >
+          <aside data-sidebar className={`fixed top-0 left-0 h-full w-[300px] bg-white border-r border-[#e5e5e5] flex flex-col z-50 md:hidden anim-drawer ${mobileSidebarOpen ? 'flex' : 'hidden'}`}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e5] bg-[#fafbfc]">
               <span className="text-[14px] font-semibold text-[#32363a]">Advance Shipping Notes</span>
-              <button onClick={() => setMobileSidebarOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+              <button onClick={() => setMobileSidebarOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6a6d70] hover:text-[#cc1c14] hover:bg-[#fce8e6] transition-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
             <SidebarContent {...sidebarProps} />
           </aside>
 
-          <aside data-sidebar
-            className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}
-          >
+          <aside data-sidebar className={`hidden md:flex overflow-hidden flex-col bg-white border-r border-[#e5e5e5] sidebar-transition anim-slide-l flex-shrink-0 h-screen sticky top-0 ${sidebarCollapsed ? 'w-[56px]' : 'w-[300px] lg:w-[340px]'}`}>
             <SidebarContent {...sidebarProps} />
           </aside>
 
@@ -904,16 +705,16 @@ const handleSuccessDismiss = async () => {
                   <div className="flex items-center gap-3 mb-4 md:hidden">
                     <button data-sidebar-toggle onClick={() => setMobileSidebarOpen(true)}
                       className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M3 6h18M3 12h18M3 18h18" />
-                      </svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
                     </button>
                     <span className="text-[13px] text-[#6a6d70]">ASNs</span>
                   </div>
+
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">
                         ASN — {asn.id}
+                        {/* View Only badge for employee */}
                         {isEmployee && (
                           <span className="ml-2 px-2 py-0.5 bg-[#fff3e0] text-[#e65100] rounded text-[10px] font-bold normal-case">
                             View Only
@@ -927,61 +728,34 @@ const handleSuccessDismiss = async () => {
                       </div>
                       <div className="text-[14px] text-[#6a6d70] mt-1">Plant: {asn.plantName} ({asn.plant})</div>
                     </div>
+
                     <div className="flex flex-col items-end gap-2 ml-3 flex-shrink-0">
-  <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
+                      <span className="hidden sm:block text-[13px] text-[#6a6d70]">{asn.date}</span>
 
-  {/* Print — visible to all roles, disabled for employee */}
-  <div className="relative group">
-    <button
-      onClick={handlePrint}
-      disabled={!canPerformActions}
-      title={!canPerformActions ? 'View only — contact your admin to print' : undefined}
-      className={`flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white rounded-lg transition-all shadow-md ${
-        canPerformActions
-          ? 'bg-[#0a6ed1] hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98]'
-          : 'bg-[#9ca3af] cursor-not-allowed opacity-60 shadow-none'
-      }`}
-    >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="6 9 6 2 18 2 18 9" />
-        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-        <rect x="6" y="14" width="12" height="8" />
-      </svg>
-      Print
-    </button>
-    {!canPerformActions && (
-      <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-[#32363a] text-white text-[11px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-        View only — contact your admin
-      </div>
-    )}
-  </div>
+                      {/* Print — hidden for employee, visible for partner + employeeadmin */}
+                      {canPerformActions && (
+                        <button onClick={handlePrint}
+                          className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-white bg-[#0a6ed1] rounded-lg hover:bg-[#085caf] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9" />
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                            <rect x="6" y="14" width="12" height="8" />
+                          </svg>
+                          Print
+                        </button>
+                      )}
 
-  {/* Cancel — visible whenever status is confirmed, for all roles; disabled for employee */}
-  {asns.find(a => a.id === asn.id)?.status?.toLowerCase() === 'confirmed' && (
-    <div className="relative group">
-      <button
-        onClick={handleCancelClick}
-        disabled={!canPerformActions}
-        title={!canPerformActions ? 'View only — contact your admin to cancel' : undefined}
-        className={`flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold rounded-lg border transition-all ${
-          canPerformActions
-            ? 'text-[#cc1c14] bg-white border-[#cc1c14] hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98]'
-            : 'text-[#9ca3af] bg-[#f5f6f7] border-[#d9d9d9] cursor-not-allowed opacity-70'
-        }`}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
-        </svg>
-        Cancel ASN
-      </button>
-      {!canPerformActions && (
-        <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-[#32363a] text-white text-[11px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-          View only — contact your admin
-        </div>
-      )}
-    </div>
-  )}
-</div>
+                      {/* Cancel ASN — hidden for employee, only shown when status is confirmed */}
+                      {canPerformActions && asns.find(a => a.id === asn.id)?.status?.toLowerCase() === 'confirmed' && (
+                        <button onClick={handleCancelClick}
+                          className="flex items-center gap-1.5 px-3 sm:px-4 h-9 text-[13px] font-semibold text-[#cc1c14] bg-white border border-[#cc1c14] rounded-lg hover:bg-[#fce8e6] hover:scale-[1.02] active:scale-[0.98] transition-all">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
+                          </svg>
+                          Cancel ASN
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -991,8 +765,7 @@ const handleSuccessDismiss = async () => {
                       const isActive = activeTab === tab.key
                       return (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                          className={`flex flex-col items-center pb-3 border-b-2 transition-all duration-200 flex-shrink-0 ${isActive ? 'border-[#0a6ed1]' : 'border-transparent hover:border-[#d9d9d9]'}`}
-                        >
+                          className={`flex flex-col items-center pb-3 border-b-2 transition-all duration-200 flex-shrink-0 ${isActive ? 'border-[#0a6ed1]' : 'border-transparent hover:border-[#d9d9d9]'}`}>
                           <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-200 ${isActive ? 'shadow-md scale-110' : 'hover:scale-105'}`}
                             style={{ backgroundColor: isActive ? tab.color : '#f0f4f8' }}>
                             {tab.icon(isActive)}
