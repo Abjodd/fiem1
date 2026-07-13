@@ -110,7 +110,7 @@ function Toggle({ value, onChange }) {
 }
 
 export default function ForecastReport() {
-  const { loginId, loginType, loading: userLoading } = useUser();
+  const { loginId, loginType, role, loading: userLoading } = useUser();
   authConfig.loginId   = loginId;
   authConfig.loginType = loginType;
   const [date, setDate] = useState(todayIso());
@@ -468,12 +468,14 @@ export default function ForecastReport() {
                       <ValueHelpInput placeholder="Select SA" value={saNo} onOpen={() => openVh("sa")} onClear={() => setSaNo("")} />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Supplier</label>
-                    <div className="w-[170px]">
-                    <ValueHelpInput placeholder="Select Supplier" value={supplier} onOpen={() => openVh("supplier")} onClear={() => setSupplier("")}/>
+                  {role !== 'partner' && (
+                    <div>
+                      <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Supplier</label>
+                      <div className="w-[170px]">
+                      <ValueHelpInput placeholder="Select Supplier" value={supplier} onOpen={() => openVh("supplier")} onClear={() => setSupplier("")}/>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

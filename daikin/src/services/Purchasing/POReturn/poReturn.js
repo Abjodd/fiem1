@@ -48,7 +48,8 @@ async function odataGet(path) {
  */
 function mapHeader(raw) {
   return {
-    id:             str(raw.DeliveryChallanNo),
+    id:                str(raw.DeliveryChallanNo) || str(raw.DocumentNo),
+    deliveryChallanNo: str(raw.DeliveryChallanNo),
     documentNo:     str(raw.DocumentNo),
     plantCode:      str(raw.Plant),
     documentDate:   sapDateToDdmmyyyy(raw.DocumentDate),
@@ -227,7 +228,8 @@ export const poReturnApi = {
       odataGet(`/ItemDetailsSet?$filter=${f}`),
     ])
 
-    const header = (headerData.results || [])[0]
+    const results = headerData.results || []
+    const header = results.find(h => h.DocumentNo === documentNo) || results[0]
     if (!header) throw new Error(`Document ${documentNo} not found`)
 
     return mapDocument({

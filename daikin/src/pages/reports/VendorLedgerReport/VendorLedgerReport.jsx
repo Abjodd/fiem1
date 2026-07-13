@@ -330,7 +330,7 @@ function DetailPage({ row, onBack }) {
 // MAIN
 // ═══════════════════════════════════════════════════════════════
 export default function VendorLedgerReport() {
-  const { loginId, loginType, loading: userLoading } = useUser();
+  const { loginId, loginType, role, loading: userLoading } = useUser();
   authConfig.loginId   = loginId;
   authConfig.loginType = loginType;
   // ── Dropdown option stores ──
@@ -627,10 +627,12 @@ export default function VendorLedgerReport() {
                 <div className="flex-1 min-w-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3">
 
-                    <div>
-                      <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Supplier <span className="text-[#cc1c14]">*</span></label>
-                      <DropdownTrigger placeholder="Select supplier" displayValue={supplierLabel} onClick={() => openDD('supplier')} onClear={() => setSupplier('')} />
-                    </div>
+                    {role !== 'partner' && (
+                      <div>
+                        <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Supplier <span className="text-[#cc1c14]">*</span></label>
+                        <DropdownTrigger placeholder="Select supplier" displayValue={supplierLabel} onClick={() => openDD('supplier')} onClear={() => setSupplier('')} />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-[11px] text-[#6a6d70] mb-1 font-semibold uppercase tracking-wider">Document No.</label>

@@ -190,7 +190,7 @@ function DeliveryChallanPrint({ doc }) {
               </div>
               <div className="dc-doc-info-block">
                 <div className="orig">ORIGINAL FOR CONSIGNEE</div>
-                <div className="dc-dir"><span className="lbl">Delivery Challan No. :</span> <span>{doc.id}</span></div>
+                <div className="dc-dir"><span className="lbl">Delivery Challan No. :</span> <span>{doc.deliveryChallanNo || ''}</span></div>
                 <div className="dc-dir"><span className="lbl">Document Date:</span> <span>{doc.documentDate}</span></div>
                 <div className="dc-dir"><span className="lbl">Plant Code:</span> <span>{doc.plantCode}</span></div>
                 <div className="dc-dir"><span className="lbl">Document No:</span> <span>{doc.documentNo}</span></div>
@@ -434,7 +434,7 @@ function SidebarContent({
                   className={`w-full flex items-center justify-center py-3 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1]' : 'hover:bg-[#f5f6f7] border-l-transparent'}`}
                 >
                   <span className={`text-[11px] font-bold ${isSelected ? 'text-[#0a6ed1]' : 'text-[#6a6d70]'}`}>
-                    {doc.id.slice(-3)}
+                    {doc.deliveryChallanNo ? doc.deliveryChallanNo.slice(-3) : ''}
                   </span>
                 </button>
               )
@@ -452,7 +452,7 @@ function SidebarContent({
                     className={`w-full text-left px-5 py-3.5 border-b border-[#e5e5e5] transition-all duration-200 border-l-[3px] pl-[17px] ${isSelected ? 'bg-[#ebf5ff] border-l-[#0a6ed1] shadow-sm' : 'hover:bg-[#f5f6f7] hover:translate-x-0.5 border-l-transparent'}`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[14px] font-bold text-[#0a6ed1]">{doc.id}</span>
+                      <span className="text-[14px] font-bold text-[#0a6ed1]">{doc.deliveryChallanNo || ''}</span>
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${statusStyle(printOk)}`}>
                         {printOk ? 'Started' : 'Not Started'}
                       </span>
@@ -847,7 +847,7 @@ export default function ReturnPOMatdoc() {
                     <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
                       <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">Delivery Challan No.</div>
-                        <h2 className="text-[20px] sm:text-[24px] font-bold text-[#0a6ed1] tracking-tight break-all">{doc.id}</h2>
+                        <h2 className="text-[20px] sm:text-[24px] font-bold text-[#0a6ed1] tracking-tight break-all">{doc.deliveryChallanNo || ''}</h2>
                       </div>
 
                       <div className="flex items-center gap-3 ml-3 flex-shrink-0 relative group">

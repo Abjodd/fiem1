@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import PageLayout from '../../../layouts/PageLayout.jsx'
 import { DeliveryScheduleApi, authConfig } from '../../../services/Reports/DeliveryScheduleTracker/DeliverySchedule.js'
-// import { useUser } from '../../../context/UserContext.jsx'
+import { useUser } from '../../../context/UserContext.jsx'
 // ═══════════════════════════════════════════════════════════════
 // DATE HELPERS
 // ═══════════════════════════════════════════════════════════════
@@ -681,9 +681,9 @@ function applyClientFilters(rows, { status, supplier, material, asn, invoiceNo, 
 const EMPTY_CHART = { shipment: {}, delay: {} }
 
 export default function DeliverySchedule() {
-  // const { loginId, loginType, loading: userLoading } = useUser()
-  // authConfig.loginId   = loginId
-  // authConfig.loginType = loginType
+  const { loginId, loginType, role, loading: userLoading } = useUser()
+  authConfig.loginId   = loginId
+  authConfig.loginType = loginType
   const companyCode = '1000 (Comstar India)'
 
   const [view,             setView]             = useState('list')
@@ -992,10 +992,12 @@ DeliveryScheduleApi.fetchDeliveries({ startDate: today, endDate: today })
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute right-2.5 top-3.5 text-[#6a6d70] pointer-events-none"><path d="M6 9l6 6 6-6"/></svg>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] text-[#6a6d70] font-semibold">Supplier</label>
-                      <ValueHelpInput placeholder="Select Supplier" value={supplier} onOpen={() => openVh('supplier')} />
-                    </div>
+                    {role !== 'partner' && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] text-[#6a6d70] font-semibold">Supplier</label>
+                        <ValueHelpInput placeholder="Select Supplier" value={supplier} onOpen={() => openVh('supplier')} />
+                      </div>
+                    )}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] text-[#6a6d70] font-semibold">Material</label>
                       <ValueHelpInput placeholder="Select Material" value={material} onOpen={() => openVh('material')} />

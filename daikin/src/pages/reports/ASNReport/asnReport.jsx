@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import PageLayout from '../../../layouts/PageLayout.jsx'
 import { AsnReportApi, authConfig } from '../../../services/Reports/ASNReport/Asnreport.js'
+import { useUser } from '../../../context/UserContext.jsx'
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -270,6 +271,7 @@ function AsnDetailPage({ row, onBack }) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function AsnReport() {
+  const { role } = useUser()
   const [asnDateFrom,  setAsnDateFrom]  = useState(monthsAgoIso(1))
   const [asnDateTo,    setAsnDateTo]    = useState(todayIso())
   const [supplier,     setSupplier]     = useState('')
@@ -572,10 +574,12 @@ export default function AsnReport() {
                 <input type="date" value={asnDateTo} onChange={e => setAsnDateTo(e.target.value)} min={asnDateFrom || undefined}
                   className={`${inputCls} ${dateError ? 'border-[#cc1c14] focus:ring-[#cc1c14]/20' : ''}`} />
               </div>
-              <div>
-                <label className={labelCls}>Supplier</label>
-                <VhInput placeholder="Select supplier" value={supplier} onOpen={() => openVh('supplier')} />
-              </div>
+              {role !== 'partner' && (
+                <div>
+                  <label className={labelCls}>Supplier</label>
+                  <VhInput placeholder="Select supplier" value={supplier} onOpen={() => openVh('supplier')} />
+                </div>
+              )}
               <div>
                 <label className={labelCls}>Material</label>
                 <VhInput placeholder="Select material" value={material} onOpen={() => openVh('material')} />
