@@ -366,8 +366,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
             {[
               { label: 'Sch Line', value: `${item.ebelp} / ${item.schLine}` },
               { label: 'Total Qty', value: `${item.totalQty} ${item.totalUnit}` },
-              { label: 'Conf. Qty', value: `${item.confQty} ${item.confUnit}` },
-              { label: 'Delivered Qty (Menge)', value: `${item.deliveredQty} ${item.deliveredUnit}` },
+              { label: 'Confirm Qty', value: `${item.confQty} ${item.confUnit}` },
+              { label: 'Delivered Qty', value: `${item.deliveredQty} ${item.deliveredUnit}` },
               { label: 'ASN Created', value: item.asnCreated },
               { label: 'SPQ', value: item.spq },
             ].map((d, i) => (
