@@ -400,9 +400,9 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
           <div className="mb-3">
             <label className="block text-[12px] font-semibold text-[#374151] mb-1">FG Stock</label>
             <input type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} onWheel={e => e.target.blur()} placeholder="0"
-              className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all ${item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`} />
-            {item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) && (
-              <p className="text-[11px] text-[#cc1c14] font-semibold mt-1">Must be greater than {item.avlAsnQty}</p>
+              className={`w-full h-10 rounded-lg border bg-white px-3 text-[14px] outline-none focus:ring-2 transition-all ${item.fgStock !== '' && parseFloat(item.fgStock) < parseFloat(item.avlAsnQty || 0) ? 'border-[#cc1c14] focus:border-[#cc1c14] focus:ring-[#cc1c14]/20' : 'border-[#d9d9d9] focus:border-[#0a6ed1] focus:ring-[#0a6ed1]/20'}`} />
+            {item.fgStock !== '' && parseFloat(item.fgStock) < parseFloat(item.avlAsnQty || 0) && (
+              <p className="text-[11px] text-[#cc1c14] font-semibold mt-1">Must be &gt;= {item.avlAsnQty}</p>
             )}
           </div>
           <div className="mb-3">
@@ -505,9 +505,9 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
         </Field>
           <Field label="FG Stock">
             <input type="number" min="0" step="any" value={item.fgStock} onChange={e => onUpdate('fgStock', e.target.value)} onWheel={e => e.target.blur()} placeholder="0" disabled={isZeroQty}
-              className={inputCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed' + (item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) ? ' border-[#cc1c14] ring-1 ring-[#cc1c14]/30' : '')} />
-            {item.fgStock !== '' && parseFloat(item.fgStock) <= parseFloat(item.avlAsnQty || 0) && (
-              <span className="text-[10px] text-[#cc1c14] font-semibold leading-tight">Must be &gt; {item.avlAsnQty}</span>
+              className={inputCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed' + (item.fgStock !== '' && parseFloat(item.fgStock) < parseFloat(item.avlAsnQty || 0) ? ' border-[#cc1c14] ring-1 ring-[#cc1c14]/30' : '')} />
+            {item.fgStock !== '' && parseFloat(item.fgStock) < parseFloat(item.avlAsnQty || 0) && (
+              <span className="text-[10px] text-[#cc1c14] font-semibold leading-tight">Must be &gt;= {item.avlAsnQty}</span>
             )}
           </Field>
           <Field label="Net Price"><ReadonlyVal value={item.netPrice} /></Field>
@@ -840,7 +840,7 @@ export default function CreateASN({ agreement: propAgreement }) {
 
       const fgVal = parseFloat(it.fgStock)
       if (it.fgStock === '' || isNaN(fgVal)) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock is required.`)
-      else if (fgVal <= avl) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than Avl. ASN Qty (${avl}).`)
+      else if (fgVal < avl) errors.push(`Item ${it.itemNo} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than or equal to Avl. ASN Qty (${avl}).`)
 
       // If batches exist, validate them
       if (it.batches && it.batches.length > 0) {
