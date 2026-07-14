@@ -1,0 +1,17 @@
+{
+  "_version": "1.21.0",
+  "sap.app": {
+    "id": "fiem.ui",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "title": "FIEM Supplier Portal",
+    "description": "FIEM Supplier Portal UI"
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "FIEM-app"
+  }
+}

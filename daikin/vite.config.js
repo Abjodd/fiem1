@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/',
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: 'approuter/resources',
+    outDir: 'dist',
     emptyOutDir: true,
   }
 })

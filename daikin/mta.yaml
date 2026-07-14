@@ -4,6 +4,21 @@ version: 1.0.0
 
 modules:
 
+  - name: FIEM-app-content
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: FIEM-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: FIEM-ui
+          artifacts:
+            - '*.zip'
+          target-path: 'resources/'
+
   - name: FIEM-ui
     type: html5
     path: .
@@ -12,8 +27,8 @@ modules:
       commands:
         - npm install
         - npm run build
-      build-result: approuter/resources
-      supported-platforms: []   
+      build-result: dist
+      supported-platforms: []
 
   - name: FIEM-app
     type: approuter.nodejs
@@ -25,6 +40,7 @@ modules:
       - name: FIEM-destination-service
       - name: FIEM-connectivity-service
       - name: FIEM-xsuaa-service
+      - name: FIEM-repo-runtime
     provides:
       - name: approuter-api
         properties:
@@ -37,6 +53,8 @@ resources:
     parameters:
       service: destination
       service-plan: lite
+      config:
+        HTML5Runtime_enabled: true
 
   - name: FIEM-connectivity-service
     type: org.cloudfoundry.managed-service
@@ -50,3 +68,20 @@ resources:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
+
+  - name: FIEM-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-name: FIEM-html5-service
+      service-plan: app-host
+
+  - name: FIEM-repo-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true

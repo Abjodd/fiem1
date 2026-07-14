@@ -1,11 +1,10 @@
 {
   "welcomeFile": "/index.html",
   "authenticationMethod": "route",
-    "logout": {
+  "logout": {
     "logoutEndpoint": "/do/logout",
     "logoutPage": "/"
   },
-
   "routes": [
     {
       "source": "^/sap/(.*)$",
@@ -18,22 +17,17 @@
       "target": "$1",
       "service": "sap-approuter-userapi",
       "authenticationType": "xsuaa"
-      
     },
     {
-      "source": "^/assets/(.*)$",
-      "localDir": "resources",
+      "source": "^/(.*\\.(png|svg|ico|jpg|jpeg|gif|pdf|css|js|woff|woff2|ttf|json|map))$",
+      "target": "/fiemui-1.0.0/$1",
+      "service": "html5-apps-repo-rt",
       "authenticationType": "none"
     },
     {
-      "source": "^/(.*\\.(png|svg|ico|jpg|jpeg|gif|css|js|woff|woff2|ttf|json|map))$",
-      "localDir": "resources",
-      "authenticationType": "none"
-    },
-    {
-      "source": "^/.*$",
-      "localDir": "resources",
-      "target": "index.html",
+      "source": "^(?!/sap/|/user-api).*$",
+      "target": "/fiemui-1.0.0/index.html",
+      "service": "html5-apps-repo-rt",
       "authenticationType": "xsuaa"
     }
   ]
