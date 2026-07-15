@@ -80,6 +80,11 @@ export const importPOApi = {
     if (!purchaseId) return []
     const filter = `?$filter=Purchaseid%20eq%20%27${encodeURIComponent(purchaseId)}%27&$format=json`
     const data = await odataGet(`/itempoSet${filter}`)
-    return (data.results || []).map(mapItem)
+
+    const filteredResults = (data.results || []).filter(
+      raw => String(raw.Purchaseid) === String(purchaseId)
+    )
+    
+    return filteredResults.map(mapItem)
   },
 }
