@@ -1,9 +1,5 @@
-// src/services/CreateAsnPost.js
 import { authConfig } from '../../authConfig.js'
 const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
-// export const authConfig = { loginId: '', loginType: '' }
-
-
 
 const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -14,7 +10,6 @@ const getHeaders = () => ({
 
 const str = (v) => String(v ?? '').trim()
 
-// "2026-05-19" or display date → "20260519"
 function toSapDate(v) {
   if (!v) return ''
   const s = str(v)
@@ -34,10 +29,10 @@ function toSapDate(v) {
  * Build POST payload for PO ASN creation.
  *
  * @param {object} opts
- * @param {string}  opts.poNo            - PO number e.g. "8501000141"
- * @param {object}  opts.invoice         - { number, date, amount, invoiceVal, totalPacking }
- * @param {Array}   opts.selectedItems   - items filtered to selected only
- * @param {object}  opts.header          - full header from createAsnService (for buyer, currency etc.)
+ * @param {string}  opts.poNo            
+ * @param {object}  opts.invoice         
+ * @param {Array}   opts.selectedItems   
+ * @param {object}  opts.header          
  */
 export function buildAsnPayload({ poNo, invoice, selectedItems, header = {} }) {
   const items = selectedItems.map(it => {
@@ -131,14 +126,9 @@ export function buildAsnPayload({ poNo, invoice, selectedItems, header = {} }) {
   }
 }
 
-/**
- * POST to PO_ASN_HEADERSet — creates the ASN for a PO.
- * Returns the full SAP response d object on success.
- */
 export async function postCreateAsn({ poNo, invoice, selectedItems, header = {} }) {
   const payload = buildAsnPayload({ poNo, invoice, selectedItems, header })
 
-  // Fetch CSRF token (SAP OData requires for POST)
   const tokenRes = await fetch(`${ODATA_BASE}/PO_ASN_HEADERSet`, {
     method: 'GET',
     headers: { ...getHeaders(), 'X-CSRF-Token': 'Fetch' },

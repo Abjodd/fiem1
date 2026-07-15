@@ -4,7 +4,6 @@ export const authConfig = { loginId: '', loginType: '' }
 const str = (v) => String(v ?? '').trim()
 const num = (v) => parseFloat(String(v ?? '0').trim()) || 0
 
-// ── Date / Time helpers ───────────────────────────────────────
 export const fromSapDateDisplay = (sapDate) => {
   if (!sapDate || sapDate === '00000000') return ''
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -22,7 +21,6 @@ const formatTimestamp = (sapDate, sapTime) => {
 
 const TRANS_MODE = { '01': 'By Road', '02': 'By Air', '03': 'By Rail', '04': 'By Sea' }
 
-// ── Status resolver ───────────────────────────────────────────
 const resolveStatus = (code, text) => {
   const label = str(text) || 'Unknown'
   const t = (text || '').toLowerCase()
@@ -33,7 +31,6 @@ const resolveStatus = (code, text) => {
   return { label, color }
 }
 
-// ── Timeline builder ──────────────────────────────────────────
 const buildTimeline = (d) => [
   {
     key: 'created',
@@ -73,7 +70,6 @@ const buildTimeline = (d) => [
   },
 ]
 
-// ── ASN mapper ────────────────────────────────────────────────
 const mapAsn = (raw) => ({
   asnId: `${str(raw.Asn)}/${str(raw.AsnYear)}`,
   asnNum: str(raw.Asn),
@@ -88,7 +84,6 @@ const mapAsn = (raw) => ({
   currency: str(raw.Curr) || 'INR',
 })
 
-// ── ASN item mapper ───────────────────────────────────────────
 const mapAsnItem = (raw) => ({
   asnNum: str(raw.AsnNum),
   fisYear: str(raw.FisYear),
@@ -103,7 +98,6 @@ const mapAsnItem = (raw) => ({
   hsnCode: str(raw.HsnCode),
 })
 
-// ── Header mapper ─────────────────────────────────────────────
 const mapHeader = (d) => {
   const status = resolveStatus(d.Status, d.StatusText)
   return {
@@ -148,7 +142,6 @@ const getHeaders = () => ({
   Logintype: authConfig.loginType,
 })
 
-// ── SAP error extractor ───────────────────────────────────────
 function extractSapError(responseText, method, status) {
   try {
     const errJson = JSON.parse(responseText)
@@ -160,7 +153,6 @@ function extractSapError(responseText, method, status) {
     if (errJson?.error?.message?.value) return errJson.error.message.value
     if (typeof errJson?.error?.message === 'string') return errJson.error.message
   } catch {
-    // JSON parse failed — fall through
   }
   return `OData ${method} ${status}: ${responseText.slice(0, 300)}`
 }
@@ -179,7 +171,6 @@ async function odata(path) {
   return res.json()
 }
 
-// ── CSRF token fetch ──────────────────────────────────────────
 async function fetchCsrfToken() {
   const res = await fetch(`${SRV}/$metadata`, {
     method: 'GET',
@@ -191,7 +182,6 @@ async function fetchCsrfToken() {
   return token
 }
 
-// ── Write with pre-fetched token ─────────────────────────────
 async function odataWriteWithToken(token, path, payload, method) {
   const res = await fetch(`${SRV}${path}`, {
     method,
@@ -210,7 +200,6 @@ async function odataWriteWithToken(token, path, payload, method) {
   return res.json()
 }
 
-// ── Write with auto CSRF fetch ────────────────────────────────
 async function odataWrite(path, payload, method) {
   const token = await fetchCsrfToken()
   return odataWriteWithToken(token, path, payload, method)
@@ -219,7 +208,6 @@ async function odataWrite(path, payload, method) {
 
 export const gateEntryApi = {
 
-  // ── READ: full header with nav expansions ───────────────────
   async getTracking(trackNo, year) {
     const key = buildKey(trackNo, year)
     const data = await odata(
@@ -229,21 +217,18 @@ export const gateEntryApi = {
     return mapHeader(data.d)
   },
 
-  // ── READ: ASN summary rows for a tracking entry ─────────────
   async getAsnData(trackNo, year) {
     const filter = encodeURIComponent(`TrackNo eq '${trackNo}' and Year eq '${year}'`)
     const data = await odata(`/ASNDataSet?$filter=${filter}`)
     return (data.d?.results || []).map(mapAsnItem)
   },
 
-  // ── READ: line items for one ASN ────────────────────────────
   async getAsnItems(asnNum, fisYear) {
     const filter = encodeURIComponent(`AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`)
     const data = await odata(`/AsnItemSet?$filter=${filter}`)
     return (data.d?.results || []).map(mapAsnItem)
   },
 
-  // ── WRITE: Gate Reporting ────────────────────────────────────
   async processGateReporting(trackNo, year) {
     const key = buildKey(trackNo, year)
     return odataWrite(

@@ -1,16 +1,12 @@
-// src/services/poReturn.js
 const BASE = '/sap/opu/odata/SAP/ZDEBIT_PO_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
-// ─── SAP date helpers ───────────────────────────────────────────
-// SAP YYYYMMDD -> "05.06.2026"
 export function sapDateToDdmmyyyy(s) {
   if (!s || s === '00000000') return ''
   const y = s.slice(0, 4), m = s.slice(4, 6), d = s.slice(6, 8)
   return `${d}.${m}.${y}`
 }
 
-// SAP YYYYMMDD -> ISO "YYYY-MM-DD"
 export function sapDateToIso(s) {
   if (!s || s === '00000000') return ''
   return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`
@@ -24,7 +20,6 @@ function trimNum(s) {
 
 const str = (v) => String(v ?? '').trim()
 
-// ─── Fetch helper ───────────────────────────────────────────────
 async function odataGet(path) {
   const url = `${BASE}${path}`
   const res = await fetch(url, {
@@ -40,12 +35,6 @@ async function odataGet(path) {
   return json.d
 }
 
-// ─── Mappers ────────────────────────────────────────────────────
-
-/**
- * HeaderDetailsSet row -> UI sidebar/header shape
- * Fields: Status, PostingDate, DocumentDate, Plant, DocumentNo, DeliveryChallanNo
- */
 function mapHeader(raw) {
   return {
     id:                str(raw.DeliveryChallanNo) || str(raw.DocumentNo),
@@ -58,11 +47,6 @@ function mapHeader(raw) {
   }
 }
 
-/**
- * GeneralDataSet row -> UI generalData shape
- * Fields: PurchaseOrderNo, VendCode, PODate, VehicleNo, GRNo, OrgInv,
- *         EwayBillNo, Date, DeliveryChallanNo, DocumentNo
- */
 function mapGeneralData(raw) {
   return {
     poNo:         str(raw.PurchaseOrderNo),
@@ -76,11 +60,6 @@ function mapGeneralData(raw) {
   }
 }
 
-/**
- * ConsigneeSet row -> UI consignee shape
- * Fields: GSTIN, Country, State, StateCode, Address, Name,
- *         DeliveryChallanNo, DocumentNo
- */
 function mapConsignee(raw) {
   return {
     name:       str(raw.Name),
@@ -92,17 +71,6 @@ function mapConsignee(raw) {
   }
 }
 
-/**
- * ItemDetailsSet row -> UI item shape
- * Fields: ItemNo, ItemCodeDesc, HSN, Qty, UOM, Rate, Total, Discount,
- *         OtherCharges, TaxableValue, CGSTRate, CGSTAmount, SGSTRate,
- *         SGSTAmount, IGSTRate, IGSTAmount, CGSTTotal, SGSTTotal, IGSTTotal,
- *         Remarks, TotalValue, GrandTotal, TotalValInWords, Attachment,
- *         DeliveryChallanNo, DocumentNo
- *
- * ItemCodeDesc payload is "code|description" or "code - description" depending
- * on backend formatting; we split defensively on common separators.
- */
 function splitItemCodeDesc(s) {
   const v = str(s).trim()
   if (!v) return { code: '', desc: '' }
@@ -148,16 +116,6 @@ function mapItem(raw) {
   }
 }
 
-/**
- * Build the full UI document shape (header + generalData + consignee + items
- * + remarks/totals) by combining one row from each entity set that share the
- * same DocumentNo / DeliveryChallanNo key — mirrors how mapPoDetail() in
- * purchaseOrder.js combines PO_HEADERSet + headertoitemNav.
- *
- * Remarks/TotalValInWords/CGSTTotal/SGSTTotal/IGSTTotal/TotalValue/GrandTotal
- * live on ItemDetailsSet per-row in the service, but are document-level
- * values (same on every item row) — we just lift them from the first item.
- */
 function mapDocument({ header, generalRaw, consigneeRaw, itemRows }) {
   const items = (itemRows || []).map(mapItem)
   const first = (itemRows || [])[0] || {}
@@ -193,30 +151,18 @@ function mapDocument({ header, generalRaw, consigneeRaw, itemRows }) {
   }
 }
 
-// ─── Status helpers (UI logic, not SAP-specific) ─────────────────
 export const isPrintEnabled = (status) => {
   if (!status) return false
   const s = status.toLowerCase()
   return s.includes('return started') && !s.includes('not started')
 }
 
-// ─── API object ─────────────────────────────────────────────────
-
 export const poReturnApi = {
-  /**
-   * List all delivery-challan headers for the sidebar.
-   * GET HeaderDetailsSet?$skip=0&$top=40
-   */
   async listHeaders() {
     const data = await odataGet('/HeaderDetailsSet?$skip=0&$top=40')
     return (data.results || []).map(mapHeader)
   },
 
-  /**
-   * Full document detail for one Delivery Challan No.
-   * Fetches header + generalData + consignee + items in parallel,
-   * all filtered by DocumentNo, same pattern as PO's $expand/$filter calls.
-   */
   async getDocumentDetail(documentNo) {
     if (!documentNo) throw new Error('No document number provided')
     const f = `DocumentNo%20eq%20%27${encodeURIComponent(documentNo)}%27`
@@ -240,13 +186,6 @@ export const poReturnApi = {
     })
   },
 
-  /**
-   * Single-call detail fetch using $expand instead of 4 parallel filtered
-   * calls, if/when the backend wires up navigation properties between
-   * HeaderDetails -> GeneralData / Consignee / ItemDetails.
-   * Prefer this once nav properties exist; falls back to getDocumentDetail
-   * otherwise.
-   */
   async getDocumentDetailExpanded(documentNo) {
     if (!documentNo) throw new Error('No document number provided')
     const key = `DocumentNo='${documentNo}'`

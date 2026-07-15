@@ -16,7 +16,6 @@ const sapDate = (v) => {
 
 const isoToSap8 = (iso) => (iso || '').replace(/-/g, '')
 
-// ── OData helpers ──
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
     headers: { Accept: 'application/json',     
@@ -28,7 +27,6 @@ async function odataGet(path) {
   return res.json()
 }
 
-// ── Mappers ──
 function mapHeader(d) {
   return {
     id: str(d.Schedule_No),
@@ -93,13 +91,7 @@ function mapConfirmRow(d) {
   }
 }
 
-
-// ═══════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════
 export const scheduleReleaseApi = {
-
-  // Cross-service call to ZSCHEDULE_GENERATE_SRV for F4 supplier value help
   async fetchAllSuppliers() {
     const res = await fetch(`/sap/opu/odata/sap/ZSCHEDULE_GENERATE_SRV/f4supplierSet?$format=json`, {
       headers: {
@@ -114,7 +106,6 @@ export const scheduleReleaseApi = {
     return (json.d?.results || []).map(d => ({ lifnr: d.lifnr, name: d.name }))
   },
 
-  // LIST — all schedule agreements
   async listAgreements({ search = '', plants = [], vendorNo = '' } = {}) {
     const filterStr = vendorNo ? `?$filter=Vendor_No%20eq%20%27${encodeURIComponent(vendorNo)}%27&$format=json` : `?$format=json`
     const json = await odataGet(`/S_HEADERSet${filterStr}`)
@@ -132,7 +123,6 @@ export const scheduleReleaseApi = {
     return rows
   },
 
-  // DETAIL — single agreement + items
   async getAgreement(id) {
     const json = await odataGet(`/S_HEADERSet('${id}')?$expand=Sitemnav&$format=json`)
     const d = json.d
@@ -142,7 +132,6 @@ export const scheduleReleaseApi = {
     return agreement
   },
 
-  // SCHEDULE LINES — per item
   async getScheduleLines(scheduleNo, scheduleItem, materialNo, uom) {
     const filter =
       `Schedule_No eq '${scheduleNo}' and ` +
@@ -153,9 +142,7 @@ export const scheduleReleaseApi = {
     return (json.d?.results || []).map(mapScheduleLine)
   },
 
-  // CONFIRM DATA — fetch rows for confirm view
   async getConfirmData({ scheduleNo, fromDate, toDate, storageLocation = '' }) {
-    // Guard against undefined scheduleNo which causes a 400
     if (!scheduleNo || scheduleNo === 'undefined') {
       throw new Error('No schedule number provided')
     }
@@ -163,24 +150,17 @@ export const scheduleReleaseApi = {
     const filter = `Schedule_No eq '${scheduleNo}'`
     const json = await odataGet(`/ConfirmDataSet?$filter=${encodeURIComponent(filter)}&$format=json`)
     let rows = (json.d?.results || []).map(mapConfirmRow)
-
-    // Client-side filtering for dates and storage location
     if (fromDate) rows = rows.filter(r => r.deliveryDateRaw >= isoToSap8(fromDate))
     if (toDate)   rows = rows.filter(r => r.deliveryDateRaw <= isoToSap8(toDate))
     if (storageLocation.trim()) rows = rows.filter(r => r.storageLocation === storageLocation.trim())
-
     return rows
   },
 
-  // CONFIRM SUBMIT
-  // Step 1: GET S_HEADERSet(Schedule_No='...') to fetch CSRF token (mirrors UI5 exactly)
-  // Step 2: Single POST to S_HEADERSet with all selected rows nested in Confirmnav
   async submitConfirm(scheduleNo, selectedRows) {
     if (!scheduleNo || scheduleNo === 'undefined') {
       throw new Error('No schedule number provided')
     }
 
-    // Step 1: fetch CSRF token via GET on the specific header (exactly like UI5 does)
     const csrfRes = await fetch(`${ODATA_BASE}/S_HEADERSet('${scheduleNo}')`, {
       method: 'GET',
       headers: {
@@ -192,10 +172,7 @@ export const scheduleReleaseApi = {
       credentials: 'include',
     })
     const token = csrfRes.headers.get('X-CSRF-Token') || ''
-
-    // Step 2: Single POST with all rows nested in Confirmnav
-    // SAP rejects Schedule_Item/Schedule_Line as top-level S_HEADER fields —
-    // they must be nested inside Confirmnav.results
+    
     const res = await fetch(`${ODATA_BASE}/S_HEADERSet`, {
       method: 'POST',
       headers: {

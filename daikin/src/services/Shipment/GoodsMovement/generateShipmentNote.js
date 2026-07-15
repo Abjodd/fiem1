@@ -1,7 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// generateShipmentNote.js — PDF Shipment Note Generator
-// ═══════════════════════════════════════════════════════════════
-
 import { jsPDF } from 'jspdf'
 import JsBarcode from 'jsbarcode'
 
@@ -47,8 +43,7 @@ export async function generateShipmentNote(tracking) {
     doc.rect(x, y, w, h)
   }
 
-  // ── Extract data ────────────────────────────────────────────
-  const trackingNo = tracking.id || ''             // e.g. '1000001187/2026'
+  const trackingNo = tracking.id || '' 
   const createdOn = tracking.timeline?.find(t => t.key === 'created')?.timestamp || tracking.date || ''
   const shipmentDate = tracking.timeline?.find(t => t.key === 'shipped')?.timestamp || ''
   const eta = tracking.etaDate || ''
@@ -66,14 +61,12 @@ export async function generateShipmentNote(tracking) {
 
   let Y = 15
 
-  // ── HEADER ──────────────────────────────────────────────────
   setFont('bold', 18)
   doc.setTextColor(...BLACK)
   doc.text('SHIPMENT NOTE', W / 2, Y, { align: 'center' })
 
   Y += 12
 
-  // ── LEFT BOX ────────────────────────────────────────────────
   const leftBoxX = LM
   const leftBoxW = PW * 0.52
   const leftBoxY = Y
@@ -81,8 +74,7 @@ export async function generateShipmentNote(tracking) {
 
   drawRect(leftBoxX, leftBoxY, leftBoxW, leftBoxH)
 
-  // FIX 3: Keep slash in barcode — CODE128 supports it natively
-  const trackBarcodeText = trackingNo  // '1000001187/2026' — NO strip
+  const trackBarcodeText = trackingNo  
   const trackBarcodeImg = barcodeDataUrl(trackBarcodeText, { width: 2, height: 40 })
   if (trackBarcodeImg) {
     doc.addImage(trackBarcodeImg, 'PNG', leftBoxX + 8, leftBoxY + 3, 55, 14)
@@ -111,7 +103,6 @@ export async function generateShipmentNote(tracking) {
     fieldY += 7
   })
 
-  // ── RIGHT BOX — Vendor Details ──────────────────────────────
   const rightBoxX = leftBoxX + leftBoxW + 4
   const rightBoxW = PW - leftBoxW - 4
   const rightBoxY = leftBoxY
@@ -130,11 +121,10 @@ export async function generateShipmentNote(tracking) {
   drawRect(innerX, innerY, innerW, innerH)
 
   let vendorY = innerY + 6
-  const vendorTextMaxW = innerW - 6  // padding of 3mm each side
+  const vendorTextMaxW = innerW - 6  
   setFont('normal', 9)
   doc.setTextColor(...BLACK)
 
-  // FIX 4: splitTextToSize wraps text to fit within box width
   const vendorDisplayName = vendorCode
     ? `${vendorName} (${vendorCode})`
     : vendorName || '—'
@@ -158,7 +148,6 @@ export async function generateShipmentNote(tracking) {
     })
   })
 
-  // ── ASN BARCODES SECTION ─────────────────────────────────────
   Y = leftBoxY + leftBoxH + 4
 
   setFont('bold', 11)
@@ -190,7 +179,6 @@ export async function generateShipmentNote(tracking) {
         doc.addPage()
       }
 
-      // FIX 3: Keep slash in ASN barcode too — '1000001187/2026' format preserved
       const asnBarcodeText = `${asn.asnId}${asn.asnYear ? '/' + asn.asnYear : ''}`
       const asnBarcodeImg = barcodeDataUrl(asnBarcodeText, { width: 2, height: 35 })
       if (asnBarcodeImg) {
@@ -218,29 +206,20 @@ export async function generateShipmentNote(tracking) {
     })
   }
 
-  // ── FIX 2: Proper filename — use <a> click trick ─────────────
-  // This sets the correct filename in download dialog AND browser tab
   const sanitizedTrackNo = trackingNo.replace(/\//g, '_')
   const filename = `Tracking_Number_${sanitizedTrackNo}.pdf`
 
   const pdfBlob = doc.output('blob')
   const blobUrl = URL.createObjectURL(pdfBlob)
 
-  // Create named anchor → forces correct filename in download + tab title
   const a = document.createElement('a')
   a.href = blobUrl
   a.target = '_blank'
   a.rel = 'noopener noreferrer'
-  // Setting download attr shows filename in tab — but opens inline if browser supports PDF
-  // Use without download attr to open in tab, WITH to force download
-  // Best UX: open in tab (no download attr), filename visible in URL
-  // Rename blob URL not possible, so append filename as hash hint for some browsers:
-  const namedUrl = blobUrl  // blob URLs can't be renamed, but we trigger save via print dialog
+  const namedUrl = blobUrl
 
-  // Open in new tab
   const newTab = window.open(blobUrl, '_blank')
 
-  // Fallback: if popup blocked → download with correct filename
   if (!newTab || newTab.closed) {
     a.download = filename
     document.body.appendChild(a)
@@ -248,7 +227,6 @@ export async function generateShipmentNote(tracking) {
     document.body.removeChild(a)
   }
 
-  // Also revoke after delay
   setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
 
   return { filename, blobUrl }

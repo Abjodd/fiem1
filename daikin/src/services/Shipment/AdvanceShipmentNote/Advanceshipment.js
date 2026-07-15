@@ -1,7 +1,6 @@
 const ODATA_BASE = '/sap/opu/odata/SHIV/MO_SUPP_PORTAL_ASN_APP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
-
 async function fetchCsrfToken() {
   const res = await fetch(`${ODATA_BASE}/ASN_HEADERSet?$top=1&$format=json`, {
     headers: {
@@ -12,7 +11,6 @@ async function fetchCsrfToken() {
   })
   return res.headers.get('x-csrf-token') || ''
 }
-// ── base GET helper ──
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
     headers: { Accept: 'application/json',      
@@ -24,24 +22,20 @@ async function odataGet(path) {
 }
 
 const TRANS_MODE = { '01': 'By Road', '02': 'By Air', '03': 'By Ship', '04': 'By Rail' }
-// ── value helpers ──
 const num = (v) => Number(String(v ?? '').trim() || 0)
 const str = (v) => String(v ?? '').trim()
 
-// SAP "20260520" → "20.05.2026"
 const sapDate = (v) => {
   const s = str(v)
   if (s.length !== 8) return s
   return `${s.slice(6, 8)}.${s.slice(4, 6)}.${s.slice(0, 4)}`
 }
 
-// SAP "122800" → "12:28:00"
 const sapTime = (v) => {
   const s = str(v).padStart(6, '0')
   return `${s.slice(0, 2)}:${s.slice(2, 4)}:${s.slice(4, 6)}`
 }
 
-// ── status derivation ──
 function deriveStatus(d) {
   if (d.Cancel === true || str(d.Cancel) === 'X') return { status: 'Cancelled', color: 'red' }
   if (str(d.Status)) {
@@ -53,7 +47,6 @@ function deriveStatus(d) {
   return { status: 'Open', color: 'green' }
 }
 
-// ── mappers ──
 function mapHeader(d) {
   const { status, color } = deriveStatus(d)
   const baseDoc = `${str(d.Type_text)} ${str(d.Order_num)}`.trim()
@@ -119,7 +112,6 @@ function mapAttachment(d) {
   const name = str(d.Filename)
   let mime = str(d.Mimetype).toLowerCase()
 
-  // Derive mime from filename extension if SAP leaves it empty/wrong
   if (!mime || mime === 'application/octet-stream') {
     const ext = name.split('.').pop().toLowerCase()
     const mimeMap = {
@@ -140,9 +132,7 @@ function mapAttachment(d) {
 
   const content = str(d.FileContent || d.Content || d.Value || '')
 
-  // Extract SAP OData entity URI — needed for /$value binary download
   const entityUri = d.__metadata?.uri || ''
-  // Some SAP services expose media_src for media-link entries
   const mediaSrc = d.__metadata?.media_src || ''
 
   return {
@@ -156,9 +146,6 @@ function mapAttachment(d) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PART TAG MAPPING — asn + item → generatePartTags() payload
-// ═══════════════════════════════════════════════════════════════
 export function buildPartTag(asn, item, opts = {}) {
   const boxNo = String(opts.boxNo ?? '1')
   const totalBoxes = String(opts.totalBoxes ?? '1')
@@ -206,12 +193,8 @@ export function buildPartTag(asn, item, opts = {}) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════
 export const asnApi = {
 
-  // GET /ASN_HEADERSet?$format=json
   async listAsns({ search = '', plants = [] } = {}) {
     const json = await odataGet('/ASN_HEADERSet?$format=json')
     let rows = (json.d?.results || []).map(mapHeader)
@@ -227,7 +210,6 @@ export const asnApi = {
     return rows
   },
 
-  // GET /ASN_HEADERSet(Asn_Num='...',FisYear='...')?$expand=Headertoitemnav&$format=json
   async getAsn(id) {
     const [asnNum, fisYear] = id.split('/')
     const json = await odataGet(
@@ -240,7 +222,6 @@ export const asnApi = {
     const itemRows = d.Headertoitemnav?.results || []
     asn.items = itemRows.map(mapItem)
 
-    // derive tax summary from items
     const sum = (k) => asn.items.reduce((t, it) => t + (it[k] || 0), 0)
     const taxable = sum('amount')
     const igst = sum('igst')
@@ -256,27 +237,18 @@ export const asnApi = {
     return asn
   },
 
-  // GET /AsnAttachmentSet?$filter=AsnNum eq '...' and FisYear eq '...'&$format=json
   async getAttachments(asnNum, fisYear) {
     const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`
     const json = await odataGet(
       `/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
     )
-    // ── TEMP DEBUG ──
     console.log('RAW attachment response:', JSON.stringify(json.d?.results?.[0], null, 2))
-    // ────────────────
     return (json.d?.results || []).map(mapAttachment)
   },
 
-  // Download attachment — tries four strategies in order:
-  //   1. base64/hex content already inline (FileContent field)
-  //   2. SAP entity URI + /$value (binary stream — most reliable)
-  //   3. SAP media_src URL (media-link entries)
-  //   4. direct Url field fallback
   async downloadAttachment(asnNum, fisYear, attachment) {
     const { name, mime, content, downloadUrl, entityUri, mediaSrc } = attachment
 
-    // Strategy 1 — inline base64 or hex content
     if (content) {
       try {
         triggerDownload(decodeContentToBlob(content, mime), name)
@@ -286,17 +258,13 @@ export const asnApi = {
       }
     }
 
-    // Strategy 2 — entity URI + /$value (standard SAP OData binary stream)
     if (entityUri) {
       try {
-        // entityUri from SAP is absolute (https://saphost:port/sap/opu/...)
-        // Convert to relative path so Vite proxy works
         let valueUrl = entityUri
         try {
           const parsed = new URL(entityUri)
           valueUrl = parsed.pathname
         } catch {
-          // already relative
         }
         valueUrl = valueUrl + '/$value'
 
@@ -318,7 +286,6 @@ export const asnApi = {
       }
     }
 
-    // Strategy 3 — SAP media_src (media-link entry pattern)
     if (mediaSrc) {
       try {
         let srcUrl = mediaSrc
@@ -340,7 +307,6 @@ export const asnApi = {
       }
     }
 
-    // Strategy 4 — direct Url field
     if (downloadUrl) {
       try {
         const res = await fetch(downloadUrl, { credentials: 'include' })
@@ -357,17 +323,14 @@ export const asnApi = {
     throw new Error('No download strategy available for this attachment')
   },
 
-  // Print — log for now; wire to backend print endpoint when available
   async printAsn(id) {
     console.log('print requested for', id)
     return { success: true, id }
   },
 
-  // Cancel — DELETE /ASN_HEADERSet(Asn_Num='...',FisYear='...')
 async cancelAsn(id) {
   const [asnNum, fisYear] = id.split('/')
 
-  // fetch CSRF token first
   const csrfToken = await fetchCsrfToken()
 
   const res = await fetch(
@@ -387,32 +350,20 @@ async cancelAsn(id) {
 },
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PRIVATE UTILS
-// ═══════════════════════════════════════════════════════════════
-
-// Robust decoder — handles base64, hex, data-URI, whitespace/newlines
 function decodeContentToBlob(raw, mime = 'application/octet-stream') {
   let clean = raw
 
-  // Strip data-URI prefix if present (e.g. "data:application/pdf;base64,AAAA…")
   if (clean.includes(',')) {
     const parts = clean.split(',')
-    // Only strip if it looks like a data URI (first part contains "base64" or "data:")
     if (parts[0].includes('base64') || parts[0].includes('data:')) {
       clean = parts.slice(1).join(',')
     }
   }
 
-  // Remove ALL whitespace / newlines SAP often injects into base64
   clean = clean.replace(/[\s\r\n]+/g, '')
 
-  // If empty after cleaning, throw
   if (!clean) throw new Error('Empty content after cleaning')
 
-  // Detect hex-encoded content (SAP sometimes returns hex instead of base64)
-  // Hex string: only 0-9 A-F chars, even length
-  // "25504446" = "%PDF" header in hex
   const isHex = /^[0-9A-Fa-f]+$/.test(clean) && clean.length % 2 === 0 && clean.length > 8
   if (isHex) {
     const bytes = new Uint8Array(clean.length / 2)
@@ -422,10 +373,8 @@ function decodeContentToBlob(raw, mime = 'application/octet-stream') {
     return new Blob([bytes], { type: mime })
   }
 
-  // Fix base64 padding if missing
   while (clean.length % 4 !== 0) clean += '='
 
-  // Decode base64
   const binary = atob(clean)
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
@@ -433,7 +382,6 @@ function decodeContentToBlob(raw, mime = 'application/octet-stream') {
 }
 
 function triggerDownload(blob, filename) {
-  // Ensure blob has correct mime type from filename if missing
   let finalBlob = blob
   if (!blob.type || blob.type === 'application/octet-stream') {
     const ext = filename.split('.').pop().toLowerCase()
@@ -443,16 +391,12 @@ function triggerDownload(blob, filename) {
 
   const url = URL.createObjectURL(finalBlob)
 
-  // Always open in new tab — browser renders PDFs/images natively,
-  // prompts download for unsupported types
   const newTab = window.open(url, '_blank')
   if (newTab && !newTab.closed) {
-    // Keep blob URL alive so new tab can load it
     setTimeout(() => URL.revokeObjectURL(url), 120000)
     return
   }
 
-  // Popup blocked → fall back to download
   const a = document.createElement('a')
   a.href = url
   a.download = filename

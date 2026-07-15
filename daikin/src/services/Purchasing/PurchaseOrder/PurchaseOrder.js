@@ -1,8 +1,6 @@
-// src/services/purchaseOrder.js
 const BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
-// ─── SAP date helpers ───────────────────────────────────────────
-// SAP YYYYMMDD → "May 11, 2026"
+
 export function sapDateToDisplay(s) {
   if (!s || s === '00000000') return ''
   const y = s.slice(0, 4)
@@ -12,13 +10,11 @@ export function sapDateToDisplay(s) {
   return isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
-// SAP YYYYMMDD → ISO "YYYY-MM-DD"
 export function sapDateToIso(s) {
   if (!s || s === '00000000') return ''
   return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`
 }
 
-// trim SAP numeric strings: "10.000 " → "10.00"
 function trimNum(s) {
   if (s === null || s === undefined || s === '') return '0.00'
   const n = parseFloat(String(s).trim())
@@ -27,7 +23,6 @@ function trimNum(s) {
 
 const str = (v) => String(v ?? '').trim()
 
-// ─── Fetch helpers ──────────────────────────────────────────────
 async function odataGet(path) {
   const url = `${BASE}${path}`
   const res = await fetch(url, {
@@ -43,12 +38,6 @@ async function odataGet(path) {
   return json.d
 }
 
-// ─── Mappers ────────────────────────────────────────────────────
-
-/**
- * PO_HEADER row → UI header shape (for sidebar list)
- * From: PO_HEADERSet?$skip=0&$top=40
- */
 function mapHeader(raw) {
   return {
     id:                   str(raw.Po_No),
@@ -78,20 +67,6 @@ function mapHeader(raw) {
   }
 }
 
-/**
- * PO_ITEM row (from headertoitemNav) → UI item shape
- *
- * Payload → UI column mapping:
- *   Item_No       → itemNo        (Item No.)
- *   Material_No   → materialNumber (Material — code)
- *   Material_Desc → materialName   (Material — description)
- *   Hsn_Code      → hsnCode        (HSN Code)
- *   Quantity      → poQty          (PO Qty — what was ordered)
- *   Confirm_Qty   → confirmQty     (Confirmed QTY)
- *   Delivered_Qty → deliveredQty   (Delivered QTY)
- *   Total_Amount  → unitPrice      (Unit Price)
- *   Confirm_Status→ status         (Status)
- */
 function mapPoItem(raw) {
   const rawStatus = str(raw.Confirm_Status)
   let status = rawStatus
@@ -104,27 +79,17 @@ function mapPoItem(raw) {
 
   return {
     poNo:             str(raw.Po_No),
-    // Item No. — strip leading zeros for display, keep raw for API calls
     itemNo:           str(raw.Item_No)?.replace(/^0+/, '') || str(raw.Item_No),
     ebelp:            str(raw.Item_No),
-    // Material
     materialNumber:   str(raw.Material_No),
     materialName:     str(raw.Material_Desc),
-    // HSN Code
     hsnCode:          str(raw.Hsn_Code),
-    // PO Qty (ordered quantity)
     poQty:            trimNum(raw.Quantity),
-    // Confirmed QTY
     confirmQty:       trimNum(raw.Confirm_Qty),
-    // Delivered QTY (goods received)
     deliveredQty:     trimNum(raw.Delivered_Qty),
-    // Unit Price — mapped from Total_Amount
     unitPrice:        trimNum(raw.Total_Amount),
-    // Status
     status,
-    // Unit of measure
     deliveryUnit:     str(raw.Uom),
-    // Kept for backward compat / schedule line drill-down
     deliverySchedule: trimNum(raw.Quantity),
     deliveryDate:     sapDateToDisplay(raw.Delivery_Date),
     plant:            str(raw.Plant),
@@ -150,10 +115,6 @@ function mapPoItem(raw) {
   }
 }
 
-/**
- * PO detail (expanded header + items) → UI agreement shape
- * From: PO_HEADERSet(Po_No='...',Vendor_No='')?$expand=headertoitemNav
- */
 function mapPoDetail(raw) {
   return {
     id:                   str(raw.Po_No),
@@ -182,9 +143,6 @@ function mapPoDetail(raw) {
   }
 }
 
-/**
- * PoConfirmSet row → confirm row shape
- */
 function mapConfirmRow(raw) {
   return {
     poNo:            str(raw.Po_No),
@@ -207,12 +165,6 @@ function mapConfirmRow(raw) {
   }
 }
 
-/**
- * Po_Lineitem row → schedule line shape
- * Menge  = scheduled qty
- * Wemng  = goods received (delivered) qty
- * Bmeng  = vendor confirmed qty
- */
 function mapLineItem(raw) {
   return {
     ebeln:            str(raw.Ebeln),
@@ -227,7 +179,6 @@ function mapLineItem(raw) {
   }
 }
 
-/** Pdir_ref_noSet row */
 function mapPdirRef(raw) {
   return {
     ebeln:   str(raw.Ebeln),
@@ -237,10 +188,7 @@ function mapPdirRef(raw) {
   }
 }
 
-// ─── API object ─────────────────────────────────────────────────
-
 export const purchaseOrderApi = {
-  // Cross-service call to ZSCHEDULE_GENERATE_SRV for F4 supplier value help
   async fetchAllSuppliers() {
     const res = await fetch(`/sap/opu/odata/sap/ZSCHEDULE_GENERATE_SRV/f4supplierSet?$format=json`, {
       headers: {

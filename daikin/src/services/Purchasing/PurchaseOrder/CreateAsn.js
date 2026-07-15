@@ -1,9 +1,5 @@
-// src/services/CreateAsn.js
 import { authConfig } from '../../authConfig.js'
 const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_PO_APP_SRV'
-// export const authConfig = { loginId: '', loginType: '' }
-
-
 
 const getHeaders = () => ({
   Accept: 'application/json',
@@ -17,7 +13,6 @@ async function odataGet(path) {
   return res.json()
 }
 
-// SAP "20260519" → "May 19, 2026"
 function sapDateToDisplay(v) {
   const s = String(v ?? '').trim()
   if (s.length !== 8) return s
@@ -25,7 +20,6 @@ function sapDateToDisplay(v) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-// SAP "20260519" → "2026-05-19" (for date input value)
 function sapDateToIso(v) {
   const s = String(v ?? '').trim()
   if (s.length !== 8) return ''
@@ -35,15 +29,12 @@ function sapDateToIso(v) {
 const num = (v) => Number(String(v ?? '').trim() || 0)
 const str = (v) => String(v ?? '').trim()
 
-// Map PO_ASN_ITEM → CreateASN item shape
 function mapItem(d) {
   const totalQty   = str(d.Total_Qty)
   const poQty      = str(d.Po_Qty)
   const asnCreated = str(d.Asn_Created)
   const shortQty   = num(d.ShortQty)
   const delQty     = num(d.DelQty)
-
-  // avlAsnQty = ShortQty (open qty to ship)
   const avlAsnQty  = String(Math.max(0, num(d.Menge) - num(d.Asn_Created)))
 
   return {
@@ -85,7 +76,6 @@ function mapItem(d) {
   }
 }
 
-// Map PO_ASN_HEADER → agreement/header shape
 function mapHeader(d) {
   return {
     poNo:              str(d.Po_No),
@@ -100,7 +90,6 @@ function mapHeader(d) {
   }
 }
 
-// Map Pdir_ref_noSet result → { value, label }
 function mapPdir(d) {
   return {
     value: str(d.PdirRefNo || d.Pdir_Ref_No || d.RefNo || ''),
@@ -108,15 +97,7 @@ function mapPdir(d) {
   }
 }
 
-// ═══════════════════════════════════════════════════
-// PUBLIC API
-// ═══════════════════════════════════════════════════
 export const createAsnService = {
-
-  /**
-   * Fetch PO header + items for Create ASN form.
-   * Returns { header, items }
-   */
   async getAsnData(poNo) {
     const json = await odataGet(
       `/PO_ASN_HEADERSet('${poNo}')?$expand=asnheadertoasnitemnav`
@@ -127,10 +108,6 @@ export const createAsnService = {
     return { header, items: header.items.filter(i => parseFloat(i.avlAsnQty || 0) > 0) }
   },
 
-  /**
-   * Fetch PDIR reference numbers for a PO.
-   * Returns array of { value, label }
-   */
   async getPdirRefs(poNo) {
     const filter = `Ebeln eq '${poNo}'`
     const json = await odataGet(
@@ -139,9 +116,6 @@ export const createAsnService = {
     return (json.d?.results || []).map(mapPdir)
   },
 
-  /**
-   * Fetch both in parallel — use this in CreateASN component.
-   */
   async getCreateAsnPageData(poNo) {
     const [asnData, pdirRefs] = await Promise.all([
       createAsnService.getAsnData(poNo),

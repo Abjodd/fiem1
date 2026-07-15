@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// AsnReportApi.js — ASN Report OData Service
-// Service: NW_SUP_POR_ASN_REPORT_SRV
-// ═══════════════════════════════════════════════════════════════
-
 const SRV = '/sap/opu/odata/shiv/NW_SUP_POR_ASN_REPORT_SRV'
 export const authConfig = { loginId: 'aryas@kpmg.com', loginType: 'E' }
 
@@ -41,55 +36,30 @@ const formatTime = (v) => {
   return `${s.slice(0, 2)}:${s.slice(2, 4)}:${s.slice(4, 6)}`
 }
 
-
-// ── Row mapper — AsnSet ───────────────────────────────────────
-// Missing fields (Gate Entry No., ETA, Gate Entry/Exit DT, Invoice/PDIR)
-// not in OData payload → kept blank until backend provides them.
 function mapAsnRow(raw) {
   return {
-    // Plant
     plant:             str(raw.Plant),
     plantDesc:         str(raw.PlantName ?? raw.PlantDesc ?? ''),
-
-    // Invoice
     invoiceNumber:     str(raw.VendorInvoice),
     invoiceDate:       formatDate(raw.InvDate),
-
-    // IBD / Gate
     ibdNo:             str(raw.Ibd),
-    gateEntryNo:       str(raw.GateNo ?? ''),     // Missing in payload
-
-    // ASN / Shipment
+    gateEntryNo:       str(raw.GateNo ?? ''),
     asnNumber:         str(raw.AsnNumber),
     shipmentNo:        str(raw.Shipment),
     createdOn:     formatDate(raw.CreatedOn),
     shipmentDate:  formatDate(raw.ShipmentDate),
-
-    // Base document
     baseDocument:      str(raw.BaseDocument),
     baseDocumentType:  str(raw.DocType ?? raw.BaseDocumentType ?? ''),
-
-    // Vendor
     vendorCode:        str(raw.Supplier),
     vendorName:        str(raw.Name),
-
-    // Purchase
     purchaseGroup:     str(raw.PurGrp),
-
-    // Statuses
     asnStatus:         str(raw.AsnStatusText),
     grStatus:          str(raw.GrStatus),
     invStatus:         str(raw.InvStatus),
-
-    // Financials
     currency:          str(raw.Currency ?? raw.Waers ?? ''),
     qty:               str(raw.Qty ?? raw.Menge ?? ''),
-
-    // Eway bill
     ewayBillNo:        str(raw.Eway),
     ewayBillDate:  formatDate(raw.EwayDate),
-
-    // Dates
     reachedPlantDate:  formatDate(raw.RchPlantDt),
     etaDate:           formatDate(raw.Eta ?? ''),
     etaTime:           formatTime(raw.EtaTime ?? ''),
@@ -97,16 +67,12 @@ function mapAsnRow(raw) {
     gateEntryTime:     formatTime(raw.GenTime ?? ''),
     gateExitDate:      formatDate(raw.GexDate ?? ''),
     gateExitTime:      formatTime(raw.GexTime ?? ''),
-
-    // Material (used in detail page)
     material:          str(raw.Material ?? raw.Matnr ?? ''),
     materialName:      str(raw.MaterialText ?? raw.Maktx ?? ''),
     challanNo:         str(raw.ChallanNo ?? ''),
     qualityStatus:     str(raw.QualityStatus ?? ''),
     packingMaterialType: str(raw.PackingMaterialType ?? ''),
     packingMaterialQty:  str(raw.PackingMaterialQty ?? '0.000'),
-
-    // Items array for detail page (single item per row from flat OData)
     items: [
       {
         materialCode:        str(raw.Material ?? raw.Matnr ?? ''),
@@ -127,9 +93,6 @@ const mapMaterial = (raw) => ({ code: str(raw.Material), label: str(raw.Material
 const mapInvoice  = (raw) => ({ code: str(raw.VendorInvoice), label: '' })
 const mapRefDoc   = (raw) => ({ code: str(raw.BaseDocument), label: str(raw.DocType) })
 
-// Shipment & IBD help sets return 404 → graceful empty array fallback
-
-// ── Filter builder — only include non-empty optional params ───
 function buildFilter(required = {}, optional = {}) {
   const parts = []
   Object.entries(required).forEach(([key, val]) => {
@@ -141,9 +104,6 @@ function buildFilter(required = {}, optional = {}) {
   return encodeURIComponent(`(${parts.join(' and ')})`)
 }
 
-// ─────────────────────────────────────────────────────────────
-// Date range filter — StartDate / EndDate used by all VH sets
-// ─────────────────────────────────────────────────────────────
 function dateFilter(startDate, endDate, extra = {}) {
   return buildFilter(
     { StartDate: toSapDate(startDate), EndDate: toSapDate(endDate) },
@@ -151,12 +111,8 @@ function dateFilter(startDate, endDate, extra = {}) {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════
 export const AsnReportApi = {
 
-  // Go button — fetch report rows
   async fetchReport({
     asnDateFrom = '', asnDateTo = '',
     supplier = '', material = '', invoiceNo = '',
@@ -185,7 +141,6 @@ export const AsnReportApi = {
     return (data.d?.results || []).map(mapAsnRow)
   },
 
-  // Value Help — ASN Number
   async fetchAsnHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     const f = dateFilter(startDate, endDate)
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -193,7 +148,6 @@ export const AsnReportApi = {
     return (data.d?.results || []).map(mapAsn)
   },
 
-  // Value Help — Shipment (404 → empty, backend not ready)
   async fetchShipmentHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
   try {
     const f = dateFilter(startDate, endDate)
@@ -205,8 +159,6 @@ export const AsnReportApi = {
   }
 },
 
-
-  // Value Help — IBD Number (404 → empty, backend not ready)
 async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
   try {
     const f = dateFilter(startDate, endDate)
@@ -218,7 +170,6 @@ async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
   }
 },
 
-  // Value Help — Material
   async fetchMaterialHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     const f = dateFilter(startDate, endDate)
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -226,7 +177,6 @@ async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     return (data.d?.results || []).map(mapMaterial)
   },
 
-  // Value Help — Invoice Number
   async fetchInvoiceHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     const f = dateFilter(startDate, endDate)
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -234,7 +184,6 @@ async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     return (data.d?.results || []).map(mapInvoice)
   },
 
-  // Value Help — Reference Document (Base Doc)
   async fetchRefDocHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     const f = dateFilter(startDate, endDate)
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -242,7 +191,6 @@ async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     return (data.d?.results || []).map(mapRefDoc)
   },
 
-  // Value Help — Supplier: SupplierHelpSet (no filter — Bukrs not filterable on this entity)
   async fetchSupplierHelp({ skip = 0, top = 20 } = {}) {
     const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
     const data = await odata(`/SupplierHelpSet?${pagination}`)
@@ -252,7 +200,6 @@ async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
     }))
   },
 
-  // Value Help — Plant: no endpoint confirmed yet → empty
   async fetchPlantHelp() {
     return []
   },

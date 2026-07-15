@@ -1,16 +1,5 @@
-// ═══════════════════════════════════════════════════════════════
-// vendorLedgerService.js — OData service for Vendor Ledger Report
-// Service: SUP_PRTL_VENDR_ITM_DISP_SRV
-// ═══════════════════════════════════════════════════════════════
-
 const SRV = '/sap/opu/odata/shiv/SUP_PRTL_VENDR_ITM_DISP_SRV'
 export const authConfig = { loginId: '', loginType: '' }
-
-
-// ── SAP Date helpers ──────────────────────────────────────────
-// All date conversion is handled here in the service.
-// Callers always pass ISO strings (YYYY-MM-DD); service converts internally.
-
 export const toSapDate = (isoDate) => {
   if (!isoDate) return ''
   return isoDate.replace(/-/g, '')
@@ -30,7 +19,6 @@ export const fromSapDateDisplay = (sapDate) => {
   return `${months[m]} ${String(d).padStart(2, '0')}, ${y}`
 }
 
-// ── Generic OData fetch ───────────────────────────────────────
 async function odata(path) {
   const res = await fetch(`${SRV}${path}`, {
     headers: {
@@ -46,8 +34,6 @@ async function odata(path) {
   }
   return res.json()
 }
-
-// ── Mappers ───────────────────────────────────────────────────
 
 const mapSupplier = (raw) => ({
   code:     raw.Lifnr,
@@ -78,7 +64,6 @@ const mapDocumentNo = (raw) => ({
   label: raw.Belnr,
 })
 
-// VendorDeailsSet → full row
 const mapReportRow = (raw) => ({
   supplier:             raw.Lifnr       || '',
   companyCode:          raw.Bukrs       || '',
@@ -141,11 +126,6 @@ const mapOpenCloseBal = (raw) => ({
   closeBal: parseFloat(raw.CloseBal || '0'),
 })
 
-// ── Filter builder helpers ────────────────────────────────────
-
-// Builds an OData filter string for a field that may have multiple values.
-// Single value  → Blart eq 'RE'
-// Multiple vals → (Blart eq 'RE' or Blart eq 'KR')
 const buildMultiFilter = (field, commaSeparated) => {
   if (!commaSeparated) return null
   const values = commaSeparated.split(',').map(v => v.trim()).filter(Boolean)
@@ -154,7 +134,6 @@ const buildMultiFilter = (field, commaSeparated) => {
   return '(' + values.map(v => `${field} eq '${v}'`).join(' or ') + ')'
 }
 
-// ── API object ────────────────────────────────────────────────
 export const VendorLedgerApi = {
 
   async fetchSuppliers(skip = 0, top = 50) {
@@ -183,13 +162,10 @@ export const VendorLedgerApi = {
     return (data.d?.results || []).map(mapInvoice)
   },
 
-  
-
-  // All date params accept ISO strings (YYYY-MM-DD); conversion is done here.
-  async fetchReport({
+    async fetchReport({
     lifnr       = '',
-    childLifnr  = '',  // FIX: was missing — child supplier filter now forwarded
-    blart       = '',  // FIX: comma-separated values now build proper or-clauses
+    childLifnr  = '',  
+    blart       = '',  
     xblnr       = '',
     bldat       = '',
     openItem    = '',
@@ -209,7 +185,6 @@ export const VendorLedgerApi = {
     if (lifnr)       filters.push(`Lifnr eq '${lifnr}'`)
     if (childLifnr)  filters.push(`ChildLifnr eq '${childLifnr}'`)
 
-    // Multi-value doc type (or-clause when more than one selected)
     const blartFilter = buildMultiFilter('Blart', blart)
     if (blartFilter)  filters.push(blartFilter)
     if (belnr)        filters.push(`Belnr eq '${belnr}'`)
@@ -225,7 +200,6 @@ export const VendorLedgerApi = {
     if (postFrom)     filters.push(`BUDAT_LOW eq '${toSapDate(postFrom)}'`)
     if (postTo)       filters.push(`BUDAT_HIGH eq '${toSapDate(postTo)}'`)
 
-    // filters.push(`Bukrs eq '${bukrs}'`)
       if (bukrs) filters.push(`Bukrs eq '${bukrs}'`)
 
     const filterStr = filters.map(f => encodeURIComponent(f)).join('%20and%20')
@@ -233,9 +207,6 @@ export const VendorLedgerApi = {
     return (data.d?.results || []).map(mapReportRow)
   },
 
-  // Date params accept ISO strings (YYYY-MM-DD); conversion is done here.
-  // FIX: was previously expecting pre-converted SAP dates from the caller —
-  // now consistent with fetchReport: callers always pass ISO, service converts.
   async fetchOpenCloseBal({
     lifnr      = '',
     childLifnr = '',

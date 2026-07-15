@@ -3,8 +3,6 @@ const USE_MOCK = false
 const SRV = '/sap/opu/odata/sap/ZSCHEDULE_GENERATE_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
-// ── OData helpers ─────────────────────────────────────────────
-
 async function fetchCsrfToken() {
   const res = await fetch(`${SRV}/`, {
     method: 'GET',
@@ -54,8 +52,6 @@ async function odataPost(path, body) {
   return json.d
 }
 
-// ── Field-name mappers ────────────────────────────────────────
-
 function mapHeader(d) {
   return {
     id:          d.agreement,
@@ -73,8 +69,6 @@ function extractDaysFromRow(d) {
   const qty = Number(d.day1) || 0
   const dateStr = d.date || ''
   
-  // If vertical format (has date and qty in day1)
-  // Backend date is in YYYYMMDD format (e.g., 20260708)
   if (dateStr && dateStr.length === 8 && qty > 0) {
     const dayNum = parseInt(dateStr.substring(6, 8), 10)
     
@@ -82,7 +76,6 @@ function extractDaysFromRow(d) {
       days[dayNum - 1] = qty
     }
   } else {
-    // Horizontal fallback
     for (let i = 1; i <= 31; i++) {
       days[i - 1] = Number(d[`day${i}`]) || 0
     }
@@ -238,7 +231,6 @@ const MOCK_SUPPLIERS = {
   },
 }
 
-// Mock f4 supplier list (lifnr + name only)
 const MOCK_F4_SUPPLIERS = Object.values(MOCK_SUPPLIERS).map(s => ({
   lifnr: s.code,
   name:  s.name,
@@ -296,14 +288,12 @@ function buildEditPayload(agreementId, lifnr, item) {
 
   const results = []
   
-  // Use originalDays to detect what was deleted
   const original = item.originalDays || []
   
   item.days.forEach((val, idx) => {
     const numVal = Number(val) || 0
     const origVal = Number(original[idx]) || 0
     
-    // Send if currently allotted, OR if it was previously allotted but is now 0 (deleted)
     if (numVal > 0 || (numVal === 0 && origVal > 0)) {
       const dayStr = String(idx + 1).padStart(2, '0')
       results.push({
@@ -376,7 +366,6 @@ function buildHeaderApprovePayload(agreementId, lifnr, itemsData) {
   }
 }
 
-// ── Schedule generation helpers ───────────────────────────────
 export function generateDays(totalQty, mode, dayCount) {
   const days = new Array(31).fill(0)
   if (mode === 'week') {
@@ -393,13 +382,7 @@ export function generateDays(totalQty, mode, dayCount) {
   return days
 }
 
-// ── Public API ────────────────────────────────────────────────
 export const scheduleGenerateApi = {
-
-  // ────────────────────────────────────────────────────────────
-  // fetchAllSuppliers  (NEW — for F4 value help)
-  // GET f4supplierSet → [{lifnr, name}]
-  // ────────────────────────────────────────────────────────────
   async fetchAllSuppliers() {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 200))
@@ -411,9 +394,6 @@ export const scheduleGenerateApi = {
     return results.map(d => ({ lifnr: d.lifnr, name: d.name }))
   },
 
-  // ────────────────────────────────────────────────────────────
-  // listAgreements (NEW — for Approver Sidebar)
-  // ────────────────────────────────────────────────────────────
   async listAgreements({ search = '', plants = [] } = {}) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 200))
@@ -439,9 +419,6 @@ export const scheduleGenerateApi = {
     return rows
   },
 
-  // ────────────────────────────────────────────────────────────
-  // getAgreementDetails (NEW — for Approver Sidebar selection)
-  // ────────────────────────────────────────────────────────────
   async getAgreementDetails(agreementId, lifnr, isApprover = false) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 200))
@@ -460,9 +437,6 @@ export const scheduleGenerateApi = {
     return { id: agreementId, items }
   },
 
-  // ────────────────────────────────────────────────────────────
-  // fetchSupplier
-  // ────────────────────────────────────────────────────────────
   async fetchSupplier(code) {
     if (USE_MOCK) {
       await new Promise(r => setTimeout(r, 200))
@@ -567,9 +541,7 @@ export const scheduleGenerateApi = {
     })
     return map
   },
-  // ────────────────────────────────────────────────────────────
-  // generateWeekSchedule
-  // ────────────────────────────────────────────────────────────
+
   async generateWeekSchedule(agreementId, lifnr, itemsData) {
   if (USE_MOCK) {
     await new Promise(r => setTimeout(r, 250))
@@ -582,9 +554,7 @@ export const scheduleGenerateApi = {
   )
   return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
 },
-  // ────────────────────────────────────────────────────────────
-  // generateDaySchedule
-  // ────────────────────────────────────────────────────────────
+
   async generateDaySchedule(agreementId, lifnr, itemsData, dayCount) {
   if (USE_MOCK) {
     await new Promise(r => setTimeout(r, 250))
@@ -597,9 +567,7 @@ export const scheduleGenerateApi = {
   )
   return results.map((res, i) => ({ ...itemsData[i], ...mapDayRecord(res) }))
 },
-  // ────────────────────────────────────────────────────────────
-  // saveScheduleLines (editSet)
-  // ────────────────────────────────────────────────────────────
+
   async saveScheduleLines(agreementId, lifnr, itemsData) {
   if (USE_MOCK) {
     await new Promise(r => setTimeout(r, 300))

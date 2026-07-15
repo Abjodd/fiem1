@@ -1,16 +1,9 @@
 const ODATA_BASE = '/sap/opu/odata/shiv/NW_SUPP_PORTAL_SA_SRV'
 export const authConfig = { loginId: '', loginType: '' }
 
-
 const str = (v) => String(v ?? '').trim()
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Date helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-// "20260422" → "Apr 22, 2026"  (display only, never sent to SAP)
 const sapDateDisplay = (v) => {
   const s = str(v)
   if (s.length !== 8) return s
@@ -20,7 +13,6 @@ const sapDateDisplay = (v) => {
   return `${MONTHS[mi]} ${d}, ${y}`
 }
 
-// Convert any reasonable date string → "YYYYMMDD" for SAP POST
 function toSap8(v) {
   const s = str(v)
   if (!s) return ''
@@ -35,10 +27,6 @@ function toSap8(v) {
   }
   return ''
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HTTP helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 const getHeaders = () => ({
   Accept: 'application/json',
@@ -81,7 +69,7 @@ function mapAsnItem(d, idx = 0) {
     werks:            str(d.Werks),
     maktx:            str(d.Maktx),
     plantDesc:        str(d.PlantDesc),
-    perUnit:          str(d.PerUnit),    // "1 " → "1"
+    perUnit:          str(d.PerUnit),    
     warningMsg:       str(d.Warningmsg),
     pstyp:            str(d.Pstyp),
 
@@ -91,7 +79,7 @@ function mapAsnItem(d, idx = 0) {
     igstPer:          str(d.Igst_per || '0'),
     cgstPer:          str(d.Cgst_per || '0'),
     sgstPer:          str(d.Sgst_per || '0'),
-    tax:              str(d.Tax     || '0'),   // "0 " → "0"
+    tax:              str(d.Tax     || '0'),   
     currency:         str(d.Currency || ''),
 
     materialName:     str(d.Maktx),
@@ -109,14 +97,14 @@ function mapAsnItem(d, idx = 0) {
     confUnit:         str(d.Meins),
     asnCreated:       str(d.Asn_Created),
     draftAsnQty:      str(d.Draft_AsnQty || '0'),
-    spq:              str(d.SOQ),         // "100.000 " → "100.000"
+    spq:              str(d.SOQ),
 
-    avlAsnQty:        menge,             // "0.00" stored correctly ✅
-    delQty:           delQty,             // "0.00" stored correctly ✅
+    avlAsnQty:        menge,
+    delQty:           delQty,
     deliveredQty:     delQty,
     deliveredUnit:    str(d.Meins),
 
-    netPrice:         str(d.Netpr),       // "        12.00" → "12.00" ✅
+    netPrice:         str(d.Netpr),
     supplierNetPrice: str(d.NetprVen),
 
     packingMaterialQty:  str(d.PkgMatQty) || '1',
@@ -131,9 +119,6 @@ function mapAsnItem(d, idx = 0) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Public API
-// ─────────────────────────────────────────────────────────────────────────────
 export const createAsnApi = {
 
   async getEligibleItems({ scheduleNo, fromDate, toDate, storageLocation = '' } = {}) {
@@ -158,7 +143,6 @@ export const createAsnApi = {
       const genSch = String(ebelpCounters[ebelpStr]++)
       item.schLine = item.schLine ? String(parseInt(item.schLine, 10)) : genSch
       
-      // Update itemNo to reflect the new schLine so React keys are stable
       item.itemNo = `${item.ebelp}-${item.schLine}-${item.eindt}-${idx}`
       
       return item
@@ -172,9 +156,6 @@ export const createAsnApi = {
       .filter(Boolean)
   },
 
-  // ── Submit ASN — POST to ASN_HEADERSet ────────────────────────────────────
-  // Menge in each item row = Con_Qty − DelQty (recomputed, matching actual app)
-  // Payload structure mirrors the confirmed working POST (201 Created).
   async submitAsn({
     scheduleNo, plant, invoiceNumber, invoiceDate, invoiceAmount,
     totalPacking, items,
@@ -185,8 +166,6 @@ export const createAsnApi = {
     const ebelpCounters = {}
 
     const itemRows = items.map(it => {
-      // Use avlAsnQty directly — this is what SAP returned and user confirmed.
-      // Do NOT recompute Con_Qty − DelQty; that's SAP's job and causes mismatch.
       const menge = String(parseFloat(it.avlAsnQty || '0'))
       
       const ebelpStr = str(it.ebelp)
@@ -252,7 +231,6 @@ export const createAsnApi = {
         App: '',
       }
 
-      // ── BatchSplitSet — same as PO CreateAsnPost.js ──
       if (it.batches && it.batches.length > 0) {
         itemObj.BatchSplitSet = it.batches.map(b => ({
           Batch: str(b.batchCode),
@@ -268,7 +246,6 @@ export const createAsnApi = {
       return itemObj
     })
 
-    // ── Header payload ────────────────────────────────────────────────────────
     const payload = {
       Update:               false,
       DraftAsn:             false,

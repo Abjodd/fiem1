@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// GateInMIGOApi.js — Gate-In to MIGO Report OData Service
-// Service: SUPP_PORTAL_GRN_REPORT_SRV
-// ═══════════════════════════════════════════════════════════════
-
 const SRV = '/sap/opu/odata/shiv/SUPP_PORTAL_GRN_REPORT_SRV'
 export const authConfig = { loginId: 'aryas@kpmg.com', loginType: 'E' }
 
@@ -30,8 +25,6 @@ export const toSapDate = (isoDate) => {
   return isoDate.replace(/-/g, '')
 }
 
-// ── Row mapper — HeaderDataSet ────────────────────────────────
-// ── Row mapper — fix 3 wrong OData field names ─────────────
 function mapGrnRow(raw) {
   return {
     grnNumber:           str(raw.Mblnr),
@@ -56,16 +49,15 @@ function mapGrnRow(raw) {
     asnCrBy:             str(raw.AsnCreater),
     grnBy:               str(raw.Usnam),
     stLoc:               str(raw.Lgort),
-    trNo:                str(raw.Tbnum),          // ← was TrNo ?? ''
-    toNo:                str(raw.Tanum),          // ← was ToNo ?? ''
-    packagingComment:    str(raw.PkgStdCmt),      // ← was HeaderText
+    trNo:                str(raw.Tbnum),
+    toNo:                str(raw.Tanum),
+    packagingComment:    str(raw.PkgStdCmt),
     packingMaterialType: str(raw.PkgMatType),
     packingMaterialQty:  num(raw.PkgMatQty),
     shortQty:            num(raw.ShortQty ?? 0),
     remarks:             str(raw.Remarks),
   }
 }
-// ── Filter builder ────────────────────────────────────────────
 function buildFilter(required = {}, optional = {}) {
   const parts = []
   Object.entries(required).forEach(([k, v]) => parts.push(`${k} eq '${v}'`))
@@ -75,18 +67,13 @@ function buildFilter(required = {}, optional = {}) {
   return encodeURIComponent(`(${parts.join(' and ')})`)
 }
 
-// ═══════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════
 export const GateInMIGOApi = {
 
-  // Go button — HeaderDataSet
-  // plant (Werks) added as optional filter — sent only when selected
   async fetchReport({
     postingStartDate = '', postingEndDate = '',
     asnNo = '', grnNo = '', material = '',
     shipmentNo = '', ibdNumber = '',
-    plant = '',          // ← NEW: Werks filter
+    plant = '',
     skip = 0, top = 200,
   } = {}) {
     const f = buildFilter(
@@ -99,7 +86,7 @@ export const GateInMIGOApi = {
         Matnr:      material,
         ShipmentNo: shipmentNo,
         Ibd:        ibdNumber,
-        Werks:      plant,       // ← NEW: only appended to filter if non-empty
+        Werks:      plant,
       },
     )
     const pagination = skip > 0 ? `&$skip=${skip}&$top=${top}` : `&$top=${top}`
@@ -107,7 +94,6 @@ export const GateInMIGOApi = {
     return (data.d?.results || []).map(mapGrnRow)
   },
 
-  // VH — ASN: AsnHelpSet (no date filter needed per spec)
   async fetchAsnHelp({ skip = 0, top = 20 } = {}) {
     const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
     const data = await odata(`/AsnHelpSet?${pagination}`)
@@ -117,8 +103,6 @@ export const GateInMIGOApi = {
     }))
   },
 
-  // VH — GRN / Document: DocumentHelpSet
-  // Lifnr = '' per spec (empty, not loginId). Sdate/Edate always required.
   async fetchGrnHelp({ startDate = '', endDate = '', asnNo = '', skip = 0, top = 20 } = {}) {
     const f = buildFilter(
       {
@@ -137,9 +121,6 @@ export const GateInMIGOApi = {
     }))
   },
 
-  // VH — Plant: PlantHelpSet
-  // Payload: Lifnr eq '' and AsnNum eq '' and Mblnr eq '' and (Sdate eq '...' and Edate eq '...')
-  // Returns: Werks (code) + Name1 (label e.g. "KRL")
   async fetchPlantHelp({ startDate = '', endDate = '', asnNo = '', grnNo = '', skip = 0, top = 20 } = {}) {
     const f = buildFilter(
       {
@@ -159,15 +140,13 @@ export const GateInMIGOApi = {
     }))
   },
 
-  // VH — Material: MaterialHelpSet
-  // All 5 params always sent; Werks = plant if selected, '' otherwise
   async fetchMaterialHelp({ startDate = '', endDate = '', asnNo = '', grnNo = '', plant = '', skip = 0, top = 20 } = {}) {
     const f = buildFilter(
       {
         Lifnr:  '',
         AsnNum: asnNo,
         Mblnr:  grnNo,
-        Werks:  plant,        // ← now uses plant state if set
+        Werks:  plant,
         Sdate:  toSapDate(startDate),
         Edate:  toSapDate(endDate),
       },
@@ -177,21 +156,19 @@ export const GateInMIGOApi = {
     const data = await odata(`/MaterialHelpSet?$filter=${f}${pagination}`)
     return (data.d?.results || []).map(r => ({
   code:  str(r.Matnr),
-  label: str(r.Maktx ?? ''),   // ← was missing
+  label: str(r.Maktx ?? ''),
 }))
   },
 
-  // VH — Shipment: ShipmentHelpSet (no filter params in spec)
 async fetchShipmentHelp({ skip = 0, top = 20 } = {}) {
   const pagination = skip > 0 ? `$skip=${skip}&$top=${top}` : `$top=${top}`
   const data = await odata(`/ShipmentHelpSet?${pagination}`)
   return (data.d?.results || []).map(r => ({
-    code:  str(r.Shipment),    // ← was r.Shipmentno
+    code:  str(r.Shipment), 
     label: '',
   }))
 },
 
-  // VH — IBD: IBDHelpSet returns 404 → graceful empty
 async fetchIbdHelp({ startDate = '', endDate = '', skip = 0, top = 20 } = {}) {
   try {
     const f = buildFilter(

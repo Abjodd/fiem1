@@ -22,90 +22,7 @@ const parseDdmmyyyy = (s) => {
   return iso ? new Date(iso) : null
 }
 
-// ─── MOCK DATA (no service yet) ────────────────────────────────
-const MOCK_AGREEMENTS = [
-  {
-    id: 'IPO-4500198231',
-    poNo: 'IPO-4500198231',
-    date: '05.07.2026',
-    vendor: 'Shenzhen Opto Components Co.',
-    plant: '1010',
-    plantName: 'Sonepat Plant',
-    plantDesc: 'Sonepat Plant',
-    buyerName: 'Rakesh Malhotra',
-    currency: 'USD',
-    type: 'Import',
-    items: [
-      { itemNo: '10', materialName: 'LED Driver IC SMD', materialNumber: 'IMP-100234', hsnCode: '85414000', poQty: '5000', balanceQty: '2000', deliveredQty: '3000', unitPrice: '0.42', deliveryUnit: 'PC' },
-      { itemNo: '20', materialName: 'Reflector Lens Assembly', materialNumber: 'IMP-100987', hsnCode: '85122000', poQty: '1200', balanceQty: '1200', deliveredQty: '0', unitPrice: '3.15', deliveryUnit: 'PC' },
-      { itemNo: '30', materialName: 'Wiring Harness Connector', materialNumber: 'IMP-101045', hsnCode: '85369090', poQty: '8000', balanceQty: '0', deliveredQty: '8000', unitPrice: '0.09', deliveryUnit: 'PC' },
-    ],
-  },
-  {
-    id: 'IPO-4500198305',
-    poNo: 'IPO-4500198305',
-    date: '02.07.2026',
-    vendor: 'Taiwan Precision Optics Ltd.',
-    plant: '1020',
-    plantName: 'Rai Plant',
-    plantDesc: 'Rai Plant',
-    buyerName: 'Neha Sharma',
-    currency: 'USD',
-    type: 'Import',
-    items: [
-      { itemNo: '10', materialName: 'Polycarbonate Lens Blank', materialNumber: 'IMP-200112', hsnCode: '39209900', poQty: '3000', balanceQty: '1500', deliveredQty: '1500', unitPrice: '1.85', deliveryUnit: 'PC' },
-      { itemNo: '20', materialName: 'Aluminium Heat Sink', materialNumber: 'IMP-200456', hsnCode: '76169900', poQty: '2500', balanceQty: '2500', deliveredQty: '0', unitPrice: '2.40', deliveryUnit: 'PC' },
-    ],
-  },
-  {
-    id: 'IPO-4500198360',
-    poNo: 'IPO-4500198360',
-    date: '28.06.2026',
-    vendor: 'Korea Auto Lighting Corp.',
-    plant: '1010',
-    plantName: 'Sonepat Plant',
-    plantDesc: 'Sonepat Plant',
-    buyerName: 'Rakesh Malhotra',
-    currency: 'USD',
-    type: 'Import',
-    items: [
-      { itemNo: '10', materialName: 'Headlamp Bezel Chrome', materialNumber: 'IMP-300771', hsnCode: '87089900', poQty: '1800', balanceQty: '600', deliveredQty: '1200', unitPrice: '4.60', deliveryUnit: 'PC' },
-      { itemNo: '20', materialName: 'PCB Control Module', materialNumber: 'IMP-300889', hsnCode: '85340000', poQty: '900', balanceQty: '900', deliveredQty: '0', unitPrice: '11.20', deliveryUnit: 'PC' },
-      { itemNo: '30', materialName: 'Rubber Gasket Seal', materialNumber: 'IMP-300921', hsnCode: '40169300', poQty: '6000', balanceQty: '4400', deliveredQty: '1600', unitPrice: '0.06', deliveryUnit: 'PC' },
-    ],
-  },
-  {
-    id: 'IPO-4500198412',
-    poNo: 'IPO-4500198412',
-    date: '20.06.2026',
-    vendor: 'Osaka Electro Devices Inc.',
-    plant: '1030',
-    plantName: 'Manesar Plant',
-    plantDesc: 'Manesar Plant',
-    buyerName: 'Neha Sharma',
-    currency: 'JPY',
-    type: 'Import',
-    items: [
-      { itemNo: '10', materialName: 'Micro Relay Switch', materialNumber: 'IMP-400012', hsnCode: '85365000', poQty: '4000', balanceQty: '4000', deliveredQty: '0', unitPrice: '38.00', deliveryUnit: 'PC' },
-    ],
-  },
-  {
-    id: 'IPO-4500198488',
-    poNo: 'IPO-4500198488',
-    date: '15.06.2026',
-    vendor: 'Shenzhen Opto Components Co.',
-    plant: '1010',
-    plantName: 'Sonepat Plant',
-    plantDesc: 'Sonepat Plant',
-    buyerName: 'Rakesh Malhotra',
-    currency: 'USD',
-    type: 'Import',
-    items: [
-      { itemNo: '10', materialName: 'LED Chip High Output', materialNumber: 'IMP-500233', hsnCode: '85414000', poQty: '10000', balanceQty: '0', deliveredQty: '10000', unitPrice: '0.31', deliveryUnit: 'PC' },
-      { itemNo: '20', materialName: 'Diffuser Film Roll', materialNumber: 'IMP-500340', hsnCode: '39209900', poQty: '500', balanceQty: '150', deliveredQty: '350', unitPrice: '9.80', deliveryUnit: 'RL' },
-    ],
-  },
-]
+import { importPOApi } from '../../../services/Purchasing/ImportPO/ImportPO.js'
 
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR CONTENT
@@ -284,15 +201,20 @@ export default function ImportPurchaseOrder() {
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  // ── load mock list (swap for real API later) ──
   useEffect(() => {
     if (userLoading) return
-    setListLoading(true); setListError(null)
-    const t = setTimeout(() => {
-      setAgreements(MOCK_AGREEMENTS)
-      setListLoading(false)
-    }, 250)
-    return () => clearTimeout(t)
+    setListLoading(true)
+    setListError(null)
+    importPOApi.listHeaders()
+      .then(data => {
+        setAgreements(data)
+        setListLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setListError('Failed to load import purchase orders')
+        setListLoading(false)
+      })
   }, [userLoading])
 
   useEffect(() => {
@@ -307,18 +229,29 @@ export default function ImportPurchaseOrder() {
     if (selectedAgreementId) sessionStorage.setItem('ipo_selected_id', selectedAgreementId)
   }, [selectedAgreementId])
 
-  // ── load mock detail (swap for real API later) ──
   useEffect(() => {
     if (!selectedAgreementId) { setAgreement(null); return }
-    setDetailLoading(true); setDetailError(null)
-    const t = setTimeout(() => {
-      const found = MOCK_AGREEMENTS.find(a => a.id === selectedAgreementId)
-      if (found) setAgreement(found)
-      else setDetailError('Import purchase order not found')
+    setDetailLoading(true)
+    setDetailError(null)
+    
+    const foundHeader = agreements.find(a => a.id === selectedAgreementId)
+    if (!foundHeader) {
+      setDetailError('Import purchase order not found')
       setDetailLoading(false)
-    }, 200)
-    return () => clearTimeout(t)
-  }, [selectedAgreementId])
+      return
+    }
+
+    importPOApi.getLineItems(selectedAgreementId)
+      .then(items => {
+        setAgreement({ ...foundHeader, items })
+        setDetailLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setDetailError('Failed to load line items')
+        setDetailLoading(false)
+      })
+  }, [selectedAgreementId, agreements])
 
   useEffect(() => {
     if (selectedBtnRef.current) {
