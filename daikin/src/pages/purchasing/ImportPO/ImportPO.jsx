@@ -303,8 +303,23 @@ export default function ImportPurchaseOrder() {
 
   const filteredItems = useMemo(() => {
     if (!agreement) return []
-    return agreement.items
-  }, [agreement])
+    let items = agreement.items
+
+    const f = parseDdmmyyyy(fromDate)
+    const t = parseDdmmyyyy(toDate)
+
+    if (f || t) {
+      items = items.filter(item => {
+        const itemDate = parseDdmmyyyy(item.deliveryFromDate)
+        if (!itemDate) return true
+
+        if (f && itemDate < f) return false
+        if (t && itemDate > t) return false
+        return true
+      })
+    }
+    return items
+  }, [agreement, fromDate, toDate])
 
   const handleSelectAgreement = useCallback((id) => {
     setSelectedAgreementId(id)
@@ -482,7 +497,7 @@ export default function ImportPurchaseOrder() {
 
                 {/* ── Items table (no status col, no chevron, no row nav) ── */}
                 <div className="px-4 sm:px-6 lg:px-10 pt-4 pb-6 overflow-hidden flex flex-col flex-1">
-                  <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-auto flex-1">
+                  <div className="rounded-xl border border-[#e5e5e5] shadow-sm overflow-auto w-full max-h-full">
                     <table className="w-full text-[13px]" style={{ minWidth: '700px', borderCollapse: 'collapse' }}>
                       <thead className="sticky top-0 z-10">
                         <tr className="bg-gradient-to-b from-[#fafbfc] to-[#f5f6f7] border-b border-[#e5e5e5] text-[#6a6d70]">
@@ -502,10 +517,9 @@ export default function ImportPurchaseOrder() {
                             {/* Item No. */}
                             <td className="py-3.5 px-4 font-semibold text-[#32363a]">{item.itemNo}</td>
 
-                            {/* Material — description + code */}
-                            <td className="py-3.5 px-4">
-                              <div className="text-[#32363a] font-medium text-[13px]">{item.materialName}</div>
-                              <div className="text-[#0a6ed1] text-[12px] font-medium">{item.materialNumber}</div>
+                            {/* Material — code only */}
+                            <td className="py-3.5 px-4 text-[#32363a] font-medium text-[13px]">
+                              {item.materialNumber}
                             </td>
 
                             {/* HSN Code */}

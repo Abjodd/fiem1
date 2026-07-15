@@ -835,7 +835,7 @@ export default function ReturnPOMatdoc() {
 
             {!detailLoading && !detailError && doc && (
               <>
-                <div className="sticky top-0 z-20 bg-white">
+                <div className="bg-white">
                   <div className="px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 pb-5 border-b border-[#e5e5e5] bg-gradient-to-b from-[#fafbfc] to-white">
                     <div className="flex items-center gap-3 mb-4 md:hidden">
                       <button data-sidebar-toggle onClick={() => setMobileSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#d9d9d9] text-[#6a6d70] hover:text-[#0a6ed1] hover:border-[#0a6ed1] transition-all">

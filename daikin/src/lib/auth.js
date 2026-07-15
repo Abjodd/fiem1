@@ -9,6 +9,7 @@ export const PAGE_PERMISSIONS = {
   '/purchasing/ScheduleRelease/schedule-release':    ['partner', 'employee','employeeadmin','approval'],
   '/purchasing/PurchaseOrder/purchase-order':      ['partner' , 'employee','employeeadmin','approval'],
   // '/purchasing/po-schedule-report':  ['partner', 'employee','employeeadmin'],
+  '/purchasing/POReturn/poreturn':  ['partner', 'employee','employeeadmin','approval'],
   '/purchasing/ScheduleGenerate/schedule-generate':   [ 'employee','employeeadmin','approval'],
   '/purchasing/create-asn':          ['partner', 'employee','employeeadmin','approval'],
   '/reports/ForecastReport/forecast-report':        ['partner','employee','approval'],
