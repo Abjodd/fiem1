@@ -68,6 +68,7 @@ function mapScheduleLine(d) {
     deliverySchedule: num(d.Required_Qty),
     confirmedQty: num(d.Confirmed_Qty),
     unit: str(d.Uom),
+    confkey: str(d.confkey),
   }
 }
 

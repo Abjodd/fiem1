@@ -225,11 +225,12 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
               const confirmedQty = line ? (line.confirmedQty || 0) : 0
               const unit         = line ? (line.unit || item.deliveryUnit || '') : ''
               const hasData      = !!line
+              const isConfirmed  = line ? (line.confkey === 'X') : false
 
               let cellBg, cellText, cellBorder
               if (!hasData) {
                 cellBg = 'transparent'; cellText = '#d9d9d9'; cellBorder = 'none'
-              } else if (confirmedQty > 0) {
+              } else if (isConfirmed) {
                 cellBg = '#e8f5e9'; cellText = '#2e7d32'; cellBorder = '1.5px solid #a5d6a7'
               } else {
                 cellBg = '#fce8e6'; cellText = '#cc1c14'; cellBorder = '1.5px solid #ef9a9a'
@@ -262,7 +263,7 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
                         )}
                       </span>
                       {/* Icon below */}
-                      {confirmedQty > 0 ? (
+                      {isConfirmed ? (
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={cellText} strokeWidth="3" strokeLinecap="round">
                           <path d="M5 13l4 4L19 7"/>
                         </svg>
