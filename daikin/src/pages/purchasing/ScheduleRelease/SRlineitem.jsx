@@ -92,8 +92,18 @@ function CalendarGrid({ item, lines, calCols, monthGroups }) {
     return m
   }, [lines])
 
-  const totalDelivery  = lines.reduce((s, l) => s + (l.deliverySchedule || 0), 0)
-  const totalConfirmed = lines.reduce((s, l) => s + (l.confirmedQty || 0), 0)
+  const totalDelivery = lines.reduce((s, l) => {
+    const boxVal = (l.confirmedQty || 0) > 0 ? (l.confirmedQty || 0) : (l.deliverySchedule || 0);
+    return s + boxVal;
+  }, 0)
+
+  const totalConfirmed = lines.reduce((s, l) => {
+    if (l.confkey === 'X') {
+      const boxVal = (l.confirmedQty || 0) > 0 ? (l.confirmedQty || 0) : (l.deliverySchedule || 0);
+      return s + boxVal;
+    }
+    return s;
+  }, 0)
   const isFullyConfirmed = totalConfirmed > 0 && totalConfirmed >= totalDelivery
 
   return (

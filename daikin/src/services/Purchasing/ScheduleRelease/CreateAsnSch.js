@@ -107,7 +107,7 @@ function mapAsnItem(d, idx = 0) {
     netPrice:         str(d.Netpr),
     supplierNetPrice: str(d.NetprVen),
 
-    packingMaterialQty:  str(d.PkgMatQty) || '1',
+    packingMaterialQty:  '1',
     packingMaterialType: str(d.PkgMatType),
     packagingType:       str(d.PackingStyle),
     pdirNo:              str(d.PdirRefNo),
@@ -133,14 +133,12 @@ export const createAsnApi = {
     const json = await odataGet(`/ASN_itemSet?$filter=${encodeURIComponent(filter)}&$format=json`)
     
     const results = json.d?.results || []
-    const ebelpCounters = {}
+    let globalSchCounter = 1;
     
     return results.map((d, idx) => {
       const item = mapAsnItem(d, idx)
-      const ebelpStr = str(d.Ebelp)
-      if (!ebelpCounters[ebelpStr]) ebelpCounters[ebelpStr] = 1
       
-      const genSch = String(ebelpCounters[ebelpStr]++)
+      const genSch = String(globalSchCounter++)
       item.schLine = item.schLine ? String(parseInt(item.schLine, 10)) : genSch
       
       item.itemNo = `${item.ebelp}-${item.schLine}-${item.eindt}-${idx}`
@@ -163,14 +161,13 @@ export const createAsnApi = {
     const token = await fetchCsrfToken()
 
     // ── Item rows ─────────────────────────────────────────────────────────────
-    const ebelpCounters = {}
+    let globalSchCounter = 1;
 
     const itemRows = items.map(it => {
       const menge = String(parseFloat(it.avlAsnQty || '0'))
       
       const ebelpStr = str(it.ebelp)
-      if (!ebelpCounters[ebelpStr]) ebelpCounters[ebelpStr] = 1
-      const generatedEtenr = String(ebelpCounters[ebelpStr]++)
+      const generatedEtenr = String(globalSchCounter++)
 
       const itemObj = {
         __metadata: {

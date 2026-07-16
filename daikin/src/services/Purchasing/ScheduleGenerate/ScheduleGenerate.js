@@ -20,13 +20,20 @@ async function fetchCsrfToken() {
 }
 
 async function odataGet(path) {
-  const res = await fetch(`${SRV}${path}`, {
+  const separator = path.includes('?') ? '&' : '?'
+  const cacheBusterPath = `${path}${separator}_=${Date.now()}`
+
+  const res = await fetch(`${SRV}${cacheBusterPath}`, {
     headers: {
       Accept: 'application/json',
       Loginid: authConfig.loginId,
       Logintype: authConfig.loginType,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
     },
     credentials: 'include',
+    cache: 'no-store',
   })
   if (!res.ok) throw new Error(`OData GET failed: ${res.status} ${res.statusText}`)
   const json = await res.json()
@@ -528,17 +535,46 @@ export const scheduleGenerateApi = {
       return {}
     }
 
-    const itemsRaw = await odataGet(
-      `/sg_itemSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}'&$format=json`
-    )
-
     const map = {}
-    ;(itemsRaw.results ?? []).forEach(data => {
-      const itemNo = String(data.itemno).trim().replace(/^0+/, '')
-      const cleanItemNos = itemNos.map(n => String(n).trim().replace(/^0+/, ''))
-      if (!cleanItemNos.includes(itemNo)) return
-      map[itemNo] = mapDayRecord(data)
-    })
+    const cleanItemNos = itemNos.map(n => String(n).trim().replace(/^0+/, ''))
+    
+    await Promise.all(
+      cleanItemNos.map(async (itemNo) => {
+        const formattedItemNo = String(itemNo).padStart(5, '0')
+        
+        try {
+          const itemsRaw = await odataGet(
+            `/editSet?$filter=agreement eq '${agreementId}' and lifnr eq '${encodeURIComponent(lifnr)}' and itemno eq '${formattedItemNo}'&$format=json`
+          )
+          
+          const results = itemsRaw.results ?? []
+          if (results.length > 0) {
+            const days = new Array(31).fill(0)
+            
+            results.forEach(row => {
+              const rowDays = extractDaysFromRow(row)
+              rowDays.forEach((val, i) => {
+                if (val > 0) days[i] = val
+              })
+            })
+            
+            const first = results[0]
+            const frozenDays = [first.fn1, first.fn2, first.fn3]
+              .filter(Boolean)
+              .map(Number)
+              
+            map[itemNo] = {
+              days,
+              frozenDays,
+              totalQuantity: Number(first.totalsch) || 0,
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch editSet for item ${itemNo}:`, err)
+        }
+      })
+    )
+    
     return map
   },
 
