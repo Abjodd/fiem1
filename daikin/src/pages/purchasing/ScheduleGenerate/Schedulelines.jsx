@@ -141,6 +141,7 @@ function buildInitialLines(itemsData, mode, dayCount, calDays) {
       ...it,
       originalDays: Array.isArray(it.days) ? [...it.days] : [],
       days,
+      asnCreatedDays: Array.isArray(it.asnCreatedDays) ? [...it.asnCreatedDays] : new Array(31).fill(0),
       forecast: it.forecast ? [...it.forecast] : [0, 0, 0],
     }
   })
@@ -162,6 +163,22 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
       const days = [...l.days]
       days[di] = Math.max(0, parseInt(val) || 0)
       return { ...l, days }
+    }))
+  }
+
+  // Enforce ASN floor on blur — user can type freely, but when they leave
+  // the cell, the value snaps to the asncreated minimum if it's too low
+  const handleCellBlur = (li, di) => {
+    if (!onChange) return
+    onChange(prev => prev.map((l, i) => {
+      if (i !== li) return l
+      const floor = (l.asnCreatedDays || [])[di] || 0
+      if (floor > 0 && l.days[di] < floor) {
+        const days = [...l.days]
+        days[di] = floor
+        return { ...l, days }
+      }
+      return l
     }))
   }
 
@@ -303,6 +320,27 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                   )
                 }
 
+                // ASN locked: asncreated equals or exceeds the day value — grey, no editing
+                const asnFloor = (line.asnCreatedDays || [])[di] || 0
+                const isAsnLocked = editable && asnFloor > 0 && asnFloor >= val
+
+                if (isAsnLocked) {
+                  return (
+                    <td
+                      key={di}
+                      className="border-r border-[#f0f0f0] p-0 text-center"
+                      style={{ background: '#eaeaea' }}
+                    >
+                      <span
+                        className="text-[11px] tabular-nums block py-1.5 font-bold text-[#999]"
+                        title={`ASN Created: ${asnFloor} — Locked`}
+                      >
+                        {val || 0}
+                      </span>
+                    </td>
+                  )
+                }
+
                 // Past date OR normal future date — both render identically
                 return (
                   <td
@@ -310,19 +348,28 @@ function ScheduleGrid({ lines, editable, calDays, onChange }) {
                     className="border-r border-[#f0f0f0] p-0 text-center"
                   >
                     {editable ? (
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        min="0"
-                        value={val}
-                        onChange={e => {
-                          const v = e.target.value.replace(/[^0-9]/g, '')  // strip non-numeric
-                          handleCellChange(li, di, v === '' ? 0 : v)
-                        }}
-                        onFocus={e => e.target.select()}
-                        className="cell-input"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          min="0"
+                          value={val}
+                          onChange={e => {
+                            const v = e.target.value.replace(/[^0-9]/g, '')  // strip non-numeric
+                            handleCellChange(li, di, v === '' ? 0 : v)
+                          }}
+                          onBlur={() => handleCellBlur(li, di)}
+                          onFocus={e => e.target.select()}
+                          className="cell-input"
+                          style={asnFloor > 0 && val < asnFloor ? { background: '#fce8e6', boxShadow: 'inset 0 0 0 1.5px #cc1c14', borderRadius: 4 } : undefined}
+                        />
+                        {asnFloor > 0 && val < asnFloor && (
+                          <div className="text-[8px] font-bold text-[#cc1c14] leading-none pb-0.5">
+                            Min: {asnFloor}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <span className={`text-[11px] tabular-nums block py-1.5
                         ${val > 0 ? 'font-bold text-[#32363a]' : 'text-[#d9d9d9]'}`}>
@@ -512,6 +559,13 @@ const handleClose = () => {
                     style={{ background: '#e8f5ec', border: '1px solid #b7e2c4' }} />
                   Fully allocated
                 </div>
+                {editable && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-sm inline-block"
+                      style={{ background: '#eaeaea', border: '1px solid #d0d0d0' }} />
+                    ASN Locked
+                  </div>
+                )}
               </div>
 
               <button

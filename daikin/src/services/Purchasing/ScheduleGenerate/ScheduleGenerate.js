@@ -500,12 +500,21 @@ export const scheduleGenerateApi = {
           const results = itemsRaw.results ?? []
           if (results.length > 0) {
             const days = new Array(31).fill(0)
+            const asnCreatedDays = new Array(31).fill(0)
             
             results.forEach(row => {
               const rowDays = extractDaysFromRow(row)
               rowDays.forEach((val, i) => {
                 if (val > 0) days[i] = val
               })
+              // Extract asncreated per date
+              const dateStr = row.date || ''
+              if (dateStr.length === 8) {
+                const dayNum = parseInt(dateStr.substring(6, 8), 10)
+                if (dayNum >= 1 && dayNum <= 31) {
+                  asnCreatedDays[dayNum - 1] = Number(String(row.asncreated || '').trim()) || 0
+                }
+              }
             })
             
             const first = results[0]
@@ -516,6 +525,7 @@ export const scheduleGenerateApi = {
             map[itemNo] = {
               days,
               frozenDays,
+              asnCreatedDays,
               // Keeping backward compatibility format
               totalQuantity: Number(first.totalsch) || 0,
             }
@@ -550,12 +560,21 @@ export const scheduleGenerateApi = {
           const results = itemsRaw.results ?? []
           if (results.length > 0) {
             const days = new Array(31).fill(0)
+            const asnCreatedDays = new Array(31).fill(0)
             
             results.forEach(row => {
               const rowDays = extractDaysFromRow(row)
               rowDays.forEach((val, i) => {
                 if (val > 0) days[i] = val
               })
+              // Extract asncreated per date
+              const dateStr = row.date || ''
+              if (dateStr.length === 8) {
+                const dayNum = parseInt(dateStr.substring(6, 8), 10)
+                if (dayNum >= 1 && dayNum <= 31) {
+                  asnCreatedDays[dayNum - 1] = Number(String(row.asncreated || '').trim()) || 0
+                }
+              }
             })
             
             const first = results[0]
@@ -566,6 +585,7 @@ export const scheduleGenerateApi = {
             map[itemNo] = {
               days,
               frozenDays,
+              asnCreatedDays,
               totalQuantity: Number(first.totalsch) || 0,
             }
           }
