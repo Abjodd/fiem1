@@ -115,7 +115,7 @@ function SidebarContent({
                       <span className="text-[11px] text-[#6a6d70] bg-[#f0f0f0] px-2 py-0.5 rounded font-medium">{a.type}</span>
                     </div>
                     <div className="flex items-center justify-between text-[12px] text-[#6a6d70]">
-                      <span>{a.plant} · {a.plantName}</span>
+                      <span>{a.plant && a.plantName ? `${a.plant} · ${a.plantName}` : a.plant || a.plantName || ''}</span>
                       <span>{a.date}</span>
                     </div>
                   </button>
@@ -207,7 +207,13 @@ export default function ImportPurchaseOrder() {
     setListError(null)
     importPOApi.listHeaders()
       .then(data => {
-        setAgreements(data)
+        const seen = new Set()
+        const unique = data.filter(a => {
+          if (seen.has(a.id)) return false
+          seen.add(a.id)
+          return true
+        })
+        setAgreements(unique)
         setListLoading(false)
       })
       .catch(err => {
