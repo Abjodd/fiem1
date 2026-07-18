@@ -4,14 +4,30 @@
     "id": "fiem.ui",
     "type": "application",
     "i18n": "i18n/i18n.properties",
-    "applicationVersion": {
-      "version": "1.0.0"
-    },
+    "applicationVersion": { "version": "1.0.0" },
     "title": "FIEM Supplier Portal",
-    "description": "FIEM Supplier Portal UI"
+    "description": "FIEM Supplier Portal UI",
+    "ach": "CA-UI2-INT-FE",
+    "crossNavigation": {
+      "inbounds": {
+        "fiem-display": {
+          "semanticObject": "FIEMSupplierPortal",
+          "action": "display",
+          "title": "FIEM Supplier Portal",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "HTML5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
   },
   "sap.cloud": {
     "public": true,
-    "service": "FIEM-app"
+    "service": "FIEM"
   }
 }

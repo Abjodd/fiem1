@@ -1,5 +1,5 @@
 _schema-version: "3.1"
-ID: FIEM-app
+ID: FIEM
 version: 1.0.0
 
 modules:
@@ -30,7 +30,30 @@ modules:
       build-result: dist
       supported-platforms: []
 
-  - name: FIEM-app
+  - name: FIEM-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: FIEM-destination-service
+        parameters:
+          content-target: true
+      - name: FIEM-repo-host
+        parameters:
+          service-key:
+            name: FIEM-repo-host-key
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: fiem_html_repo_host
+              ServiceInstanceName: FIEM-html5-service
+              ServiceKeyName: FIEM-repo-host-key
+              sap.cloud.service: FIEM
+      version: 1.0.0
+    build-parameters:
+      no-source: true
+
+  - name: FIEM
     type: approuter.nodejs
     path: approuter
     parameters:
