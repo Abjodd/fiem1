@@ -417,7 +417,7 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Type</label>
+              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Type <span className="text-[#cc1c14]">*</span></label>
               <select value={item.packingMaterialType} onChange={e => onUpdate('packingMaterialType', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-2 text-[13px] outline-none focus:border-[#0a6ed1]">
               <option value="">Select</option>
               {(packagingTypes || []).map(pt => (
@@ -426,8 +426,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
             </select>
             </div>
             <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Qty</label>
-              <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
+              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Qty <span className="text-[#cc1c14]">*</span></label>
+              <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value.replace(/^0+/, ''))} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
             </div>
           </div>
           
@@ -523,14 +523,14 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
           <Field label="Tax Mismatch">
             <TaxMismatchToggle value={item.taxMismatch} onChange={val => onUpdate('taxMismatch', val)} compact disabled={isZeroQty} />
           </Field>
-          <Field label="Type of Packaging">
+          <Field label={<>Type of Packaging <span className="text-[#cc1c14]">*</span></>}>
             <select value={item.packagingType} onChange={e => onUpdate('packagingType', e.target.value)} disabled={isZeroQty} className={selectCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'}>
               <option value="">Select</option>
               {packagingTypes.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
             </select>
           </Field>
-          <Field label="Packing Material Qty" className="max-w-[120px]">
-            <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} placeholder="0" disabled={isZeroQty} className={inputCls + ' text-center disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
+          <Field label={<>Packing Material Qty <span className="text-[#cc1c14]">*</span></>} className="max-w-[120px]">
+            <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value.replace(/^0+/, ''))} placeholder="0" disabled={isZeroQty} className={inputCls + ' text-center disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
           </Field>
           <Field label="PDIR No.">
             <select value={item.pdirNo} onChange={e => onUpdate('pdirNo', e.target.value)} disabled={isZeroQty} className={selectCls + ' disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'}>
@@ -812,6 +812,13 @@ const handleGo = async () => {
       const fgVal = parseFloat(it.fgStock)
       if (it.fgStock === '' || isNaN(fgVal)) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): FG Stock is required.`)
       else if (fgVal < avl) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): FG Stock (${fgVal}) must be greater than or equal to Avl. ASN Qty (${avl}).`)
+      
+      if (!it.packagingType) {
+        errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): Type of Packaging is required.`);
+      }
+      if (!it.packingMaterialQty || Number(it.packingMaterialQty) <= 0) {
+        errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): Packing Material Qty must be greater than 0.`);
+      }
       if (it.batches && it.batches.length > 0) {
         const sum = it.batches.reduce((s, b) => s + parseFloat(b.quantity || 0), 0)
         if (Math.abs(sum - avl) > 0.0001) errors.push(`Item ${it.ebelp} / Sch ${it.schLine} (${it.materialNumber}): batch quantity sum (${sum}) does not match Permissible ASN Qty (${avl}).`)

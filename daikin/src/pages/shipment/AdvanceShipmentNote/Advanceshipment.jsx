@@ -490,6 +490,20 @@ export default function AdvanceShippingNote() {
 
   const renderItems = () => {
     if (!asn) return null
+
+    const displayItems = Object.values(asn.items.reduce((acc, item) => {
+      const key = item.materialCode || item.material
+      if (!acc[key]) {
+        acc[key] = { ...item }
+      } else {
+        acc[key].quantity += item.quantity
+        acc[key].igst += item.igst
+        acc[key].cgst += item.cgst
+        acc[key].sgstUtgst += item.sgstUtgst
+      }
+      return acc
+    }, {}))
+
     return (
       <div className="anim-fade px-4 sm:px-6 lg:px-10 py-6">
         <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] shadow-sm mb-6">
@@ -502,7 +516,7 @@ export default function AdvanceShippingNote() {
               </tr>
             </thead>
             <tbody className="row-stagger">
-              {asn.items.map((item, idx) => (
+              {displayItems.map((item, idx) => (
                 <tr key={idx} className="border-b border-[#f0f0f0] last:border-b-0 hover:bg-[#fafbfc] transition-colors duration-200">
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-2 text-[#32363a] font-medium">
@@ -672,10 +686,10 @@ export default function AdvanceShippingNote() {
         <CancelSuccessDialog asnId={cancelSuccessAsn} onDismiss={handleSuccessDismiss} />
       )}
 
-      <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
+      {/* <div className="bg-white border-b border-[#e5e5e5] px-4 sm:px-6 lg:px-10 py-2 text-[13px] text-[#6a6d70] flex flex-wrap gap-x-6 gap-y-1">
         <span><span className="font-semibold text-[#32363a]">Supplier Name:</span> Kunstocom(India) Ltd</span>
         <span className="ml-auto"><span className="font-semibold text-[#32363a]">Supplier Location:</span> NEEMRANA(alwar)</span>
-      </div>
+      </div> */}
 
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
         <div className="flex" style={{ minHeight: 'calc(100vh - 260px)' }}>
@@ -715,16 +729,14 @@ export default function AdvanceShippingNote() {
                       <div className="text-[12px] uppercase tracking-wider text-[#6a6d70] font-semibold mb-1.5">
                         ASN — {asn.id}
                         {/* View Only badge for employee */}
-                        {isEmployee && (
+                        {/* {isEmployee && (
                           <span className="ml-2 px-2 py-0.5 bg-[#fff3e0] text-[#e65100] rounded text-[10px] font-bold normal-case">
                             View Only
                           </span>
-                        )}
+                        )} */}
                       </div>
                       <div className="flex items-baseline gap-4">
                         <h2 className="text-[22px] sm:text-[26px] font-bold text-[#32363a] tracking-tight">{asn.id}</h2>
-                        <span className="text-[22px] sm:text-[26px] font-bold text-[#32363a]">{asn.amount.toFixed(2)}</span>
-                        <span className="text-[14px] text-[#6a6d70] self-end pb-1">{asn.currency}</span>
                       </div>
                       <div className="text-[14px] text-[#6a6d70] mt-1">Plant: {asn.plantName} ({asn.plant})</div>
                     </div>

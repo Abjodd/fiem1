@@ -477,21 +477,21 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
                     className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"
                   />
                 </th>
-                {['Item', 'Schedule Line', 'Material', 'Storage Loc.', 'Delivery Schedule', 'Confirmed Qty', 'ASN Qty', 'Delivery Date', 'Dispatch Date'].map(h => (
+                {['Item', 'Material', 'Delivery Schedule', 'Confirmed Qty', 'ASN Qty', 'Delivery Date'].map(h => (
                   <th key={h} className="text-left font-semibold py-3 px-3 text-[11px] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} className="py-12 text-center">
+                <tr><td colSpan={7} className="py-12 text-center">
                   <div className="flex items-center justify-center gap-2 text-[13px] text-[#6a6d70]">
                     <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>
                     Loading…
                   </div>
                 </td></tr>
               ) : filteredRows.length === 0 ? (
-                <tr><td colSpan={10} className="py-12 text-center text-[13px] text-[#6a6d70]">No data</td></tr>
+                <tr><td colSpan={7} className="py-12 text-center text-[13px] text-[#6a6d70]">No data</td></tr>
               ) : filteredRows.map((r, idx) => {
                 const key = String(idx)
                 const isSelected = selected.has(key)
@@ -508,19 +508,16 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
                       />
                     </td>
                     <td className="py-3 px-3 font-semibold text-[#32363a]">{r.itemNo || '—'}</td>
-                    <td className="py-3 px-3 text-[#32363a]">{r.scheduleLine || '—'}</td>
                     <td className="py-3 px-3">
                       <div className="font-semibold text-[#0a6ed1] text-[12px]">{r.materialNo || '—'}</div>
                       <div className="text-[#6a6d70] text-[11px] truncate max-w-[160px]">{r.materialDesc || ''}</div>
                     </td>
-                    <td className="py-3 px-3 text-[#32363a]">{r.storageLocation || '—'}</td>
                     <td className="py-3 px-3 font-semibold text-[#32363a]">
                       {r.requiredQty || '—'} <span className="text-[#6a6d70] font-normal text-[11px]">{r.uom}</span>
                     </td>
                     <td className="py-3 px-3 text-[#32363a]">{r.confirmedQty || '—'}</td>
                     <td className="py-3 px-3 text-[#32363a]">{r.asnQty || '—'}</td>
                     <td className="py-3 px-3 text-[#32363a]">{r.deliveryDate || '—'}</td>
-                    <td className="py-3 px-3 text-[#32363a]">{r.dispatchDate || '—'}</td>
                   </tr>
                 )
               })}

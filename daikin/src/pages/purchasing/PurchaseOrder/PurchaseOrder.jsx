@@ -392,20 +392,20 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
                 <th className="py-3 px-3 w-10">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"/>
                 </th>
-                {['Item', 'Sch. Line', 'Material', 'PO Qty', 'Conf. Qty', 'Del. Qty', 'ASN Qty', 'Conf. Date', 'Ship Date', 'Dispatch Date'].map(h => (
+                {['Item', 'Material', 'PO Qty', 'Conf. Qty', 'Del. Qty', 'ASN Qty', 'Conf. Date', 'Ship Date'].map(h => (
                   <th key={h} className="text-left font-semibold py-3 px-3 text-[11px] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={11} className="py-12 text-center">
+                <tr><td colSpan={9} className="py-12 text-center">
                   <div className="flex items-center justify-center gap-2 text-[13px] text-[#6a6d70]">
                     <div className="w-5 h-5 border-2 border-[#e5e5e5] border-t-[#0a6ed1] rounded-full animate-spin"/>Loading…
                   </div>
                 </td></tr>
               ) : filteredRows.length === 0 ? (
-                <tr><td colSpan={11} className="py-12 text-center text-[13px] text-[#6a6d70]">No confirmation lines found</td></tr>
+                <tr><td colSpan={9} className="py-12 text-center text-[13px] text-[#6a6d70]">No confirmation lines found</td></tr>
               ) : filteredRows.map((r, idx) => {
                 const key = String(idx)
                 const isSelected = selected.has(key)
@@ -416,7 +416,6 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
                       <input type="checkbox" checked={isSelected} onChange={() => toggleRow(key)} className="w-4 h-4 accent-[#0a6ed1] cursor-pointer"/>
                     </td>
                     <td className="py-3 px-3 font-semibold text-[#32363a]">{r.itemNo || '—'}</td>
-                    <td className="py-3 px-3 text-[#32363a]">{r.scheduleLine?.trim() || '—'}</td>
                     <td className="py-3 px-3">
                       <div className="font-semibold text-[#0a6ed1] text-[12px]">{r.materialNo || '—'}</div>
                       <div className="text-[#6a6d70] text-[11px] truncate max-w-[160px]">{r.materialDesc || ''}</div>
@@ -427,7 +426,6 @@ function ConfirmView({ agreement, onBack, onSuccess }) {
                     <td className="py-3 px-3 text-[#32363a]">{r.asnQty || '—'}</td>
                     <td className="py-3 px-3 text-[#32363a]">{r.confDateDisplay || '—'}</td>
                     <td className="py-3 px-3 text-[#32363a]">{r.shipDateDisplay || '—'}</td>
-                    <td className="py-3 px-3 text-[#32363a]">{r.dispDateDisplay || '—'}</td>
                   </tr>
                 )
               })}

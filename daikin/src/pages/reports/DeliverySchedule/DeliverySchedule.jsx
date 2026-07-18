@@ -684,7 +684,7 @@ export default function DeliverySchedule() {
   const { loginId, loginType, role, loading: userLoading } = useUser()
   authConfig.loginId   = loginId
   authConfig.loginType = loginType
-  const companyCode = '1000 (Comstar India)'
+
 
   const [view,             setView]             = useState('list')
   const [selectedTracking, setSelectedTracking] = useState(null)
@@ -877,12 +877,7 @@ DeliveryScheduleApi.fetchDeliveries({ startDate: today, endDate: today })
       <div className="bg-[#f5f6f7] min-h-[calc(100vh-104px)]">
         <main className="flex flex-col bg-white" style={{ minHeight:'calc(100vh - 220px)' }}>
 
-          {/* Company code */}
-          <div className="px-4 sm:px-6 lg:px-10 py-3 bg-white border-b border-[#e5e5e5] flex-shrink-0 text-center">
-            <div className="text-[13px] text-[#6a6d70]">
-              Company Code: <strong className="text-[#32363a]">{companyCode}</strong>
-            </div>
-          </div>
+
 
           {view === 'detail' ? (
             <DetailView trackingNo={selectedTracking} trackYear={selectedYear} supplierName={selectedSupplier} onBack={handleBack}/>

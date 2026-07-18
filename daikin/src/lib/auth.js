@@ -11,6 +11,7 @@ export const PAGE_PERMISSIONS = {
   // '/purchasing/po-schedule-report':  ['partner', 'employee','employeeadmin'],
   '/purchasing/POReturn/poreturn':  ['partner', 'employee','employeeadmin','approval'],
   '/purchasing/ScheduleGenerate/schedule-generate':   [ 'employee','employeeadmin','approval'],
+  '/purchasing/ScheduleGenerate/schedule-lines':      ['employee', 'employeeadmin', 'approval'],
   '/purchasing/create-asn':          ['partner', 'employee','employeeadmin','approval'],
   '/reports/ForecastReport/forecast-report':        ['partner','employee','approval'],
   '/reports/VendorLedgerReport/vendor-ledger-report':   ['partner','employee','employeeadmin','approval'],

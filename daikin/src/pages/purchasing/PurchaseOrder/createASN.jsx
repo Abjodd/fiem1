@@ -424,8 +424,8 @@ function MobileItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, pa
             </select>
             </div>
             <div>
-              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Qty</label>
-              <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
+              <label className="block text-[12px] font-semibold text-[#374151] mb-1">Packing Qty <span className="text-[#cc1c14]">*</span></label>
+              <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value.replace(/^0+/, ''))} className="w-full h-10 rounded-lg border border-[#d9d9d9] bg-white px-3 text-[14px] outline-none focus:border-[#0a6ed1] focus:ring-2 focus:ring-[#0a6ed1]/20 text-center transition-all" />
             </div>
           </div>
           
@@ -532,8 +532,8 @@ function DesktopItemCard({ item, isSelected, onToggle, onUpdate, onSplitBatch, p
             ))}
           </select>
           </Field>
-          <Field label="Packing Material Qty" className="max-w-[120px]">
-            <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value)} placeholder="0" disabled={isZeroQty} className={inputCls + ' text-center disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
+          <Field label={<>Packing Material Qty <span className="text-[#cc1c14]">*</span></>} className="max-w-[120px]">
+            <input type="text" value={item.packingMaterialQty} onChange={e => onUpdate('packingMaterialQty', e.target.value.replace(/^0+/, ''))} placeholder="0" disabled={isZeroQty} className={inputCls + ' text-center disabled:bg-[#f5f5f5] disabled:cursor-not-allowed'} />
           </Field>
         
           <Field label="PDIR No.">
@@ -831,6 +831,9 @@ export default function CreateASN({ agreement: propAgreement }) {
       
       if (!it.packingMaterialType) {
         errors.push(`Item ${it.itemNo} (${it.materialNumber}): Type of Packaging is required.`)
+      }
+      if (!it.packingMaterialQty || Number(it.packingMaterialQty) <= 0) {
+        errors.push(`Item ${it.itemNo} (${it.materialNumber}): Packing Material Qty must be greater than 0.`);
       }
 
       // Split batch mandatory if packing qty is set
